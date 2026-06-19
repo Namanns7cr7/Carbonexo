@@ -1,0 +1,24 @@
+# Local PostgreSQL 16 for Carbonexo / EcoTrack development.
+#   docker compose -f database/docker-compose.yml up -d
+# Flyway (run by the backend on boot, or the flyway CLI) applies migrations/.
+# To load demo data after migrations:  psql ... -f database/seed.sql
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecotrack-postgres
+    environment:
+      POSTGRES_DB: ecotrack
+      POSTGRES_USER: ecotrack
+      POSTGRES_PASSWORD: ecotrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - ecotrack_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecotrack -d ecotrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ecotrack_pgdata:

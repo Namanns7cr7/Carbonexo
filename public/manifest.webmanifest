@@ -1,0 +1,16 @@
+{
+  "name": "Carbonexo — Daily Carbon Tracker",
+  "short_name": "Carbonexo",
+  "description": "Track your daily activities, understand your carbon footprint, and reduce emissions with simple actions and an AI coach.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08110d",
+  "theme_color": "#84cc16",
+  "categories": ["lifestyle", "health", "productivity"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
