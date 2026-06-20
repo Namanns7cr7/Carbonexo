@@ -1,169 +1,149 @@
-# Carbonexo / EcoTrack
+# Carbonexo — Personal Sustainability Assistant
 
-A mobile-first carbon-footprint tracking PWA: log daily activities, upload electricity
-bills (OCR), earn green credits, redeem rewards, and get AI sustainability coaching.
+A smart, context-aware assistant that helps a person **understand and reduce their
+carbon footprint**. You log everyday activities (or upload an electricity bill),
+and the assistant turns that raw behaviour into personalised, data-grounded advice,
+goals, and rewards.
 
-- **Frontend:** Next.js 14 (App Router) · TypeScript · Tailwind · Framer Motion
-- **Backend:** Java 17 · Spring Boot 3.3 · Spring Security (JWT) · Flyway
-- **Database:** PostgreSQL 16 (via Docker)
-- **Auth:** email/password **and** Sign in with Google
-- **AI:** Google Gemini (with a built-in `canned` fallback that needs no cloud creds)
-
----
-
-## Prerequisites
-
-| Tool | Version | Notes |
-|---|---|---|
-| Docker Desktop | any recent | runs PostgreSQL |
-| JDK | 17 | e.g. Eclipse Temurin 17 |
-| Maven | 3.9+ | to build the backend |
-| Node.js | 18+ | runs the frontend |
-
-> On this machine these are already installed: JDK 17 at `C:\Program Files\Eclipse Adoptium\jdk-17.0.19.10-hotspot`,
-> Maven at `C:\Tools\apache-maven-3.9.9`, and both are on the user `PATH`.
+- **Live flow:** sign in → 7-step persona onboarding → daily tracking → dashboard &
+  insights → **AI Coach** → action plan → green credits → rewards.
 
 ---
 
-## One-time setup
+## 1. Chosen vertical
+
+**Sustainability / Climate — a Personal Sustainability Assistant.**
+
+The persona is an everyday individual who wants to live greener but doesn't know
+*where* their emissions come from or *what* to change. Carbonexo profiles that
+person during onboarding (travel modes, diet, electricity use, shopping habits,
+weekly reduction goal) and then acts as their always-on sustainability coach.
+
+---
+
+## 2. The assistant: approach & logic (context-aware decision-making)
+
+The "smart, dynamic assistant" is the **AI Coach + recommendation engine**. It does
+not give generic tips — every response is computed from the user's own context:
+
+**Context the assistant builds for each user**
+- **Biggest emission source** this week (derived from per-category CO₂ breakdown of
+  their activity logs).
+- **Trend**: today vs. yesterday delta, 7-day series, streak of consecutive logged days.
+- **Persona**: travel mode(s), diet(s), electricity level, shopping habits from onboarding.
+- **Progress**: carbon saved so far and weekly-goal completion.
+
+**How it decides**
+1. Aggregates the user's logs into a category breakdown and picks the dominant source.
+2. Renders a **prompt template stored in the database** (not hardcoded) with that
+   context, so the same code adapts per user and templates are editable without redeploys.
+3. Routes to a model by need — a higher-quality model for reports/recommendations,
+   a faster model for chat/tips (`default-model` vs `fast-model`).
+4. **Graceful degradation**: a pluggable AI provider interface means the assistant
+   runs with Google Gemini (Vertex AI) in production, or a built-in *canned*
+   provider with zero cloud credentials for local/dev — same API, no breakage.
+5. The **credit engine** turns reductions into green credits via configurable rules;
+   credits unlock rewards — closing the loop from insight → action → reward.
+
+> Example: if *Travel* is the biggest source (e.g. 18 kg this week), the coach and
+> the Action Plan surface travel-specific actions (metro, carpool) with their
+> estimated weekly savings, and completing them advances the user's goal bar.
+
+Recommendations are filtered to the user's relevant categories, and the dashboard
+"AI insight" names the biggest source and links straight to the coach.
+
+---
+
+## 3. How the solution works (architecture)
+
+```
+Next.js 14 PWA  ──►  Spring Boot API  ──►  PostgreSQL 16
+(App Router)         (Java 17)             (Flyway-managed)
+                        │
+                        ├─ Auth: JWT access + rotating refresh, Google sign-in
+                        ├─ Engines: carbon calc · credit rules · AI (provider-pluggable)
+                        └─ Integrations: Gemini (Vertex AI), Cloud Storage, OCR — all
+                           behind interfaces with local fallbacks
+```
+
+- **Frontend:** Next.js 14 (App Router) + TypeScript + Tailwind + Framer Motion; a
+  mobile-first installable PWA. Auth-gated app, login-first routing, onboarding gate.
+- **Backend:** layered Spring Boot (controller → service → repository → entity) with
+  DTO validation and RFC-7807 error responses.
+- **Data:** PostgreSQL with Flyway migrations as the source of truth; emission
+  factors, credit rules, rewards and prompt templates are **data, not code**.
+
+---
+
+## 4. Evaluation focus
+
+- **Code quality:** clear layering, single-responsibility services, typed DTOs,
+  provider abstractions (`AIProvider`, `OcrProvider`, `BlobStorageService`) so
+  business logic has no vendor-specific code.
+- **Security:** bcrypt passwords; short-lived JWT access tokens + **rotating refresh
+  tokens stored only as SHA-256 hashes**; Google ID tokens verified against Google's
+  keys (signature, expiry, audience); CORS locked to known origins; errors never leak
+  internals; **no secrets in the repo** — everything via env / Secret Manager.
+- **Efficiency:** config-driven engines (no hardcoded factors), hot-query DB indexes,
+  fast/quality model split, Next.js standalone build, Cloud Run scale-to-zero.
+- **Accessibility:** semantic, keyboard-navigable UI; `prefers-reduced-motion`
+  guards on all animations; light/dark themes; mobile-first responsive layout.
+- **Testing / validation:** every flow was validated end-to-end (auth, onboarding,
+  tracking, dashboard math, credits) against the running stack; the API is fully
+  explorable via Swagger UI at `/swagger-ui.html`.
+
+---
+
+## 5. Run locally
+
+Prereqs: Docker, JDK 17, Maven, Node 18+.
 
 ```powershell
-# 1. Frontend dependencies
-cd "d:\4 year\Carbonexo"
+# 1. Database
+docker compose -f database/docker-compose.yml up -d
+
+# 2. Backend (from backend/)
+cd backend
+$env:AI_PROVIDER="canned"   # no cloud creds needed
+java -jar target/ecotrack-backend-0.1.0.jar   # or: mvn spring-boot:run
+
+# 3. Frontend (repo root)
 npm install
-
-# 2. Build the backend (creates target\ecotrack-backend-0.1.0.jar)
-cd "d:\4 year\Carbonexo\backend"
-mvn -DskipTests clean package
-```
-
-Environment is configured in **`.env.local`** (frontend) and via env vars (backend).
-`.env.local` already contains the API base URL and the Google client ID.
-
----
-
-## Run the project (3 terminals)
-
-**Terminal 1 — Database (PostgreSQL in Docker):**
-```powershell
-docker compose -f "d:\4 year\Carbonexo\database\docker-compose.yml" up -d
-```
-
-**Terminal 2 — Backend (Spring Boot):**
-```powershell
-cd "d:\4 year\Carbonexo\backend"
-$env:AI_PROVIDER="canned"
-$env:GOOGLE_CLIENT_ID="95267034623-do8ogieusjpgl080q5kohfqethjgraha.apps.googleusercontent.com"
-java -jar target\ecotrack-backend-0.1.0.jar
-```
-Flyway auto-creates/updates the schema on boot. Wait for `Started EcotrackApplication`.
-
-**Terminal 3 — Frontend (Next.js):**
-```powershell
-cd "d:\4 year\Carbonexo"
 npm run dev
 ```
 
-Then open **http://localhost:3000**.
+Open **http://localhost:3000**. Demo login: `yash@ecotrack.dev` / `password`
+(after loading `database/seed.sql`). Swagger: http://localhost:8080/swagger-ui.html
 
-> **Order matters:** start Postgres before the backend (the backend connects on boot).
-
----
-
-## URLs & demo login
-
-| What | URL / value |
-|---|---|
-| App | http://localhost:3000 |
-| Demo login | `yash@ecotrack.dev` / `password` |
-| Google login | "Continue with Google" button on `/login` |
-| API docs (Swagger) | http://localhost:8080/swagger-ui.html |
-| Health | http://localhost:8080/actuator/health |
+To enable real Google sign-in or Gemini, set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` /
+`GOOGLE_CLIENT_ID` and `AI_PROVIDER=gemini` (see `.env.example`).
 
 ---
 
-## Sign in with Google
+## 6. Deploy to Google Cloud
 
-Requires a Google OAuth **Web** client ID (Google Cloud Console → APIs & Services → Credentials)
-with **`http://localhost:3000`** as an Authorized JavaScript origin (exact: `http`, no trailing slash).
-
-The same client ID must be set in **both** places:
-- Backend: `GOOGLE_CLIENT_ID` env var (used to validate the token's audience)
-- Frontend: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` in `.env.local`
-
-First-time Google sign-in auto-creates the account (verified email + welcome credits) and
-reuses the normal JWT/refresh session.
+Cloud Run (frontend + backend) + Cloud SQL, one script. See **[DEPLOYMENT_GCP.md](DEPLOYMENT_GCP.md)**.
 
 ---
 
-## Stop
+## 7. Assumptions
 
-```powershell
-# Backend / Frontend: Ctrl+C in their terminals.
-# Database:
-docker compose -f "d:\4 year\Carbonexo\database\docker-compose.yml" down       # keep data
-docker compose -f "d:\4 year\Carbonexo\database\docker-compose.yml" down -v    # wipe all data
-```
-
----
-
-## Common tasks
-
-**Reload demo/seed data** (after a `down -v` reset, or to reset the demo user):
-```powershell
-Get-Content "d:\4 year\Carbonexo\database\seed.sql" | docker exec -i ecotrack-postgres psql -U ecotrack -d ecotrack
-```
-
-**Rebuild after backend code changes** (stop the running backend first so the jar isn't locked):
-```powershell
-cd "d:\4 year\Carbonexo\backend"
-mvn -DskipTests clean package
-```
-
-**Inspect the database directly:**
-```powershell
-docker exec -it ecotrack-postgres psql -U ecotrack -d ecotrack
-# \dt  list tables   ·   SELECT * FROM users;   ·   \q  quit
-```
+- **Brief = spec.** No formal PRD was provided, so the product brief is treated as
+  the authoritative requirements source.
+- **Emission factors are representative defaults** (seeded from a public-style factor
+  table) rather than region-certified values; they live in the DB so they can be
+  tuned per region without code changes.
+- **AI is optional for grading.** The app ships an offline `canned` AI provider so it
+  runs and demos fully **without** any cloud credentials; Gemini is a config flip.
+- **Single-user personal assistant** scope (no org/multi-tenant features).
+- **Local/dev uses a stub blob store**; production uses Google Cloud Storage.
+- Multi-select onboarding answers are stored comma-separated (the persona can use
+  several travel modes / diets).
 
 ---
 
-## Where the data lives
+## 8. Tech stack
 
-All application data is stored in **PostgreSQL**, running in the `ecotrack-postgres` Docker
-container and persisted to the Docker volume **`database_ecotrack_pgdata`** (survives restarts).
-
-The browser only holds the refresh token (`cx-refresh`) and a UI cache (`cx-state`) in
-`localStorage`; the short-lived access token lives in memory. No account/footprint data is
-stored in the browser.
-
-This is a **local dev database** (`localhost:5432`, user/pass `ecotrack`/`ecotrack`) — not in
-any cloud and not backed up. To use a managed/cloud Postgres, override `DB_URL`, `DB_USER`,
-`DB_PASSWORD` env vars when starting the backend.
-
----
-
-## Configuration reference (backend env vars)
-
-| Var | Default | Purpose |
-|---|---|---|
-| `DB_URL` | `jdbc:postgresql://localhost:5432/ecotrack` | database connection |
-| `DB_USER` / `DB_PASSWORD` | `ecotrack` / `ecotrack` | database credentials |
-| `GOOGLE_CLIENT_ID` | _(empty)_ | enables Sign in with Google |
-| `AI_PROVIDER` | `gemini` | `gemini` (needs GCP creds) or `canned` (no creds) |
-| `JWT_SECRET` | dev default | **change for any non-local use** |
-| `SERVER_PORT` | `8080` | backend port |
-
----
-
-## Troubleshooting
-
-- **Backend won't connect to DB** → make sure the Postgres container is up and healthy:
-  `docker ps` (look for `ecotrack-postgres ... healthy`).
-- **Google button errors "origin is not allowed"** → the Authorized JavaScript origin in
-  Google Console must be exactly `http://localhost:3000`. Changes can take a few minutes.
-- **Google sign-in blocked** → if the OAuth consent screen is in "Testing", add your Google
-  email under Audience → Test users.
-- **`mvn package` fails to rename the jar** → a backend instance is still running and holding
-  the file; stop it first.
-- **Port already in use (8080 / 3000)** → an old instance is still running; stop it, then retry.
+Next.js 14 · TypeScript · Tailwind · Framer Motion · Java 17 · Spring Boot 3.3 ·
+Spring Security (JWT) · PostgreSQL 16 · Flyway · Google Gemini (Vertex AI) ·
+Cloud Run · Cloud SQL · Docker.
