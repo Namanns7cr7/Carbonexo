@@ -141,6 +141,14 @@
             <artifactId>google-api-client</artifactId>
         </dependency>
 
+        <!-- Cloud SQL connector — lets Cloud Run reach Cloud SQL Postgres via
+             socket factory (jdbc:postgresql:///db?cloudSqlInstance=...&socketFactory=...) -->
+        <dependency>
+            <groupId>com.google.cloud.sql</groupId>
+            <artifactId>postgres-socket-factory</artifactId>
+            <version>1.21.0</version>
+        </dependency>
+
         <!-- JSON processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

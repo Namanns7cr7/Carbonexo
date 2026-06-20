@@ -199,20 +199,29 @@ export default function Onboarding() {
   const last = step === steps.length - 1;
   const progress = ((step + 1) / steps.length) * 100;
 
-  const next = () => {
-    if (!current.valid) return;
+  const [saving, setSaving] = useState(false);
+
+  const next = async () => {
+    if (!current.valid || saving) return;
     if (last) {
-      saveProfile({
-        name: d.name,
-        travelMode: d.travelModes.join(', '),
-        dailyDistance: d.dailyDistance,
-        diet: d.diets.join(', '),
-        electricity: d.electricity,
-        shopping: d.shopping.join(', '),
-        weeklyGoalPct: d.weeklyGoalPct,
-      });
-      completeOnboarding();
-      router.replace('/app');
+      setSaving(true);
+      try {
+        // save answers first, then mark onboarded (sequential — avoids a race
+        // where "complete onboarding" runs before the profile row exists)
+        await saveProfile({
+          name: d.name,
+          travelMode: d.travelModes.join(', '),
+          dailyDistance: d.dailyDistance,
+          diet: d.diets.join(', '),
+          electricity: d.electricity,
+          shopping: d.shopping.join(', '),
+          weeklyGoalPct: d.weeklyGoalPct,
+        });
+        await completeOnboarding();
+        router.replace('/app');
+      } finally {
+        setSaving(false);
+      }
       return;
     }
     setStep((s) => s + 1);
@@ -260,11 +269,11 @@ export default function Onboarding() {
           )}
           <button
             onClick={next}
-            disabled={!current.valid}
+            disabled={!current.valid || saving}
             className="flex-1 rounded-[14px] bg-lime px-6 py-3.5 text-[15px] font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ boxShadow: '0 12px 30px -12px var(--lime)' }}
           >
-            {last ? 'Start tracking →' : 'Continue'}
+            {saving ? 'Saving…' : last ? 'Start tracking →' : 'Continue'}
           </button>
         </div>
         {step === 0 && (

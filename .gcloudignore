@@ -1,0 +1,18 @@
+# Keep Cloud Build uploads small. (Cloud Build needs source, so don't ignore src.)
+.git
+.gitignore
+node_modules
+.next
+out
+backend/target
+.shots
+*.log
+README*.md
+AUDIT_REPORT.md
+GAP_ANALYSIS.md
+ROADMAP.md
+DEPLOYMENT_GUIDE.md
+tasks
+.env
+.env.*
+!.env.example

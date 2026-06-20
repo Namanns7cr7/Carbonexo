@@ -12,5 +12,5 @@ public record ProfileRequest(
         @Size(max = 200) String electricityUsage,
         @Size(max = 200) String shoppingHabit,
         @Min(0) @Max(100) Integer weeklyGoalPct,
-        boolean onboarded
+        Boolean onboarded
 ) {}

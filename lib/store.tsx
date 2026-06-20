@@ -83,7 +83,7 @@ function seed(): State {
   return {
     version: VERSION,
     profile: {
-      name: 'Yash',
+      name: 'You',
       onboarded: false,
       travelMode: 'Car',
       dailyDistance: 18,
