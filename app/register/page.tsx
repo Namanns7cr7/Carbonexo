@@ -7,6 +7,7 @@ import { register } from '@/lib/api/auth';
 import { Logo } from '@/components/Logo';
 import { AmbientBackground } from '@/components/AmbientBackground';
 import { Card } from '@/components/app/ui';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function RegisterPage() {
     setError(null);
     try {
       await register(email, password, name);
-      router.push('/onboarding');
+      window.location.assign('/onboarding');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -116,6 +117,8 @@ export default function RegisterPage() {
               {loading ? 'Creating account...' : 'Register'}
             </button>
           </form>
+
+          <GoogleSignInButton onError={setError} />
         </Card>
 
         <p className="mt-6 text-center text-sm text-muted">

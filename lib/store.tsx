@@ -148,6 +148,7 @@ export interface PlanRow extends PlanItem {
 
 interface Ctx {
   hydrated: boolean;
+  bootstrapped: boolean;
   profile: Profile;
   logs: LogEntry[];
   plan: PlanRow[];
@@ -209,15 +210,18 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
   } | null>(null);
 
   const [isAuthed, setIsAuthed] = useState(false);
+  // true once the first server fetch attempt has finished — so the onboarding
+  // gate waits for the real (server) onboarded flag instead of the stale seed.
+  const [bootstrapped, setBootstrapped] = useState(false);
 
   const refreshApi = async () => {
+    const isUserAuthed = isAuthenticated();
+    setIsAuthed(isUserAuthed);
+    if (!isUserAuthed) {
+      setApiData(null);
+      return;
+    }
     try {
-      const isUserAuthed = isAuthenticated();
-      setIsAuthed(isUserAuthed);
-      if (!isUserAuthed) {
-        setApiData(null);
-        return;
-      }
       const [prof, dash] = await Promise.all([getProfile(), getDashboard()]);
       
       const localProfile: Profile = {
@@ -287,6 +291,8 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
       });
     } catch (err) {
       console.error('Failed to load api data in store', err);
+    } finally {
+      setBootstrapped(true);
     }
   };
 
@@ -437,6 +443,7 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
     if (apiData) {
       return {
         hydrated,
+        bootstrapped,
         profile: apiData.profile,
         logs: apiData.logs,
         plan,
@@ -468,6 +475,7 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
 
     return {
       hydrated,
+      bootstrapped,
       profile: state.profile,
       logs: state.logs,
       plan,
@@ -492,7 +500,7 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
       completeOnboarding,
       resetAll: () => dispatch({ type: 'reset' }),
     };
-  }, [state, hydrated, apiData]);
+  }, [state, hydrated, apiData, bootstrapped]);
 
   return <CarbonCtx.Provider value={value}>{children}</CarbonCtx.Provider>;
 }

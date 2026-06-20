@@ -7,9 +7,6 @@ import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AmbientBackground } from '@/components/AmbientBackground';
 import { useCarbon } from '@/lib/store';
-import type { Profile } from '@/lib/carbon';
-
-type Draft = Pick<Profile, 'name' | 'travelMode' | 'dailyDistance' | 'diet' | 'electricity' | 'shopping' | 'weeklyGoalPct'>;
 
 const TRAVEL = [
   { v: 'Car', e: '🚗' },
@@ -41,26 +38,40 @@ const GOALS = [
   { v: 25, label: 'Ambitious', d: 'Reduce ~25% / week' },
 ];
 
-function OptionGrid<T extends string | number>({
+/** split/join helpers for comma-separated multi-select values */
+const toList = (csv: string | undefined): string[] =>
+  (csv ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+
+interface Draft {
+  name: string;
+  travelModes: string[];
+  dailyDistance: number;
+  diets: string[];
+  electricity: string;
+  shopping: string[];
+  weeklyGoalPct: number;
+}
+
+function PillGrid<T extends string | number>({
   options,
-  value,
-  onPick,
+  selected,
+  onToggle,
   cols = 2,
 }: {
   options: { v: T; e?: string; label?: string; d?: string }[];
-  value: T;
-  onPick: (v: T) => void;
+  selected: T[];
+  onToggle: (v: T) => void;
   cols?: number;
 }) {
   return (
     <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${cols},minmax(0,1fr))` }}>
       {options.map((o) => {
-        const active = o.v === value;
+        const active = selected.includes(o.v);
         return (
           <button
             key={String(o.v)}
-            onClick={() => onPick(o.v)}
-            className="flex items-center gap-3 rounded-[16px] border p-3.5 text-left transition-all"
+            onClick={() => onToggle(o.v)}
+            className="relative flex items-center gap-3 rounded-[16px] border p-3.5 text-left transition-all"
             style={{
               borderColor: active ? 'var(--lime)' : 'var(--border)',
               background: active ? 'var(--lime-soft)' : 'var(--surface)',
@@ -74,6 +85,14 @@ function OptionGrid<T extends string | number>({
               </span>
               {o.d && <span className="block text-xs text-muted">{o.d}</span>}
             </span>
+            {active && (
+              <span
+                className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold"
+                style={{ background: 'var(--lime)', color: '#0c1d15' }}
+              >
+                ✓
+              </span>
+            )}
           </button>
         );
       })}
@@ -87,14 +106,21 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>({
     name: profile.name || '',
-    travelMode: profile.travelMode,
+    travelModes: toList(profile.travelMode) ,
     dailyDistance: profile.dailyDistance,
-    diet: profile.diet,
+    diets: toList(profile.diet),
     electricity: profile.electricity,
-    shopping: profile.shopping,
+    shopping: toList(profile.shopping),
     weeklyGoalPct: profile.weeklyGoalPct,
   });
   const set = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
+
+  // toggle a value in/out of a string-array field
+  const toggleIn = (key: 'travelModes' | 'diets' | 'shopping', v: string) =>
+    setD((p) => {
+      const has = p[key].includes(v);
+      return { ...p, [key]: has ? p[key].filter((x) => x !== v) : [...p[key], v] };
+    });
 
   const steps = [
     {
@@ -113,9 +139,9 @@ export default function Onboarding() {
     },
     {
       title: 'How do you usually get around?',
-      sub: 'Pick your main mode of travel.',
-      body: <OptionGrid options={TRAVEL} value={d.travelMode} onPick={(v) => set({ travelMode: v })} cols={3} />,
-      valid: true,
+      sub: 'Pick every mode you use — select as many as apply.',
+      body: <PillGrid options={TRAVEL} selected={d.travelModes} onToggle={(v) => toggleIn('travelModes', v)} cols={3} />,
+      valid: d.travelModes.length > 0,
     },
     {
       title: 'Roughly how far each day?',
@@ -145,26 +171,26 @@ export default function Onboarding() {
     },
     {
       title: 'How would you describe your diet?',
-      sub: 'Food is often a top-three source.',
-      body: <OptionGrid options={DIET} value={d.diet} onPick={(v) => set({ diet: v })} />,
-      valid: true,
+      sub: 'Pick all that fit your typical week.',
+      body: <PillGrid options={DIET} selected={d.diets} onToggle={(v) => toggleIn('diets', v)} />,
+      valid: d.diets.length > 0,
     },
     {
       title: 'Home electricity use?',
       sub: 'A rough sense is enough.',
-      body: <OptionGrid options={LEVELS} value={d.electricity} onPick={(v) => set({ electricity: v })} cols={3} />,
+      body: <PillGrid options={LEVELS} selected={[d.electricity]} onToggle={(v) => set({ electricity: v })} cols={3} />,
       valid: true,
     },
     {
       title: 'How often do you shop?',
-      sub: 'New purchases carry embodied carbon.',
-      body: <OptionGrid options={SHOPPING} value={d.shopping} onPick={(v) => set({ shopping: v })} cols={3} />,
-      valid: true,
+      sub: 'Pick all the ways you buy things.',
+      body: <PillGrid options={SHOPPING} selected={d.shopping} onToggle={(v) => toggleIn('shopping', v)} cols={3} />,
+      valid: d.shopping.length > 0,
     },
     {
       title: 'Set your weekly goal',
       sub: 'How fast do you want to cut your footprint? You can change this anytime.',
-      body: <OptionGrid options={GOALS} value={d.weeklyGoalPct} onPick={(v) => set({ weeklyGoalPct: v })} />,
+      body: <PillGrid options={GOALS} selected={[d.weeklyGoalPct]} onToggle={(v) => set({ weeklyGoalPct: v })} />,
       valid: true,
     },
   ];
@@ -176,7 +202,15 @@ export default function Onboarding() {
   const next = () => {
     if (!current.valid) return;
     if (last) {
-      saveProfile(d);
+      saveProfile({
+        name: d.name,
+        travelMode: d.travelModes.join(', '),
+        dailyDistance: d.dailyDistance,
+        diet: d.diets.join(', '),
+        electricity: d.electricity,
+        shopping: d.shopping.join(', '),
+        weeklyGoalPct: d.weeklyGoalPct,
+      });
       completeOnboarding();
       router.replace('/app');
       return;

@@ -6,11 +6,11 @@ import jakarta.validation.constraints.Size;
 
 public record ProfileRequest(
         @Size(max = 120) String name,
-        @Size(max = 40) String travelMode,
+        @Size(max = 200) String travelMode,
         Double dailyDistanceKm,
-        @Size(max = 40) String diet,
-        @Size(max = 40) String electricityUsage,
-        @Size(max = 40) String shoppingHabit,
+        @Size(max = 200) String diet,
+        @Size(max = 200) String electricityUsage,
+        @Size(max = 200) String shoppingHabit,
         @Min(0) @Max(100) Integer weeklyGoalPct,
         boolean onboarded
 ) {}

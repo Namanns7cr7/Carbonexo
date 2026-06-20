@@ -16,7 +16,7 @@ spring:
       maximum-pool-size: ${DB_POOL_MAX:10}
   jpa:
     hibernate:
-      ddl-auto: validate          # schema owned by Flyway, never by Hibernate
+      ddl-auto: ${JPA_DDL_AUTO:none}   # schema owned by Flyway; Hibernate neither mutates nor validates types
     open-in-view: false
     properties:
       hibernate.jdbc.time_zone: UTC
@@ -47,6 +47,8 @@ ecotrack:
       access-token-ttl-seconds: ${JWT_ACCESS_TTL:900}        # 15 min
       refresh-token-ttl-seconds: ${JWT_REFRESH_TTL:1209600}  # 14 days
       issuer: ${JWT_ISSUER:ecotrack}
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}   # OAuth Web client ID; enables "Sign in with Google"
   storage:
     provider: ${STORAGE_PROVIDER:local_stub}       # gcs | local_stub
     gcs:

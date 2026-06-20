@@ -4,6 +4,7 @@ import com.ecotrack.auth.dto.AuthResponse;
 import com.ecotrack.auth.dto.LoginRequest;
 import com.ecotrack.auth.dto.RegisterRequest;
 import com.ecotrack.config.AppProperties;
+import com.ecotrack.exception.BadRequestException;
 import com.ecotrack.exception.ConflictException;
 import com.ecotrack.user.Role;
 import com.ecotrack.user.User;
@@ -33,16 +34,19 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final com.ecotrack.credit.CreditService creditService;
+    private final GoogleTokenVerifier googleVerifier;
     private final long refreshTtlSeconds;
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens,
                        PasswordEncoder passwordEncoder, JwtService jwtService,
-                       com.ecotrack.credit.CreditService creditService, AppProperties props) {
+                       com.ecotrack.credit.CreditService creditService,
+                       GoogleTokenVerifier googleVerifier, AppProperties props) {
         this.users = users;
         this.refreshTokens = refreshTokens;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.creditService = creditService;
+        this.googleVerifier = googleVerifier;
         this.refreshTtlSeconds = props.security().jwt().refreshTokenTtlSeconds();
     }
 
@@ -68,6 +72,45 @@ public class AuthService {
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid email or password");
+        }
+        user.setLastLoginAt(Instant.now());
+        return issueTokens(user, http);
+    }
+
+    /**
+     * Log in (or transparently sign up) using a Google Identity Services ID token.
+     * The token is verified against Google's keys; the user is matched by email and
+     * created on first sight. Email/password accounts and Google accounts that share
+     * an email are the same user.
+     */
+    @Transactional
+    public AuthResponse loginWithGoogle(String idToken, HttpServletRequest http) {
+        if (!googleVerifier.isConfigured()) {
+            throw new BadRequestException("Google login is not enabled on this server");
+        }
+        com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload =
+                googleVerifier.verify(idToken);
+        if (payload == null) {
+            throw new BadCredentialsException("Invalid Google ID token");
+        }
+        String email = payload.getEmail();
+        Boolean emailVerified = payload.getEmailVerified();
+        if (email == null || Boolean.FALSE.equals(emailVerified)) {
+            throw new BadCredentialsException("Google account has no verified email");
+        }
+        String name = (String) payload.get("name");
+
+        User user = users.findByEmailIgnoreCaseAndDeletedAtIsNull(email).orElse(null);
+        if (user == null) {
+            user = new User();
+            user.setEmail(email.trim());
+            // Google users authenticate via Google; store a random unusable password.
+            user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+            user.setDisplayName(name != null ? name : email);
+            user.setRole(Role.USER);
+            user.setEmailVerified(true);
+            users.save(user);
+            creditService.onSignup(user.getId());
         }
         user.setLastLoginAt(Instant.now());
         return issueTokens(user, http);

@@ -7,6 +7,7 @@ import { login } from '@/lib/api/auth';
 import { Logo } from '@/components/Logo';
 import { AmbientBackground } from '@/components/AmbientBackground';
 import { Card } from '@/components/app/ui';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,11 +22,8 @@ export default function LoginPage() {
     setError(null);
     try {
       const res = await login(email, password);
-      if (res.user && !res.user.displayName) {
-        router.push('/onboarding');
-      } else {
-        router.push('/app');
-      }
+      // full navigation so the store remounts and loads the server profile
+      window.location.assign(res.user && !res.user.displayName ? '/onboarding' : '/app');
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -88,6 +86,8 @@ export default function LoginPage() {
               {loading ? 'Logging in...' : 'Log in'}
             </button>
           </form>
+
+          <GoogleSignInButton onError={setError} />
         </Card>
 
         <p className="mt-6 text-center text-sm text-muted">

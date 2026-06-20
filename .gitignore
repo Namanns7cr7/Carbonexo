@@ -20,8 +20,28 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# java / maven build artifacts
+/backend/target/
+target/
+
+# logs
+*.log
+
+# screenshots & local dev tooling
+/.shots/
+
+# editor
+*.code-workspace
+.vscode/
+.idea/
+
+# local storage stub (uploaded bill files)
+/backend/.local-blob/

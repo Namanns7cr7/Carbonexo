@@ -23,13 +23,16 @@ public record AppProperties(
 ) {
     public record Cors(List<String> allowedOrigins) {}
 
-    public record Security(Jwt jwt) {
+    public record Security(Jwt jwt, Google google) {
         public record Jwt(
                 String secret,
                 long accessTokenTtlSeconds,
                 long refreshTokenTtlSeconds,
                 String issuer
         ) {}
+
+        /** Google Sign-In: the OAuth Web client ID used as the ID-token audience. */
+        public record Google(String clientId) {}
     }
 
     public record Storage(String provider, Gcs gcs, String localStubDir) {

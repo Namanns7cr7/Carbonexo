@@ -19,6 +19,12 @@ export async function register(email: string, password: string, displayName: str
   return res;
 }
 
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  const res = await api.post<AuthResponse>('/api/auth/google', { idToken });
+  setTokens(res.accessToken, res.refreshToken);
+  return res;
+}
+
 export async function logout(): Promise<void> {
   try {
     await api.post('/api/auth/logout', { refreshToken: localStorage.getItem('cx-refresh') });

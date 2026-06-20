@@ -135,6 +135,12 @@
             <artifactId>google-cloud-vertexai</artifactId>
         </dependency>
 
+        <!-- Google Sign-In — ID token verification (GoogleIdTokenVerifier) -->
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+        </dependency>
+
         <!-- JSON processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

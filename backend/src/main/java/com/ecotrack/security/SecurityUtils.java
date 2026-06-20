@@ -28,4 +28,9 @@ public final class SecurityUtils {
         if (id == null) throw new IllegalStateException("No authenticated user in context");
         return id;
     }
+
+    /** Convenience alias for {@link #requireCurrentUserId()}. */
+    public static UUID currentUserId() {
+        return requireCurrentUserId();
+    }
 }

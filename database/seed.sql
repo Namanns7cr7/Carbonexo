@@ -19,7 +19,7 @@ BEGIN
 
     INSERT INTO users (id, email, password_hash, display_name, role, status, email_verified)
     VALUES (demo_user, 'yash@ecotrack.dev',
-            '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+            '$2a$10$rSuoiK/4.OuQwdjpYbvVNealI5aFJzBX2Vba.7EWEJ8oovfEI.IKm',
             'Yash', 'USER', 'ACTIVE', true);
 
     INSERT INTO user_profiles (user_id, name, travel_mode, daily_distance_km, diet,

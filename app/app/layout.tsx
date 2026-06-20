@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCarbon } from '@/lib/store';
+import { isAuthenticated } from '@/lib/api/auth';
 import { AmbientBackground } from '@/components/AmbientBackground';
 import { Sidebar, MobileTopBar, BottomNav } from '@/components/app/AppNav';
 import { Loading } from '@/components/app/ui';
@@ -10,15 +11,20 @@ import { Loading } from '@/components/app/ui';
 import { AuthGuard } from '@/components/app/AuthGuard';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { hydrated, profile } = useCarbon();
+  const { hydrated, bootstrapped, profile } = useCarbon();
   const router = useRouter();
 
-  // onboarding gate — only after hydration so we know the real value
-  useEffect(() => {
-    if (hydrated && !profile.onboarded) router.replace('/onboarding');
-  }, [hydrated, profile.onboarded, router]);
+  // For an authenticated user the real onboarded flag comes from the server, so
+  // wait for the first fetch (bootstrapped) before deciding. Unauthenticated
+  // users are handled by AuthGuard (-> /login), not the onboarding gate.
+  const authed = hydrated && isAuthenticated();
+  const needsOnboarding = authed && bootstrapped && !profile.onboarded;
 
-  if (!hydrated || !profile.onboarded) return <Loading />;
+  useEffect(() => {
+    if (needsOnboarding) router.replace('/onboarding');
+  }, [needsOnboarding, router]);
+
+  if (!hydrated || (authed && !bootstrapped) || needsOnboarding) return <Loading />;
 
   return (
     <AuthGuard>

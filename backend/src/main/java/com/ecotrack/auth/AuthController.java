@@ -1,6 +1,7 @@
 package com.ecotrack.auth;
 
 import com.ecotrack.auth.dto.AuthResponse;
+import com.ecotrack.auth.dto.GoogleLoginRequest;
 import com.ecotrack.auth.dto.LoginRequest;
 import com.ecotrack.auth.dto.RefreshRequest;
 import com.ecotrack.auth.dto.RegisterRequest;
@@ -40,6 +41,12 @@ public class AuthController {
     @Operation(summary = "Log in with email + password")
     public AuthResponse login(@Valid @RequestBody LoginRequest req, HttpServletRequest http) {
         return authService.login(req, http);
+    }
+
+    @PostMapping("/google")
+    @Operation(summary = "Log in or sign up with a Google ID token")
+    public AuthResponse google(@Valid @RequestBody GoogleLoginRequest req, HttpServletRequest http) {
+        return authService.loginWithGoogle(req.idToken(), http);
     }
 
     @PostMapping("/refresh")
