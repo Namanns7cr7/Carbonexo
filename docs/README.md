@@ -4,10 +4,11 @@ All project documentation, organised by purpose. Start with the
 [root README](../README.md) for the project overview.
 
 ## Guides — run & deploy
-- [Deployment (GCP Cloud Run + Cloud SQL)](guides/DEPLOYMENT.md) — the canonical deploy guide
-- [Deployment walkthrough](guides/DEPLOYMENT_WALKTHROUGH.md) — step-by-step narrative
-- [Deployment guide (general)](guides/DEPLOYMENT_GUIDE.md)
-- [Environment setup](guides/ENVIRONMENT_SETUP.md) — local prerequisites & env vars
+The deploy/run guides live at the **repo root** so they're easy to find:
+- [Deployment (GCP Cloud Run + Cloud SQL)](../DEPLOYMENT.md) — the canonical deploy guide
+- [Deployment walkthrough](../DEPLOYMENT_WALKTHROUGH.md) — step-by-step narrative
+- [Deployment guide (general)](../DEPLOYMENT_GUIDE.md)
+- [Environment setup](../ENVIRONMENT_SETUP.md) — local prerequisites & env vars
 
 ## Reference — how the system works
 - [Architecture](reference/ARCHITECTURE.md) — services, layering, data flow

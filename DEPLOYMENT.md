@@ -1,8 +1,17 @@
 # Deploying Carbonexo to Google Cloud
 
 Architecture: **Cloud Run** (backend + frontend) + **Cloud SQL** (PostgreSQL 16) +
-**Secret Manager** + optional **Vertex AI** (Gemini). Images are built by **Cloud
-Build**, so you don't need Docker locally to deploy.
+**Secret Manager** + optional **Vertex AI** (Gemini). The **backend** image is
+built by **Cloud Build**. The **frontend** image **must be built locally** (you
+need Docker Desktop running) — see the warning below.
+
+> ⚠️ **The frontend must NOT be built via Cloud Build (Linux).** On Linux this
+> app mis-compiles: pages are statically prerendered without the `<html>`/`<body>`
+> document shell, and the browser crashes on hydration (React #418/#423, "Cannot
+> have more than one Element child of a Document", "useCarbon must be used within
+> CarbonexoProvider"). A **local build produces a correct bundle**. `deploy.ps1`
+> already builds the frontend locally; to redeploy *only* the frontend, use
+> [`deploy/deploy-frontend-local.ps1`](deploy/deploy-frontend-local.ps1).
 
 ```
 Next.js (Cloud Run :3000)  ──►  Spring Boot (Cloud Run :8080)  ──►  Cloud SQL (Postgres 16)
@@ -14,6 +23,7 @@ Next.js (Cloud Run :3000)  ──►  Spring Boot (Cloud Run :8080)  ──►  
 ## Prerequisites
 - `gcloud` CLI installed and logged in: `gcloud auth login`
 - A **billing-enabled** GCP project (note its **Project ID**)
+- **Node + npm** and **Docker Desktop running** (the frontend is built locally)
 - Run all commands from the **repo root**
 
 ## One-shot deploy
@@ -29,7 +39,8 @@ Next.js (Cloud Run :3000)  ──►  Spring Boot (Cloud Run :8080)  ──►  
    - create `JWT_SECRET` and `DB_PASSWORD` in Secret Manager
    - grant the Cloud Run runtime service account: Cloud SQL Client, Secret Accessor, Vertex AI User
    - build & deploy the **backend** (Flyway runs the migrations automatically on boot)
-   - build & deploy the **frontend** with the backend URL baked in
+   - build the **frontend locally** (Docker Desktop must be running) and deploy it
+     with the backend URL baked in — *not* via Cloud Build (see warning above)
    - lock the backend CORS to the deployed frontend URL
 3. It prints the **frontend** and **backend** URLs at the end.
 

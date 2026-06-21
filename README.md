@@ -23,7 +23,7 @@ deploy), **reference** (architecture, API, database, security), and **project**
 [API](docs/reference/API.md) ·
 [Database](docs/reference/DATABASE.md) ·
 [Security](docs/reference/SECURITY.md) ·
-[Deployment](docs/guides/DEPLOYMENT.md)
+[Deployment](DEPLOYMENT.md)
 
 ---
 
@@ -145,7 +145,7 @@ To enable real Google sign-in or Gemini, set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` /
 ## 6. Deploy to Google Cloud
 
 Cloud Run (frontend + backend) + Cloud SQL, one script. See
-**[docs/guides/DEPLOYMENT.md](docs/guides/DEPLOYMENT.md)**.
+**[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 > **Frontend deploys must be built locally**, not via Cloud Build — see
 > [`deploy/deploy-frontend-local.ps1`](deploy/deploy-frontend-local.ps1). A Linux
