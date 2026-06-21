@@ -144,7 +144,13 @@ To enable real Google sign-in or Gemini, set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` /
 
 ## 6. Deploy to Google Cloud
 
-Cloud Run (frontend + backend) + Cloud SQL, one script. See **[DEPLOYMENT_GCP.md](DEPLOYMENT_GCP.md)**.
+Cloud Run (frontend + backend) + Cloud SQL, one script. See
+**[docs/guides/DEPLOYMENT.md](docs/guides/DEPLOYMENT.md)**.
+
+> **Frontend deploys must be built locally**, not via Cloud Build — see
+> [`deploy/deploy-frontend-local.ps1`](deploy/deploy-frontend-local.ps1). A Linux
+> (Cloud Build) frontend build mis-compiles into a broken bundle that crashes in
+> the browser; `deploy/deploy.ps1` now builds the frontend locally for this reason.
 
 ---
 
