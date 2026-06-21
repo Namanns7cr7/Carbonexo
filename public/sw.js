@@ -1,36 +1,30 @@
-/* Carbonexo service worker — network-first with offline cache fallback. */
-const CACHE = 'cx-v1';
+/* Carbonexo service worker — DISABLED.
+ *
+ * The previous network-first SW cached the app shell and, across a redeploy,
+ * could serve a stale document that no longer matched the freshly-built JS
+ * bundles. That mismatch caused fatal hydration errors (React #418/#423 and
+ * "Cannot have more than one Element child of a Document").
+ *
+ * This version self-unregisters and clears every cache, so any browser that
+ * still has the old SW installed is cleaned up on its next visit. The browser
+ * fetches /sw.js on navigation, sees these new bytes, installs this SW, and
+ * the activate step below removes itself — independent of the page JS, so it
+ * recovers users even when the page failed to hydrate. */
 
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
-      await self.clients.claim();
-    })()
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET' || !request.url.startsWith('http')) return;
-  event.respondWith(
-    (async () => {
       try {
-        const res = await fetch(request);
-        const cache = await caches.open(CACHE);
-        cache.put(request, res.clone()).catch(() => {});
-        return res;
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+        await self.registration.unregister();
+        const clients = await self.clients.matchAll({ type: 'window' });
+        // force a fresh, SW-free load of each open tab
+        clients.forEach((c) => c.navigate(c.url));
       } catch {
-        const cached = await caches.match(request);
-        if (cached) return cached;
-        if (request.mode === 'navigate') {
-          const fallback = await caches.match('/');
-          if (fallback) return fallback;
-        }
-        return Response.error();
+        /* best-effort cleanup */
       }
     })()
   );
