@@ -71,6 +71,7 @@ function PillGrid<T extends string | number>({
           <button
             key={String(o.v)}
             onClick={() => onToggle(o.v)}
+            aria-pressed={active}
             className="relative flex items-center gap-3 rounded-[16px] border p-3.5 text-left transition-all"
             style={{
               borderColor: active ? 'var(--lime)' : 'var(--border)',
@@ -78,7 +79,7 @@ function PillGrid<T extends string | number>({
               boxShadow: active ? '0 10px 26px -18px var(--lime)' : 'none',
             }}
           >
-            {o.e && <span className="text-2xl">{o.e}</span>}
+            {o.e && <span role="img" aria-hidden="true" className="text-2xl">{o.e}</span>}
             <span className="min-w-0">
               <span className="block text-[15px] font-bold" style={{ color: active ? 'var(--lime-deep)' : 'var(--text)' }}>
                 {o.label ?? String(o.v)}
@@ -153,6 +154,7 @@ export default function Onboarding() {
             <span className="ml-1 text-base font-bold text-muted">km / day</span>
           </div>
           <input
+            id="daily-distance"
             type="range"
             min={0}
             max={120}
@@ -160,6 +162,10 @@ export default function Onboarding() {
             value={d.dailyDistance}
             onChange={(e) => set({ dailyDistance: Number(e.target.value) })}
             className="w-full accent-lime"
+            aria-label="Daily travel distance"
+            aria-valuemin={0}
+            aria-valuemax={120}
+            aria-valuenow={d.dailyDistance}
           />
           <div className="mt-2 flex justify-between text-xs text-muted">
             <span>0</span>

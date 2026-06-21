@@ -33,7 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="relative z-[1] md:pl-[248px]">
           <MobileTopBar />
-          <main className="mx-auto max-w-[880px] px-5 pb-28 pt-6 md:px-10 md:pb-14 md:pt-10">{children}</main>
+          <main id="main-content" className="mx-auto max-w-[880px] px-5 pb-28 pt-6 md:px-10 md:pb-14 md:pt-10">{children}</main>
         </div>
         <BottomNav />
       </div>

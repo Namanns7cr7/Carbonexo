@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '@/lib/api/auth';
 import { Logo } from '@/components/Logo';
@@ -10,7 +9,6 @@ import { Card } from '@/components/app/ui';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

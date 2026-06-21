@@ -25,11 +25,24 @@ export async function getMonthlyReport(period: string): Promise<string> {
   return res.result;
 }
 
-export async function sendCoachMessage(message: string): Promise<string> {
-  const res = await api.post<{ result: string }>('/api/ai/coach', { message });
-  return res.result;
+export interface CoachResponse {
+  result: string;
+  prompt?: string;
 }
 
-export async function getCoachHistory(): Promise<{ id: string; role: string; content: string; createdAt: string }[]> {
-  return api.get('/api/ai/coach/history');
+export async function sendCoachMessage(message: string): Promise<CoachResponse> {
+  return api.post<CoachResponse>('/api/ai/coach', { message });
+}
+
+export interface CoachHistoryEntry {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: string;
+  provider?: string;
+  model?: string;
+}
+
+export async function getCoachHistory(): Promise<CoachHistoryEntry[]> {
+  return api.get<CoachHistoryEntry[]>('/api/ai/coach/history');
 }

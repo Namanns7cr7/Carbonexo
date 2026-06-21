@@ -53,10 +53,10 @@ public class AIController {
     }
 
     @PostMapping("/coach")
-    public ResponseEntity<Map<String, String>> coach(@RequestBody Map<String, String> body) {
+    public ResponseEntity<CoachResponse> coach(@RequestBody Map<String, String> body) {
         UUID userId = SecurityUtils.currentUserId();
         String message = body.getOrDefault("message", "");
-        return ResponseEntity.ok(Map.of("result", service.chat(userId, message)));
+        return ResponseEntity.ok(service.chat(userId, message));
     }
 
     @GetMapping("/coach/history")

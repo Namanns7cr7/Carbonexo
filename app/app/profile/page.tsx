@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCarbon } from '@/lib/store';
+import { logout } from '@/lib/api/auth';
 import { round1 } from '@/lib/carbon';
 import { Card, PageHead } from '@/components/app/ui';
 import { usePwaInstall } from '@/lib/usePwaInstall';
@@ -37,6 +38,11 @@ export default function Profile() {
       resetAll();
       router.replace('/onboarding');
     }
+  };
+
+  const onLogout = async () => {
+    await logout();                       // revoke refresh token + clear tokens
+    window.location.assign('/login');     // full reload so the store resets cleanly
   };
 
   return (
@@ -115,10 +121,18 @@ export default function Profile() {
         </button>
       </Card>
 
-      {/* danger zone */}
-      <button onClick={onReset} className="self-start text-sm font-semibold text-muted underline-offset-2 transition-colors hover:text-text hover:underline">
-        Reset all data
-      </button>
+      {/* account actions */}
+      <div className="flex flex-wrap items-center gap-4 pt-1">
+        <button
+          onClick={onLogout}
+          className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold transition-colors hover:border-lime"
+        >
+          Log out
+        </button>
+        <button onClick={onReset} className="text-sm font-semibold text-muted underline-offset-2 transition-colors hover:text-text hover:underline">
+          Reset all data
+        </button>
+      </div>
     </div>
   );
 }

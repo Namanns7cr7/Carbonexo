@@ -21,9 +21,10 @@ public class AIConfig {
         String provider = props.ai().provider();
         log.info("AI provider selected: {}", provider);
 
+        AIProvider primaryProvider;
         if ("gemini".equalsIgnoreCase(provider)) {
             try {
-                return new GeminiAIProvider(props);
+                primaryProvider = new GeminiAIProvider(props);
             } catch (Exception e) {
                 if (props.ai().fallbackToCanned()) {
                     log.warn("Gemini initialization failed, falling back to canned provider", e);
@@ -31,8 +32,31 @@ public class AIConfig {
                 }
                 throw e;
             }
+        } else {
+            primaryProvider = new CannedFallbackProvider();
         }
 
-        return new CannedFallbackProvider();
+        if (props.ai().fallbackToCanned()) {
+            return new AIProvider() {
+                private final CannedFallbackProvider canned = new CannedFallbackProvider();
+
+                @Override
+                public String generate(String prompt, String model) {
+                    try {
+                        return primaryProvider.generate(prompt, model);
+                    } catch (Exception e) {
+                        log.warn("Primary AI provider failed during generation, falling back to canned provider", e);
+                        return canned.generate(prompt, model);
+                    }
+                }
+
+                @Override
+                public String providerName() {
+                    return primaryProvider.providerName();
+                }
+            };
+        }
+
+        return primaryProvider;
     }
 }

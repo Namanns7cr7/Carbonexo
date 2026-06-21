@@ -500,6 +500,7 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
       completeOnboarding,
       resetAll: () => dispatch({ type: 'reset' }),
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, hydrated, apiData, bootstrapped]);
 
   return <CarbonCtx.Provider value={value}>{children}</CarbonCtx.Provider>;

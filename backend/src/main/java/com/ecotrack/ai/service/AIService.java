@@ -32,10 +32,12 @@ public class AIService {
     private final CoachMessageRepository coachRepo;
     private final ActivityLogRepository logRepo;
     private final UserProfileRepository profileRepo;
+    private final com.ecotrack.credit.CreditLedgerRepository creditLedgerRepo;
 
     public AIService(AIProvider aiProvider, PromptRenderer renderer, AppProperties props,
                      RecommendationRepository recRepo, CoachMessageRepository coachRepo,
-                     ActivityLogRepository logRepo, UserProfileRepository profileRepo) {
+                     ActivityLogRepository logRepo, UserProfileRepository profileRepo,
+                     com.ecotrack.credit.CreditLedgerRepository creditLedgerRepo) {
         this.aiProvider = aiProvider;
         this.renderer = renderer;
         this.props = props;
@@ -43,6 +45,7 @@ public class AIService {
         this.coachRepo = coachRepo;
         this.logRepo = logRepo;
         this.profileRepo = profileRepo;
+        this.creditLedgerRepo = creditLedgerRepo;
     }
 
     /** Carbon reduction recommendations. */
@@ -147,7 +150,7 @@ public class AIService {
 
     /** AI coach chat — context-aware, multi-turn. */
     @Transactional
-    public String chat(UUID userId, String userMessage) {
+    public CoachResponse chat(UUID userId, String userMessage) {
         // Save user message
         CoachMessage userMsg = new CoachMessage();
         userMsg.setUserId(userId);
@@ -179,7 +182,7 @@ public class AIService {
         assistantMsg.setModel(props.ai().fastModel());
         coachRepo.save(assistantMsg);
 
-        return response;
+        return new CoachResponse(response, fullPrompt);
     }
 
     /** Get chat history for a user. */

@@ -95,10 +95,15 @@ public class BillService {
             log.info("Bill {} OCR completed — units={}, amount={}", bill.getId(),
                     extraction.unitsConsumed(), extraction.billAmount());
 
-        } catch (Exception e) {
-            log.error("OCR failed for bill {}", bill.getId(), e);
-            bill.setStatus("FAILED");
-            bill.setFailureReason(e.getMessage());
+        } catch (Throwable e) {
+            // Catch Throwable, not just Exception: a missing native lib (Tesseract)
+            // throws UnsatisfiedLinkError (a java.lang.Error). OCR is optional here —
+            // don't fail the upload; leave the bill ready for MANUAL entry + confirm
+            // so the user can still record units/amount and earn credits.
+            log.warn("OCR unavailable for bill {} ({}); falling back to manual entry",
+                    bill.getId(), e.toString());
+            bill.setStatus("OCR_DONE");
+            bill.setScannedAt(Instant.now());
             billRepo.save(bill);
         }
 

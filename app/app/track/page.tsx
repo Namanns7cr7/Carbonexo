@@ -79,7 +79,7 @@ export default function Track() {
       </Card>
 
       {/* category tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 cx-scroll">
+      <div role="tablist" className="flex gap-2 overflow-x-auto pb-1 cx-scroll">
         {CATEGORIES.map((c) => {
           const active = c.id === cat;
           const count = picks.filter((p) => p.category === c.id).length;
@@ -87,6 +87,8 @@ export default function Track() {
             <button
               key={c.id}
               onClick={() => setCat(c.id)}
+              role="tab"
+              aria-selected={active}
               className="flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
               style={{
                 borderColor: active ? 'var(--lime)' : 'var(--border)',
@@ -94,7 +96,7 @@ export default function Track() {
                 color: active ? '#0c1d15' : 'var(--muted)',
               }}
             >
-              <span>{c.emoji}</span> {c.label}
+              <span role="img" aria-hidden="true">{c.emoji}</span> {c.label}
               {count > 0 && (
                 <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold"
                   style={{ background: active ? '#0c1d15' : 'var(--lime)', color: active ? 'var(--lime)' : '#0c1d15' }}>
@@ -114,13 +116,14 @@ export default function Track() {
             <button
               key={o.label}
               onClick={() => toggle(o)}
+              aria-pressed={active}
               className="relative flex items-center gap-2.5 rounded-[15px] border p-3 text-left transition-all"
               style={{
                 borderColor: active ? 'var(--lime)' : 'var(--border)',
                 background: active ? 'var(--lime-soft)' : 'var(--surface)',
               }}
             >
-              <span className="text-2xl">{o.emoji}</span>
+              <span role="img" aria-hidden="true" className="text-2xl">{o.emoji}</span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold">{o.label}</span>
                 <span className="block text-xs text-muted">
@@ -162,16 +165,17 @@ export default function Track() {
                       </div>
                       {p.option.unit ? (
                         <div className="flex items-center gap-1.5">
-                          <button onClick={() => setQty(k, p.qty - (p.option.unit === 'km' ? 5 : 1))} className="h-8 w-8 rounded-lg border border-border bg-surface text-base font-bold">−</button>
+                          <button onClick={() => setQty(k, p.qty - (p.option.unit === 'km' ? 5 : 1))} aria-label="Decrease quantity" className="h-8 w-8 rounded-lg border border-border bg-surface text-base font-bold">−</button>
                           <input
                             type="number"
                             min={1}
+                            aria-label="Quantity"
                             value={p.qty}
                             onChange={(e) => setQty(k, Number(e.target.value) || 1)}
                             className="w-12 rounded-lg border border-border bg-surface py-1.5 text-center text-sm font-bold outline-none"
                           />
                           <span className="w-7 text-xs font-semibold text-muted">{p.option.unit}</span>
-                          <button onClick={() => setQty(k, p.qty + (p.option.unit === 'km' ? 5 : 1))} className="h-8 w-8 rounded-lg border border-border bg-surface text-base font-bold">+</button>
+                          <button onClick={() => setQty(k, p.qty + (p.option.unit === 'km' ? 5 : 1))} aria-label="Increase quantity" className="h-8 w-8 rounded-lg border border-border bg-surface text-base font-bold">+</button>
                         </div>
                       ) : (
                         <span className="text-xs text-muted">×1</span>

@@ -4,11 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCarbon } from '@/lib/store';
 import { ACTIONS, CATEGORY_META } from '@/lib/carbon';
+import { getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
+import { isAuthenticated } from '@/lib/api/auth';
 
 interface Msg {
-  id: number;
+  id: number | string;
   role: 'user' | 'ai';
   text: React.ReactNode;
+  prompt?: string;
+  provider?: string;
+  model?: string;
 }
 
 const SUGGESTIONS = [
@@ -17,6 +22,32 @@ const SUGGESTIONS = [
   'How much can metro save?',
   'How am I doing this week?',
 ];
+
+function PromptInspector({ prompt, provider, model }: { prompt: string; provider?: string; model?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2 text-left border-t border-border/30 pt-1.5">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] font-bold text-lime-deep hover:underline focus:outline-none"
+        aria-expanded={open}
+      >
+        <span>{open ? '▼' : '▶'}</span>
+        <span>Inspect Prompt Engineering Details</span>
+        {provider && model && (
+          <span className="text-[10px] text-muted font-normal">
+            ({provider} · {model})
+          </span>
+        )}
+      </button>
+      {open && (
+        <pre className="mt-2 max-w-full overflow-x-auto rounded-lg bg-surface2 border border-border p-2.5 font-mono text-[10px] text-text whitespace-pre-wrap leading-relaxed">
+          {prompt}
+        </pre>
+      )}
+    </div>
+  );
+}
 
 export default function Coach() {
   const { profile, biggestSource, todayTotal, streak, totalSaved, weekTotals } = useCarbon();
@@ -36,6 +67,36 @@ export default function Coach() {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(1);
+
+  // Load chat history on mount if authenticated
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!isAuthenticated()) return;
+      try {
+        const history = await getCoachHistory();
+        if (history.length > 0) {
+          const mapped: Msg[] = history.map((h) => ({
+            id: h.id,
+            role: h.role === 'assistant' ? 'ai' : 'user',
+            text: h.content,
+            provider: h.provider || 'gemini',
+            model: h.model || 'gemini-2.0-flash',
+          }));
+          setMsgs([
+            {
+              id: 'welcome',
+              role: 'ai',
+              text: <>Hi {profile.name}! I&apos;m your Carbonexo coach. Ask me anything about reducing your footprint — or tap a suggestion below.</>,
+            },
+            ...mapped,
+          ]);
+        }
+      } catch (err) {
+        console.warn('Failed to load chat history from API', err);
+      }
+    };
+    loadHistory();
+  }, [profile.name]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -74,16 +135,46 @@ export default function Coach() {
     );
   };
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     const q = text.trim();
     if (!q || typing) return;
-    const userId = idRef.current++;
+    const userId = 'user-' + Date.now() + '-' + idRef.current++;
     setMsgs((m) => [...m, { id: userId, role: 'user', text: q }]);
     setInput('');
     setTyping(true);
+
+    if (isAuthenticated()) {
+      try {
+        const response = await sendCoachMessage(q);
+        setMsgs((m) => [
+          ...m,
+          {
+            id: 'ai-' + Date.now() + '-' + idRef.current++,
+            role: 'ai',
+            text: response.result,
+            prompt: response.prompt,
+            provider: 'gemini',
+            model: 'gemini-2.0-flash',
+          },
+        ]);
+        setTyping(false);
+        return;
+      } catch (err) {
+        console.warn('API call failed, falling back to local simulation', err);
+      }
+    }
+
+    // fallback simulation
     setTimeout(() => {
       setTyping(false);
-      setMsgs((m) => [...m, { id: idRef.current++, role: 'ai', text: reply(q) }]);
+      setMsgs((m) => [
+        ...m,
+        {
+          id: 'ai-canned-' + Date.now() + '-' + idRef.current++,
+          role: 'ai',
+          text: reply(q),
+        },
+      ]);
     }, 1300);
   };
 
@@ -110,7 +201,12 @@ export default function Coach() {
           ) : (
             <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start gap-2.5">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-lime-soft text-sm">✦</div>
-              <div className="max-w-[82%] rounded-[18px_18px_18px_5px] border border-border bg-surface2 px-4 py-3 text-[14.5px] leading-[1.55]">{m.text}</div>
+              <div className="max-w-[82%] rounded-[18px_18px_18px_5px] border border-border bg-surface2 px-4 py-3 text-[14.5px] leading-[1.55]">
+                <div>{m.text}</div>
+                {m.prompt && (
+                  <PromptInspector prompt={m.prompt} provider={m.provider} model={m.model} />
+                )}
+              </div>
             </motion.div>
           )
         )}
@@ -149,6 +245,7 @@ export default function Coach() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask your coach…"
+          aria-label="Ask your coach"
           className="flex-1 bg-transparent text-[15px] outline-none"
         />
         <button

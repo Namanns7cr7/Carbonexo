@@ -195,10 +195,11 @@ export default function BillsPage() {
 
                 <form onSubmit={handleCorrectSubmit} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted">
+                    <label htmlFor="billingMonth" className="text-xs font-bold uppercase tracking-wider text-muted">
                       Billing Month (YYYY-MM)
                     </label>
                     <input
+                      id="billingMonth"
                       type="month"
                       required
                       value={billingMonth}
@@ -208,10 +209,11 @@ export default function BillsPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted">
+                    <label htmlFor="unitsConsumed" className="text-xs font-bold uppercase tracking-wider text-muted">
                       Units Consumed (kWh)
                     </label>
                     <input
+                      id="unitsConsumed"
                       type="number"
                       required
                       min="0"
@@ -222,7 +224,7 @@ export default function BillsPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted">
+                    <label htmlFor="billAmount" className="text-xs font-bold uppercase tracking-wider text-muted">
                       Bill Amount
                     </label>
                     <div className="relative">
@@ -230,6 +232,7 @@ export default function BillsPage() {
                         {correctingBill.currency || '₹'}
                       </span>
                       <input
+                        id="billAmount"
                         type="number"
                         required
                         min="0"

@@ -67,6 +67,7 @@ export function BillUpload({ onUploadSuccess }: BillUploadProps) {
   return (
     <div className="w-full">
       <label
+        htmlFor="bill-file-input"
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
@@ -78,11 +79,13 @@ export function BillUpload({ onUploadSuccess }: BillUploadProps) {
         }`}
       >
         <input
+          id="bill-file-input"
           type="file"
           className="hidden"
           accept=".pdf,.png,.jpg,.jpeg"
           onChange={handleChange}
           disabled={loading}
+          aria-label="Upload electricity bill file"
         />
         <div className="flex flex-col items-center gap-2">
           {loading ? (

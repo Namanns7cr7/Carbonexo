@@ -19,7 +19,7 @@ $DB_USER      = "ecotrack"
 $BACKEND_SVC  = "carbonexo-backend"
 $WEB_SVC      = "carbonexo-web"
 $GOOGLE_CLIENT_ID = "95267034623-do8ogieusjpgl080q5kohfqethjgraha.apps.googleusercontent.com"
-$AI_PROVIDER  = "canned"   # "canned" (no GCP cost) or "gemini" (needs Vertex AI)
+$AI_PROVIDER  = "gemini"   # "canned" (no GCP cost) or "gemini" (needs Vertex AI)
 # -----------------------------------------------------------------------------
 
 Write-Host "==> Project: $PROJECT_ID  Region: $REGION" -ForegroundColor Cyan

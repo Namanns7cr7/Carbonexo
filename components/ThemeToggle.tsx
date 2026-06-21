@@ -15,7 +15,7 @@ export function ThemeToggle() {
         className="absolute top-[3px] left-[3px] flex h-[23px] w-[23px] items-center justify-center rounded-full bg-lime text-[13px] leading-none shadow transition-transform duration-[420ms]"
         style={{ transform: dark ? 'translateX(27px)' : 'translateX(0)', transitionTimingFunction: 'cubic-bezier(.4,1.3,.5,1)' }}
       >
-        {dark ? '🌙' : '☀️'}
+        <span role="img" aria-hidden="true">{dark ? '🌙' : '☀️'}</span>
       </span>
     </button>
   );
