@@ -1,10 +1,19 @@
 import { api } from './client';
 
 export interface BillData {
-  id: string; userId: string; blobUrl: string; originalFilename: string;
-  contentType: string; sizeBytes: number; status: string;
-  billingMonth: string | null; unitsConsumed: number | null;
-  billAmount: number | null; currency: string; createdAt: string;
+  id: string;
+  userId: string;
+  blobUrl: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  /** OCR status: UPLOADED | OCR_PENDING | OCR_DONE | CONFIRMED */
+  status: string;
+  billingMonth: string | null;
+  unitsConsumed: number | null;
+  billAmount: number | null;
+  currency: string;
+  createdAt: string;
 }
 
 export async function uploadBill(file: File): Promise<BillData> {

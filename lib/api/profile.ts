@@ -1,9 +1,17 @@
 import { api } from './client';
 
 export interface ProfileData {
-  id: string; userId: string; name: string; travelMode: string;
-  dailyDistanceKm: number; diet: string; electricityUsage: string;
-  shoppingHabit: string; weeklyGoalPct: number; region: string; onboarded: boolean;
+  id: string;
+  userId: string;
+  name: string;
+  travelMode: string;
+  dailyDistanceKm: number;
+  diet: string;
+  electricityUsage: string;
+  shoppingHabit: string;
+  weeklyGoalPct: number;
+  region: string;
+  onboarded: boolean;
 }
 
 export async function getProfile(): Promise<ProfileData> {

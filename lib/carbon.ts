@@ -14,8 +14,9 @@ export const CATEGORIES: { id: Category; label: string; emoji: string; color: st
   { id: 'waste', label: 'Waste', emoji: '🗑️', color: '#9b8cd6' },
 ];
 
-export const CATEGORY_META: Record<Category, { label: string; emoji: string; color: string }> =
-  Object.fromEntries(CATEGORIES.map((c) => [c.id, c])) as never;
+export const CATEGORY_META = Object.fromEntries(
+  CATEGORIES.map((c) => [c.id, { label: c.label, emoji: c.emoji, color: c.color }]),
+) as Record<Category, { label: string; emoji: string; color: string }>;
 
 /** A log entry — one tracked activity on a given day. */
 export interface LogEntry {

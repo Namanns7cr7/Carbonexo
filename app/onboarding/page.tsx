@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AmbientBackground } from '@/components/AmbientBackground';
+import { PillGrid } from '@/components/onboarding/PillGrid';
 import { useCarbon } from '@/lib/store';
 
 const TRAVEL = [
@@ -52,54 +53,6 @@ interface Draft {
   weeklyGoalPct: number;
 }
 
-function PillGrid<T extends string | number>({
-  options,
-  selected,
-  onToggle,
-  cols = 2,
-}: {
-  options: { v: T; e?: string; label?: string; d?: string }[];
-  selected: T[];
-  onToggle: (v: T) => void;
-  cols?: number;
-}) {
-  return (
-    <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${cols},minmax(0,1fr))` }}>
-      {options.map((o) => {
-        const active = selected.includes(o.v);
-        return (
-          <button
-            key={String(o.v)}
-            onClick={() => onToggle(o.v)}
-            aria-pressed={active}
-            className="relative flex items-center gap-3 rounded-[16px] border p-3.5 text-left transition-all"
-            style={{
-              borderColor: active ? 'var(--lime)' : 'var(--border)',
-              background: active ? 'var(--lime-soft)' : 'var(--surface)',
-              boxShadow: active ? '0 10px 26px -18px var(--lime)' : 'none',
-            }}
-          >
-            {o.e && <span role="img" aria-hidden="true" className="text-2xl">{o.e}</span>}
-            <span className="min-w-0">
-              <span className="block text-[15px] font-bold" style={{ color: active ? 'var(--lime-deep)' : 'var(--text)' }}>
-                {o.label ?? String(o.v)}
-              </span>
-              {o.d && <span className="block text-xs text-muted">{o.d}</span>}
-            </span>
-            {active && (
-              <span
-                className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold"
-                style={{ background: 'var(--lime)', color: '#0c1d15' }}
-              >
-                ✓
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function Onboarding() {
   const router = useRouter();
@@ -114,7 +67,7 @@ export default function Onboarding() {
     shopping: toList(profile.shopping),
     weeklyGoalPct: profile.weeklyGoalPct,
   });
-  const set = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
+  const updateDraft = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
 
   // toggle a value in/out of a string-array field
   const toggleIn = (key: 'travelModes' | 'diets' | 'shopping', v: string) =>
@@ -131,7 +84,7 @@ export default function Onboarding() {
         <input
           autoFocus
           value={d.name}
-          onChange={(e) => set({ name: e.target.value })}
+          onChange={(e) => updateDraft({ name: e.target.value })}
           placeholder="Your name"
           className="w-full rounded-[14px] border border-border bg-surface px-4 py-3.5 text-[15px] font-semibold outline-none transition-colors focus:border-lime"
         />
@@ -160,7 +113,7 @@ export default function Onboarding() {
             max={120}
             step={1}
             value={d.dailyDistance}
-            onChange={(e) => set({ dailyDistance: Number(e.target.value) })}
+            onChange={(e) => updateDraft({ dailyDistance: Number(e.target.value) })}
             className="w-full accent-lime"
             aria-label="Daily travel distance"
             aria-valuemin={0}
@@ -184,7 +137,7 @@ export default function Onboarding() {
     {
       title: 'Home electricity use?',
       sub: 'A rough sense is enough.',
-      body: <PillGrid options={LEVELS} selected={[d.electricity]} onToggle={(v) => set({ electricity: v })} cols={3} />,
+      body: <PillGrid options={LEVELS} selected={[d.electricity]} onToggle={(v) => updateDraft({ electricity: v })} cols={3} />,
       valid: true,
     },
     {
@@ -196,7 +149,7 @@ export default function Onboarding() {
     {
       title: 'Set your weekly goal',
       sub: 'How fast do you want to cut your footprint? You can change this anytime.',
-      body: <PillGrid options={GOALS} selected={[d.weeklyGoalPct]} onToggle={(v) => set({ weeklyGoalPct: v })} />,
+      body: <PillGrid options={GOALS} selected={[d.weeklyGoalPct]} onToggle={(v) => updateDraft({ weeklyGoalPct: v })} />,
       valid: true,
     },
   ];

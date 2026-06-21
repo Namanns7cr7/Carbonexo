@@ -1,63 +1,53 @@
 'use client';
 
+/**
+ * Bills page — electricity bill scanning and credit earning.
+ *
+ * Responsibilities:
+ *  - Loads the list of uploaded bills from the API.
+ *  - Delegates file upload to <BillUpload />.
+ *  - Delegates bill verification to <BillCorrectionModal />.
+ */
 import { useState, useEffect } from 'react';
-import { getBills, correctBill, type BillData } from '@/lib/api/bills';
-import { PageHead, Card, Eyebrow } from '@/components/app/ui';
+import { getBills, type BillData } from '@/lib/api/bills';
+import { PageHead, Card } from '@/components/app/ui';
 import { BillUpload } from '@/components/app/BillUpload';
-import { motion, AnimatePresence } from 'framer-motion';
+import { BillCorrectionModal } from '@/components/app/BillCorrectionModal';
+
+/** Badge showing the status of a scanned bill. */
+function BillStatusBadge({ status }: { status: string }) {
+  let className = 'bg-surface border border-border text-muted';
+  if (status === 'CONFIRMED') className = 'bg-lime-soft text-lime-deep';
+  else if (status === 'OCR_DONE') className = 'bg-blue-soft text-blue';
+
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${className}`}>
+      {status}
+    </span>
+  );
+}
 
 export default function BillsPage() {
   const [bills, setBills] = useState<BillData[]>([]);
   const [correctingBill, setCorrectingBill] = useState<BillData | null>(null);
-  const [billingMonth, setBillingMonth] = useState('');
-  const [unitsConsumed, setUnitsConsumed] = useState<number>(0);
-  const [billAmount, setBillAmount] = useState<number>(0);
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchBillsList = async () => {
-    try {
-      const data = await getBills();
-      setBills(data);
-    } catch (err) {
-      console.error('Failed to load bills', err);
-    }
-  };
 
   useEffect(() => {
-    fetchBillsList();
+    getBills()
+      .then(setBills)
+      .catch((err) => console.error('[Bills] Failed to load bills:', err));
   }, []);
 
   const handleUploadSuccess = (newBill: BillData) => {
     setBills((prev) => [newBill, ...prev]);
+    // Immediately open the correction modal so users can verify OCR output.
     if (newBill.status === 'OCR_DONE' || newBill.status === 'OCR_PENDING') {
-      openCorrection(newBill);
+      setCorrectingBill(newBill);
     }
   };
 
-  const openCorrection = (bill: BillData) => {
-    setCorrectingBill(bill);
-    setBillingMonth(bill.billingMonth?.substring(0, 7) || new Date().toISOString().substring(0, 7));
-    setUnitsConsumed(bill.unitsConsumed || 0);
-    setBillAmount(bill.billAmount || 0);
-  };
-
-  const handleCorrectSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!correctingBill) return;
-    setSubmitting(true);
-    try {
-      const updated = await correctBill(correctingBill.id, {
-        billingMonth,
-        unitsConsumed,
-        billAmount,
-      });
-      setBills((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
-      setCorrectingBill(null);
-    } catch (err) {
-      console.error('Failed to correct bill', err);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleBillConfirmed = (updated: BillData) => {
+    setBills((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+    setCorrectingBill(null);
   };
 
   return (
@@ -69,7 +59,8 @@ export default function BillsPage() {
       />
 
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 flex flex-col gap-5">
+        {/* Main column: upload + history */}
+        <div className="flex flex-col gap-5 md:col-span-2">
           <Card>
             <h2 className="mb-4 text-lg font-bold">Upload New Bill</h2>
             <BillUpload onUploadSuccess={handleUploadSuccess} />
@@ -90,20 +81,8 @@ export default function BillsPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-text">
-                          {bill.originalFilename}
-                        </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${
-                            bill.status === 'CONFIRMED'
-                              ? 'bg-lime-soft text-lime-deep'
-                              : bill.status === 'OCR_DONE'
-                              ? 'bg-blue-soft text-blue'
-                              : 'bg-surface border border-border text-muted'
-                          }`}
-                        >
-                          {bill.status}
-                        </span>
+                        <span className="text-sm font-bold text-text">{bill.originalFilename}</span>
+                        <BillStatusBadge status={bill.status} />
                       </div>
                       <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-muted">
                         {bill.billingMonth && (
@@ -135,10 +114,10 @@ export default function BillsPage() {
                       </a>
                       {(bill.status === 'OCR_DONE' || bill.status === 'UPLOADED') && (
                         <button
-                          onClick={() => openCorrection(bill)}
-                          className="rounded-lg bg-lime px-3 py-1.5 text-xs font-bold text-[#0c1d15] hover:scale-105 transition-transform"
+                          onClick={() => setCorrectingBill(bill)}
+                          className="rounded-lg bg-lime px-3 py-1.5 text-xs font-bold text-[#0c1d15] transition-transform hover:scale-105"
                         >
-                          Verify & Confirm
+                          Verify &amp; Confirm
                         </button>
                       )}
                     </div>
@@ -149,13 +128,16 @@ export default function BillsPage() {
           </Card>
         </div>
 
+        {/* Sidebar: how it works */}
         <div className="flex flex-col gap-5">
           <Card className="!bg-lime-soft">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-lime text-base mb-3">⚡</div>
+            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-[11px] bg-lime text-base">
+              ⚡
+            </div>
             <h3 className="text-sm font-bold text-lime-deep">How it works</h3>
-            <ul className="mt-2 flex flex-col gap-2 text-xs leading-[1.45] text-muted">
+            <ol className="mt-2 flex flex-col gap-2 text-xs leading-[1.45] text-muted">
               <li>
-                <strong className="text-text">1. Upload:</strong> Drag & drop your PDF or image bill.
+                <strong className="text-text">1. Upload:</strong> Drag &amp; drop your PDF or image bill.
               </li>
               <li>
                 <strong className="text-text">2. AI Scan:</strong> Google Vision OCR extracts billing period and kWh consumed.
@@ -166,96 +148,17 @@ export default function BillsPage() {
               <li>
                 <strong className="text-text">4. Earn:</strong> Unlock green credits for tracking your energy consumption!
               </li>
-            </ul>
+            </ol>
           </Card>
         </div>
       </div>
 
-      <AnimatePresence>
-        {correctingBill && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-[480px]"
-            >
-              <Card className="!p-6 relative shadow-strong">
-                <button
-                  onClick={() => setCorrectingBill(null)}
-                  className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted hover:text-text hover:border-lime"
-                >
-                  ✕
-                </button>
-                <Eyebrow>Verify Bill Extraction</Eyebrow>
-                <h3 className="text-lg font-bold mb-4">Confirm Parsed Details</h3>
-                <p className="text-xs text-muted mb-4">
-                  Please review the details parsed by our AI and correct them if needed. Confirming awards your green credits.
-                </p>
-
-                <form onSubmit={handleCorrectSubmit} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="billingMonth" className="text-xs font-bold uppercase tracking-wider text-muted">
-                      Billing Month (YYYY-MM)
-                    </label>
-                    <input
-                      id="billingMonth"
-                      type="month"
-                      required
-                      value={billingMonth}
-                      onChange={(e) => setBillingMonth(e.target.value)}
-                      className="w-full rounded-xl border border-border bg-surface2 px-4 py-2.5 text-sm font-semibold outline-none focus:border-lime/60 focus:bg-surface"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="unitsConsumed" className="text-xs font-bold uppercase tracking-wider text-muted">
-                      Units Consumed (kWh)
-                    </label>
-                    <input
-                      id="unitsConsumed"
-                      type="number"
-                      required
-                      min="0"
-                      value={unitsConsumed}
-                      onChange={(e) => setUnitsConsumed(Number(e.target.value))}
-                      className="w-full rounded-xl border border-border bg-surface2 px-4 py-2.5 text-sm font-semibold outline-none focus:border-lime/60 focus:bg-surface"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="billAmount" className="text-xs font-bold uppercase tracking-wider text-muted">
-                      Bill Amount
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-2.5 text-sm font-bold text-muted">
-                        {correctingBill.currency || '₹'}
-                      </span>
-                      <input
-                        id="billAmount"
-                        type="number"
-                        required
-                        min="0"
-                        value={billAmount}
-                        onChange={(e) => setBillAmount(Number(e.target.value))}
-                        className="w-full rounded-xl border border-border bg-surface2 pl-8 pr-4 py-2.5 text-sm font-semibold outline-none focus:border-lime/60 focus:bg-surface"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="mt-2 w-full rounded-xl bg-lime py-3 text-center text-sm font-bold text-[#0c1d15] hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50"
-                  >
-                    {submitting ? 'Confirming...' : 'Verify & Confirm'}
-                  </button>
-                </form>
-              </Card>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Bill correction modal */}
+      <BillCorrectionModal
+        bill={correctingBill}
+        onClose={() => setCorrectingBill(null)}
+        onConfirm={handleBillConfirmed}
+      />
     </div>
   );
 }

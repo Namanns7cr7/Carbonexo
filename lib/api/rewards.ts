@@ -1,13 +1,23 @@
 import { api } from './client';
 
 export interface RewardData {
-  id: string; rewardKey: string; title: string; description: string;
-  costCredits: number; stock: number | null; partner: string; imageUrl: string;
+  id: string;
+  rewardKey: string;
+  title: string;
+  description: string;
+  costCredits: number;
+  stock: number | null;
+  partner: string;
+  imageUrl: string;
 }
 
 export interface RedemptionData {
-  id: string; rewardId: string; rewardTitle: string;
-  costCredits: number; status: string; createdAt: string;
+  id: string;
+  rewardId: string;
+  rewardTitle: string;
+  costCredits: number;
+  status: string;
+  createdAt: string;
 }
 
 export async function getRewards(): Promise<RewardData[]> {
