@@ -409,6 +409,26 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<Ctx>(() => {
+    // Until the client has mounted, expose a stable, data-free context so the
+    // server-rendered HTML and the first client render match exactly. The seed
+    // contains random ids + local-time day keys that differ between the server
+    // (UTC) and the browser (local tz); rendering them during SSR/first paint
+    // causes a hydration mismatch (React #423). Real data flows in once
+    // `hydrated` flips true in the mount effect — safely after hydration.
+    if (!hydrated) {
+      return {
+        ...SSR_DEFAULT,
+        addLog,
+        removeLog,
+        addPlan: (templateId) => dispatch({ type: 'addPlan', templateId }),
+        removePlan: (templateId) => dispatch({ type: 'removePlan', templateId }),
+        togglePlan,
+        saveProfile,
+        completeOnboarding,
+        resetAll: () => dispatch({ type: 'reset' }),
+      };
+    }
+
     const week = lastNDays(7);
     const todayKey = week[6];
     const yKey = week[5];
@@ -540,8 +560,9 @@ const SSR_DEFAULT: Ctx = {
 export function useCarbon(): Ctx {
   const ctx = useContext(CarbonCtx);
   if (ctx) return ctx;
-  // during SSR / static generation the provider context may be absent — return
-  // a safe default rather than crashing the build; the browser always has it.
-  if (typeof window === 'undefined') return SSR_DEFAULT;
-  throw new Error('useCarbon must be used within CarbonexoProvider');
+  // The provider is mounted at the app root, so a null context only happens
+  // during SSR / static generation or a transient hydration-recovery render.
+  // Return a safe default rather than throwing — a missing context must never
+  // hard-crash the client into a white "Application error" screen.
+  return SSR_DEFAULT;
 }
