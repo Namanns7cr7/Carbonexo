@@ -89,9 +89,13 @@ Next.js 14 PWA  ──►  Spring Boot API  ──►  PostgreSQL 16
 - **Accessibility:** semantic, keyboard-navigable UI; `prefers-reduced-motion`
   guards on all animations; light/dark themes; mobile-first responsive layout.
 - **Testing:** automated unit tests on the core logic — **backend JUnit** (JWT
-  issue/verify, Google ID-token verifier, carbon calculation) via `mvn test`, and
-  **frontend Vitest** on the carbon helpers via `npm test` (**14 tests passing**).
-  The full API is also explorable via Swagger UI at `/swagger-ui.html`.
+  issue/verify, Google ID-token verifier, carbon calculation, file-upload
+  validation, prompt rendering, profile/config/credit/reward services, RFC-7807
+  error handling) via `mvn test` (**62 tests**), and **frontend Vitest** on the
+  carbon helpers, domain catalog, and every API client module via `npm test`
+  (**44 tests**) — **106 passing in total**, with a clean `tsc --noEmit` typecheck
+  and zero ESLint warnings. The full API is also explorable via Swagger UI at
+  `/swagger-ui.html`.
 
 ---
 

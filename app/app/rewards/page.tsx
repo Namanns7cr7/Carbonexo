@@ -51,8 +51,8 @@ export default function RewardsPage() {
           r.id === reward.id && r.stock !== null ? { ...r, stock: r.stock - 1 } : r
         )
       );
-    } catch (err: any) {
-      setError(err.message || 'Failed to redeem reward');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to redeem reward');
     } finally {
       setRedeemingId(null);
     }

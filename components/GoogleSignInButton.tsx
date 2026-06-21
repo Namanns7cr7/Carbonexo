@@ -4,9 +4,32 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginWithGoogle } from '@/lib/api/auth';
 
+interface GoogleIdConfig {
+  client_id: string;
+  callback: (response: { credential: string }) => void;
+}
+
+interface GoogleButtonOptions {
+  theme?: string;
+  size?: string;
+  width?: number;
+  text?: string;
+  shape?: string;
+  logo_alignment?: string;
+}
+
+interface GoogleAccounts {
+  accounts: {
+    id: {
+      initialize: (config: GoogleIdConfig) => void;
+      renderButton: (parent: HTMLElement, options: GoogleButtonOptions) => void;
+    };
+  };
+}
+
 declare global {
   interface Window {
-    google?: any;
+    google?: GoogleAccounts;
   }
 }
 
@@ -34,8 +57,8 @@ export function GoogleSignInButton({ onError }: { onError?: (msg: string) => voi
           try {
             const res = await loginWithGoogle(response.credential);
             window.location.assign(res.user && !res.user.displayName ? '/onboarding' : '/app');
-          } catch (e: any) {
-            onError?.(e?.message || 'Google sign-in failed');
+          } catch (e) {
+            onError?.(e instanceof Error ? e.message : 'Google sign-in failed');
           }
         },
       });

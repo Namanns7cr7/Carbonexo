@@ -57,8 +57,8 @@ export function BillUpload({ onUploadSuccess }: BillUploadProps) {
     try {
       const result = await uploadBill(file);
       onUploadSuccess(result);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload and scan bill');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload and scan bill');
     } finally {
       setLoading(false);
     }

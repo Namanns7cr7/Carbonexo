@@ -209,14 +209,12 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
     biggestSource: { category: Category; value: number } | null;
   } | null>(null);
 
-  const [isAuthed, setIsAuthed] = useState(false);
   // true once the first server fetch attempt has finished — so the onboarding
   // gate waits for the real (server) onboarded flag instead of the stale seed.
   const [bootstrapped, setBootstrapped] = useState(false);
 
   const refreshApi = async () => {
     const isUserAuthed = isAuthenticated();
-    setIsAuthed(isUserAuthed);
     if (!isUserAuthed) {
       setApiData(null);
       return;
@@ -238,7 +236,7 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
       const week = lastNDays(7);
       const todayK = week[6];
 
-      const todayLogsMapped: LogEntry[] = (dash.todayLogs || []).map((l: any) => ({
+      const todayLogsMapped: LogEntry[] = (dash.todayLogs || []).map((l) => ({
         id: l.id,
         category: (l.category?.toLowerCase() || 'travel') as Category,
         label: l.label,
@@ -265,7 +263,7 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
         waste: dash.weekBreakdown?.waste || 0,
       };
 
-      const weekTotalsMapped = (dash.weekTotals || []).map((t: any) => ({
+      const weekTotalsMapped = (dash.weekTotals || []).map((t) => ({
         key: t.date,
         total: t.total,
       }));

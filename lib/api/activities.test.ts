@@ -17,7 +17,7 @@ describe('activities API helpers', () => {
 
     const logs = await getActivities('2026-06-01', '2026-06-07');
     expect(logs).toEqual(mockLogs);
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = (fetchMock.mock.calls[0] as any)[0] as string;
     expect(url).toContain('/api/activities?from=2026-06-01&to=2026-06-07');
   });
 
@@ -49,7 +49,7 @@ describe('activities API helpers', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await deleteActivity('log-123');
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = (fetchMock.mock.calls[0] as any)[0] as string;
     expect(url).toContain('/api/activities/log-123');
     const opts = (fetchMock.mock.calls[0] as any)[1] as RequestInit;
     expect(opts.method).toBe('DELETE');

@@ -22,8 +22,8 @@ export default function LoginPage() {
       const res = await login(email, password);
       // full navigation so the store remounts and loads the server profile
       window.location.assign(res.user && !res.user.displayName ? '/onboarding' : '/app');
-    } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {
       setLoading(false);
     }
