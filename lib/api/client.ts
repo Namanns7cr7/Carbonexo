@@ -43,20 +43,34 @@ export class ApiError extends Error {
   }
 }
 
+// Mutex: when multiple requests get 401 simultaneously, only one refresh
+// call is made; all callers await the same promise.
+let refreshInFlight: Promise<boolean> | null = null;
+
 async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshToken) return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    if (!refreshToken) return false;
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setTokens(data.accessToken, data.refreshToken);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
   try {
-    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return false;
-    const data = await res.json();
-    setTokens(data.accessToken, data.refreshToken);
-    return true;
-  } catch {
-    return false;
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
   }
 }
 
@@ -93,6 +107,7 @@ export async function apiFetch<T>(
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
+    throw new ApiError(401, 'Session expired', {});
   }
 
   if (!res.ok) {

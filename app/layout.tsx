@@ -4,6 +4,11 @@ import { ThemeProvider } from '@/lib/theme-provider';
 import { CarbonexoProvider } from '@/lib/store';
 import { ServiceWorker } from '@/components/ServiceWorker';
 
+// This is a client-driven, auth-gated app — render dynamically instead of
+// statically prerendering (which fails when client-only context like
+// CarbonexoProvider is evaluated at build time).
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Carbonexo — Track your footprint. Reduce your impact.',
   description:

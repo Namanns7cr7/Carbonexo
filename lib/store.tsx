@@ -505,8 +505,44 @@ export function CarbonexoProvider({ children }: { children: ReactNode }) {
   return <CarbonCtx.Provider value={value}>{children}</CarbonCtx.Provider>;
 }
 
+const EMPTY_BREAKDOWN: Record<Category, number> = { travel: 0, food: 0, electricity: 0, shopping: 0, waste: 0 };
+
+/** Safe placeholder used only during server rendering / build-time static
+ *  generation, where the client-only provider context isn't established.
+ *  In the browser the real provider is always present. */
+const SSR_DEFAULT: Ctx = {
+  hydrated: false,
+  bootstrapped: false,
+  profile: { name: '', onboarded: false, travelMode: '', dailyDistance: 0, diet: '', electricity: '', shopping: '', weeklyGoalPct: 15 },
+  logs: [],
+  plan: [],
+  todayKey: dayKey(),
+  todayLogs: [],
+  todayTotal: 0,
+  yesterdayTotal: 0,
+  deltaPct: 0,
+  todayBreakdown: { ...EMPTY_BREAKDOWN },
+  weekTotals: [],
+  weekBreakdown: { ...EMPTY_BREAKDOWN },
+  streak: 0,
+  totalSaved: 0,
+  completedCount: 0,
+  biggestSource: null,
+  addLog: async () => {},
+  removeLog: async () => {},
+  addPlan: () => {},
+  removePlan: () => {},
+  togglePlan: async () => {},
+  saveProfile: async () => {},
+  completeOnboarding: async () => {},
+  resetAll: () => {},
+};
+
 export function useCarbon(): Ctx {
   const ctx = useContext(CarbonCtx);
-  if (!ctx) throw new Error('useCarbon must be used within CarbonexoProvider');
-  return ctx;
+  if (ctx) return ctx;
+  // during SSR / static generation the provider context may be absent — return
+  // a safe default rather than crashing the build; the browser always has it.
+  if (typeof window === 'undefined') return SSR_DEFAULT;
+  throw new Error('useCarbon must be used within CarbonexoProvider');
 }

@@ -1,15 +1,18 @@
 # =============================================================================
-# Carbonexo / EcoTrack — one-shot GCP deploy (Cloud Run + Cloud SQL).
+# Carbonexo / EcoTrack - one-shot GCP deploy (Cloud Run + Cloud SQL).
 # Run from the REPO ROOT:   .\deploy\deploy.ps1
-# Prereqs: gcloud installed + `gcloud auth login` done, billing-enabled project.
+# Prereqs: gcloud installed + gcloud auth login done, billing-enabled project.
 # Safe to re-run: steps that already exist are skipped.
 # =============================================================================
-$ErrorActionPreference = 'Stop'
+# NOTE: must NOT be 'Stop' — gcloud 'describe' on a not-yet-existing resource
+# writes to stderr, which PowerShell 5.1 would treat as fatal. We check
+# $LASTEXITCODE and throw explicitly on the steps that matter instead.
+$ErrorActionPreference = 'Continue'
 
 # ----------------------------- CONFIG (edit me) ------------------------------
-$PROJECT_ID   = "REPLACE_WITH_YOUR_PROJECT_ID"      # e.g. carbonexo-123456
-$REGION       = "asia-south1"                        # Mumbai
-$REPO         = "carbonexo"                          # Artifact Registry repo
+$PROJECT_ID   = "carbonexo"                          # your billing-enabled project
+$REGION       = "asia-south1"                         # Mumbai
+$REPO         = "carbonexo"                           # Artifact Registry repo
 $SQL_INSTANCE = "carbonexo-db"
 $DB_NAME      = "ecotrack"
 $DB_USER      = "ecotrack"
@@ -19,8 +22,6 @@ $GOOGLE_CLIENT_ID = "95267034623-do8ogieusjpgl080q5kohfqethjgraha.apps.googleuse
 $AI_PROVIDER  = "canned"   # "canned" (no GCP cost) or "gemini" (needs Vertex AI)
 # -----------------------------------------------------------------------------
 
-if ($PROJECT_ID -eq "REPLACE_WITH_YOUR_PROJECT_ID") { throw "Edit PROJECT_ID at the top of this script first." }
-
 Write-Host "==> Project: $PROJECT_ID  Region: $REGION" -ForegroundColor Cyan
 gcloud config set project $PROJECT_ID | Out-Null
 
@@ -29,6 +30,7 @@ Write-Host "==> Enabling APIs..." -ForegroundColor Cyan
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com `
   sqladmin.googleapis.com secretmanager.googleapis.com `
   artifactregistry.googleapis.com aiplatform.googleapis.com
+if ($LASTEXITCODE -ne 0) { throw "Failed to enable required APIs" }
 
 $PROJECT_NUMBER = (gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
 $RUNTIME_SA = "$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
@@ -52,6 +54,7 @@ if ($LASTEXITCODE -ne 0) {
     --region=$REGION --storage-size=10GB --availability-type=zonal
 }
 $CONNECTION_NAME = (gcloud sql instances describe $SQL_INSTANCE --format='value(connectionName)')
+if (-not $CONNECTION_NAME) { throw "Cloud SQL instance not available" }
 Write-Host "    connection name: $CONNECTION_NAME"
 
 # DB + app user
@@ -60,7 +63,7 @@ if ($LASTEXITCODE -ne 0) { gcloud sql databases create $DB_NAME --instance=$SQL_
 
 # generate a DB password + JWT secret (only used when first creating the secrets)
 $DB_PASSWORD = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 28 | ForEach-Object {[char]$_})
-$JWT_SECRET  = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
+$JWT_SECRET  = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 48 | ForEach-Object {[char]$_})  # 48 chars = 384 bits (>= 256 required for HS256)
 
 gcloud sql users describe $DB_USER --instance=$SQL_INSTANCE 2>$null
 if ($LASTEXITCODE -ne 0) {
@@ -74,7 +77,12 @@ Write-Host "==> Secrets..." -ForegroundColor Cyan
 function Ensure-Secret($name, $value) {
   gcloud secrets describe $name 2>$null
   if ($LASTEXITCODE -ne 0) {
-    Write-Output $value | gcloud secrets create $name --data-file=- --replication-policy=automatic
+    # write to a temp file with NO trailing newline (piping via Write-Output
+    # appends a newline, which would corrupt passwords/keys)
+    $tmp = [System.IO.Path]::GetTempFileName()
+    [System.IO.File]::WriteAllText($tmp, $value)
+    gcloud secrets create $name --data-file="$tmp" --replication-policy=automatic
+    Remove-Item $tmp -Force
   } else {
     Write-Host "    secret $name already exists (keeping current value)"
   }
@@ -91,30 +99,49 @@ foreach ($role in @("roles/cloudsql.client","roles/secretmanager.secretAccessor"
 # 6) Build + deploy BACKEND ----------------------------------------------------
 Write-Host "==> Building backend image..." -ForegroundColor Cyan
 gcloud builds submit --config=deploy/cloudbuild.backend.yaml --substitutions=_IMAGE=$BACKEND_IMG .
+if ($LASTEXITCODE -ne 0) { throw "Backend image build failed" }
 
-$DB_URL = "jdbc:postgresql:///$DB_NAME?cloudSqlInstance=$CONNECTION_NAME&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
+# NOTE: braces required - PowerShell treats '?' as a valid variable-name char,
+# so "$DB_NAME?cloudSqlInstance" would parse as one (empty) variable.
+$DB_URL = "jdbc:postgresql:///${DB_NAME}?cloudSqlInstance=${CONNECTION_NAME}&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
+
+# Pass env vars via a YAML file so the '&' in DB_URL survives intact
+# (--set-env-vars mangles '&' through the gcloud Windows wrapper).
+$envFile = Join-Path $env:TEMP "carbonexo-backend-env.yaml"
+@"
+DB_URL: "$DB_URL"
+DB_USER: "$DB_USER"
+AI_PROVIDER: "$AI_PROVIDER"
+GOOGLE_CLIENT_ID: "$GOOGLE_CLIENT_ID"
+GCP_PROJECT_ID: "$PROJECT_ID"
+GCP_LOCATION: "$REGION"
+CORS_ALLOWED_ORIGINS: "*"
+"@ | Set-Content -Path $envFile -Encoding ascii
 
 Write-Host "==> Deploying backend to Cloud Run..." -ForegroundColor Cyan
 gcloud run deploy $BACKEND_SVC `
   --image=$BACKEND_IMG --region=$REGION --platform=managed --allow-unauthenticated `
   --add-cloudsql-instances=$CONNECTION_NAME `
   --service-account=$RUNTIME_SA `
-  --memory=1Gi --cpu=1 --min-instances=0 --max-instances=3 --port=8080 `
+  --memory=1Gi --cpu=1 --min-instances=0 --max-instances=3 --port=8080 --timeout=300 `
   --set-secrets="JWT_SECRET=JWT_SECRET:latest,DB_PASSWORD=DB_PASSWORD:latest" `
-  --set-env-vars="^##^DB_URL=$DB_URL##DB_USER=$DB_USER##AI_PROVIDER=$AI_PROVIDER##GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID##GCP_PROJECT_ID=$PROJECT_ID##GCP_LOCATION=$REGION##CORS_ALLOWED_ORIGINS=*"
+  --env-vars-file=$envFile
+if ($LASTEXITCODE -ne 0) { throw "Backend deploy failed" }
 
 $BACKEND_URL = (gcloud run services describe $BACKEND_SVC --region=$REGION --format='value(status.url)')
 Write-Host "    backend: $BACKEND_URL" -ForegroundColor Green
 
 # 7) Build + deploy FRONTEND (needs backend URL baked in at build) -------------
-Write-Host "==> Building frontend image (NEXT_PUBLIC_* baked in)..." -ForegroundColor Cyan
+Write-Host "==> Building frontend image (NEXT_PUBLIC vars baked in)..." -ForegroundColor Cyan
 gcloud builds submit --config=deploy/cloudbuild.frontend.yaml `
   --substitutions="_IMAGE=$WEB_IMG,_API_URL=$BACKEND_URL,_GCID=$GOOGLE_CLIENT_ID" .
+if ($LASTEXITCODE -ne 0) { throw "Frontend image build failed" }
 
 Write-Host "==> Deploying frontend to Cloud Run..." -ForegroundColor Cyan
 gcloud run deploy $WEB_SVC `
   --image=$WEB_IMG --region=$REGION --platform=managed --allow-unauthenticated `
   --memory=512Mi --cpu=1 --min-instances=0 --max-instances=3 --port=3000
+if ($LASTEXITCODE -ne 0) { throw "Frontend deploy failed" }
 
 $WEB_URL = (gcloud run services describe $WEB_SVC --region=$REGION --format='value(status.url)')
 Write-Host "    frontend: $WEB_URL" -ForegroundColor Green
@@ -131,7 +158,7 @@ Write-Host "  Frontend : $WEB_URL"
 Write-Host "  Backend  : $BACKEND_URL  (Swagger: $BACKEND_URL/swagger-ui.html)"
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "MANUAL STEP — Google sign-in:" -ForegroundColor Yellow
-Write-Host "  Add this to your OAuth client's Authorized JavaScript origins:"
+Write-Host "MANUAL STEP - Google sign-in:" -ForegroundColor Yellow
+Write-Host "  Add this URL to your OAuth client Authorized JavaScript origins:"
 Write-Host "    $WEB_URL"
-Write-Host "  (Google Cloud Console -> APIs & Services -> Credentials -> your Web client)"
+Write-Host "  (Google Cloud Console - APIs and Services - Credentials - your Web client)"
