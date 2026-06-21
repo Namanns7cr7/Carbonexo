@@ -131,11 +131,38 @@ if ($LASTEXITCODE -ne 0) { throw "Backend deploy failed" }
 $BACKEND_URL = (gcloud run services describe $BACKEND_SVC --region=$REGION --format='value(status.url)')
 Write-Host "    backend: $BACKEND_URL" -ForegroundColor Green
 
-# 7) Build + deploy FRONTEND (needs backend URL baked in at build) -------------
-Write-Host "==> Building frontend image (NEXT_PUBLIC vars baked in)..." -ForegroundColor Cyan
-gcloud builds submit --config=deploy/cloudbuild.frontend.yaml `
-  --substitutions="_IMAGE=$WEB_IMG,_API_URL=$BACKEND_URL,_GCID=$GOOGLE_CLIENT_ID" .
+# 7) Build + deploy FRONTEND ---------------------------------------------------
+# IMPORTANT: do NOT build the frontend via Cloud Build (Linux). On Linux this
+# app mis-compiles into a broken client bundle: pages get statically prerendered
+# without the <html>/<body> document shell and the browser crashes on hydration
+# (React #418/#423, "Cannot have more than one Element child of a Document",
+# "useCarbon must be used within CarbonexoProvider"). A LOCAL (Windows) build
+# produces a correct dynamic bundle. So we build locally and ship that.
+# See deploy/deploy-frontend-local.ps1 — this just inlines it with the live URLs.
+Write-Host "==> Building frontend LOCALLY (Cloud Build/Linux produces a broken bundle for this app)..." -ForegroundColor Cyan
+$env:NEXT_PUBLIC_API_BASE_URL     = $BACKEND_URL
+$env:NEXT_PUBLIC_GOOGLE_CLIENT_ID = $GOOGLE_CLIENT_ID
+npm run build
+if (-not (Test-Path '.next\standalone\server.js')) { throw "standalone build missing (is output:'standalone' set in next.config?)" }
+
+Copy-Item '.next\static' '.next\standalone\.next\static' -Recurse -Force
+if (Test-Path 'public') { Copy-Item 'public' '.next\standalone\public' -Recurse -Force }
+Set-Content '.next\standalone\Dockerfile' -Encoding ascii -Value @'
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
+'@
+
+gcloud auth configure-docker "$AR_HOST" --quiet 2>&1 | Out-Null
+Write-Host "==> docker build + push frontend image..." -ForegroundColor Cyan
+docker build -t $WEB_IMG '.next\standalone'
 if ($LASTEXITCODE -ne 0) { throw "Frontend image build failed" }
+docker push $WEB_IMG
+if ($LASTEXITCODE -ne 0) { throw "Frontend image push failed" }
 
 Write-Host "==> Deploying frontend to Cloud Run..." -ForegroundColor Cyan
 gcloud run deploy $WEB_SVC `

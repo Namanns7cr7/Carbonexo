@@ -7,6 +7,9 @@ import { ServiceWorker } from '@/components/ServiceWorker';
 // This is a client-driven, auth-gated app — render dynamically instead of
 // statically prerendering (which fails when client-only context like
 // CarbonexoProvider is evaluated at build time).
+// NOTE: this is only honored when the frontend is built locally (on Windows).
+// A Cloud Build (Linux) build mis-compiles the layout and ignores this, which
+// ships a broken client bundle. Always (re)deploy via deploy-frontend-local.ps1.
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
