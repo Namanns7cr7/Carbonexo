@@ -88,9 +88,10 @@ Next.js 14 PWA  ──►  Spring Boot API  ──►  PostgreSQL 16
   fast/quality model split, Next.js standalone build, Cloud Run scale-to-zero.
 - **Accessibility:** semantic, keyboard-navigable UI; `prefers-reduced-motion`
   guards on all animations; light/dark themes; mobile-first responsive layout.
-- **Testing / validation:** every flow was validated end-to-end (auth, onboarding,
-  tracking, dashboard math, credits) against the running stack; the API is fully
-  explorable via Swagger UI at `/swagger-ui.html`.
+- **Testing:** automated unit tests on the core logic — **backend JUnit** (JWT
+  issue/verify, Google ID-token verifier, carbon calculation) via `mvn test`, and
+  **frontend Vitest** on the carbon helpers via `npm test` (**14 tests passing**).
+  The full API is also explorable via Swagger UI at `/swagger-ui.html`.
 
 ---
 
