@@ -8,6 +8,23 @@ goals, and rewards.
 - **Live flow:** sign in → 7-step persona onboarding → daily tracking → dashboard &
   insights → **AI Coach** → action plan → green credits → rewards.
 
+## Live demo
+
+- **App:** https://carbonexo-web-yigbd35s3q-el.a.run.app
+- **API:** https://carbonexo-backend-yigbd35s3q-el.a.run.app
+- **API docs (Swagger):** https://carbonexo-backend-yigbd35s3q-el.a.run.app/swagger-ui.html
+
+## Documentation
+
+Full docs live in [`docs/`](docs/README.md) — organised into **guides** (run &
+deploy), **reference** (architecture, API, database, security), and **project**
+(roadmap, audits). Quick links:
+[Architecture](docs/reference/ARCHITECTURE.md) ·
+[API](docs/reference/API.md) ·
+[Database](docs/reference/DATABASE.md) ·
+[Security](docs/reference/SECURITY.md) ·
+[Deployment](docs/guides/DEPLOYMENT.md)
+
 ---
 
 ## 1. Chosen vertical
