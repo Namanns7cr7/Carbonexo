@@ -1,4 +1,13 @@
-# Carbonexo — Personal Sustainability Assistant
+# 🌱 Carbonexo — Personal Sustainability Assistant
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 14"/>
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot"/>
+  <img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+  <img src="https://img.shields.io/badge/Gemini-Vertex%20AI-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white" alt="Gemini"/>
+  <img src="https://img.shields.io/badge/Tests-106%20passing-brightgreen?style=for-the-badge" alt="Tests"/>
+</p>
 
 A smart, context-aware assistant that helps a person **understand and reduce their
 carbon footprint**. You log everyday activities (or upload an electricity bill),
@@ -27,7 +36,7 @@ deploy), **reference** (architecture, API, database, security), and **project**
 
 ---
 
-## 1. Chosen vertical
+## 1. What it is
 
 **Sustainability / Climate — a Personal Sustainability Assistant.**
 
@@ -92,7 +101,7 @@ Next.js 14 PWA  ──►  Spring Boot API  ──►  PostgreSQL 16
 
 ---
 
-## 4. Evaluation focus
+## 4. Engineering quality
 
 - **Code quality:** clear layering, single-responsibility services, typed DTOs,
   provider abstractions (`AIProvider`, `OcrProvider`, `BlobStorageService`) so
