@@ -173,3 +173,14 @@ body {
   --ease-in-out: cubic-bezier(0.6, 0, 0.3, 1);
   --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);    /* long cinematic settle */
 }
+
+/* ---- Chapter 1 scene keyframes (living-world) ----
+   Rotation is faked by sliding a horizontally-tiling background by exactly
+   one tile width, which loops seamlessly and costs one composited layer —
+   no per-frame JS and no WebGL. Clouds travel faster than land for parallax.
+   The global prefers-reduced-motion block above neutralises all of these. */
+@keyframes planetSpin { from { background-position: 0 0 }      to { background-position: -500px 0 } }
+@keyframes cloudSpin  { from { background-position: 0 0 }      to { background-position: -700px 0 } }
+@keyframes twinkle    { 0%,100% { opacity: .22 } 50% { opacity: .9 } }
+@keyframes haloPulse  { 0%,100% { opacity: .55; transform: scale(1) } 50% { opacity: .85; transform: scale(1.035) } }
+@keyframes moteRise   { 0% { transform: translateY(14px); opacity: 0 } 18%,82% { opacity: .7 } 100% { transform: translateY(-120px); opacity: 0 } }

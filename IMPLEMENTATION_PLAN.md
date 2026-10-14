@@ -165,10 +165,28 @@ Token contract for later phases: never inline a transition object — import fro
 `lib/motion.ts`, and gate every effect on `useMotionTier()`. `allowsWebGL(tier)`
 is the only sanctioned check before mounting a 3D scene.
 
-**Phase 2 — Scroll story** ⬜ not started
-- [ ] Scene/chapter primitive with scroll progress + reduced-motion branch
-- [ ] Ch.1 planet · Ch.2 trace · Ch.3 impact · Ch.4 twin · Ch.5 change · Ch.6 CTA
-- [ ] Visible nav, keyboard paths, no scroll hijack, text-only comprehension
+**Phase 2 — Scroll story** 🟡 Chapter 1 complete
+- [x] `Scene` primitive — full-viewport, labelled, exposes its own scroll progress; no pinning, no wheel capture, no programmatic scroll
+- [x] **Ch.1 planet** — `components/chapters/ChapterPlanet.tsx`, mounted at `/welcome`
+- [ ] Ch.2 trace · Ch.3 impact · Ch.4 twin · Ch.5 change · Ch.6 CTA
+- [x] Visible nav retained, native scroll/keyboard/back intact, comprehensible at `still`
+
+Chapter 1 technique notes (CSS/SVG only — no three.js, no R3F, no GSAP):
+- Rotation is a horizontally-tiling background slid by exactly one tile width
+  (500px land / 700px cloud), which loops seamlessly on one composited layer.
+  Clouds travel faster than land, so the two parallax.
+- Pointer drives `useMotionValue` → `useSpring` only. Nothing re-renders per
+  frame. Perspective, the lit limb (`useMotionTemplate`) and text planes all
+  read from the same two springs.
+- Scroll dollies the camera via `useTransform` on native scroll progress.
+- Star and mote positions come from a seeded `mulberry32` at module scope, so
+  SSR and client markup are byte-identical — `Math.random` would mismatch.
+- At `still`: no spin, no parallax, no scroll transform, motes unmounted, text
+  fully legible. Verified in the SSR output, which is the `still` state.
+
+**Removed invented data:** `HeroSection` claimed "120k+ daily trackers",
+"2.4M kg CO₂ saved together" and a "4.9★ app rating" — none of it real. Chapter 1
+supersedes it and the component is no longer rendered.
 
 **Phase 3 — Motion engine** ⬜ not started
 - [ ] R3F behind dynamic import; WebGL failure + poster fallback
