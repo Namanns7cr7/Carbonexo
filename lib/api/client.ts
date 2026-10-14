@@ -32,6 +32,14 @@ export function loadStoredRefreshToken() {
   }
 }
 
+// Rehydrate the in-memory refresh token from storage as soon as this module
+// loads, not just when some caller remembers to invoke the function above.
+// Without this, a hard navigation (e.g. window.location.assign after login)
+// wipes module memory, and the first authenticated request on the new page
+// finds refreshToken === null — so a 401 can never self-heal via refresh,
+// even though a valid refresh token is sitting in localStorage.
+loadStoredRefreshToken();
+
 export class ApiError extends Error {
   constructor(
     public status: number,
