@@ -21,6 +21,8 @@ export function getAccessToken() { return accessToken; }
 export function clearTokens() {
   accessToken = null;
   refreshToken = null;
+  cache.clear();
+  inFlight.clear();
   if (typeof window !== 'undefined') {
     localStorage.removeItem('cx-refresh');
   }
@@ -82,62 +84,130 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
+// In-flight GET request deduplication (prevents redundant parallel requests)
+const inFlight = new Map<string, Promise<unknown>>();
+
+// Short-lived memory cache for idempotent GET requests
+interface CacheEntry {
+  data: unknown;
+  expiresAt: number;
+}
+const cache = new Map<string, CacheEntry>();
+
+export function clearApiCache(pathPrefix?: string) {
+  if (!pathPrefix) {
+    cache.clear();
+    return;
+  }
+  cache.forEach((_, key) => {
+    if (key.startsWith(pathPrefix)) {
+      cache.delete(key);
+    }
+  });
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
   retryCount = 0
 ): Promise<T> {
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> || {}),
-  };
+  const isGet = !options.method || options.method.toUpperCase() === 'GET';
 
-  // Don't set Content-Type for FormData (multipart upload)
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
-  }
-
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  // 401 — try refresh once
-  if (res.status === 401 && retryCount === 0) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
-      return apiFetch<T>(path, options, retryCount + 1);
+  // Return cached result if valid
+  if (isGet && !options.headers) {
+    const cached = cache.get(path);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data as T;
     }
-    clearTokens();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+  }
+
+  // Deduplicate concurrent GET requests to the same path
+  if (isGet && inFlight.has(path)) {
+    return inFlight.get(path) as Promise<T>;
+  }
+
+  const fetchPromise = (async () => {
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string> || {}),
+    };
+
+    // Don't set Content-Type for FormData (multipart upload)
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     }
-    throw new ApiError(401, 'Session expired', {});
+
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+
+    // 401 — try refresh once
+    if (res.status === 401 && retryCount === 0) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return apiFetch<T>(path, options, retryCount + 1);
+      }
+      clearTokens();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      throw new ApiError(401, 'Session expired', {});
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body.detail || res.statusText, body.errors);
+    }
+
+    // Handle 204 No Content
+    if (res.status === 204) return undefined as T;
+
+    const data = await res.json();
+
+    // Cache successful GET results for static catalogs
+    if (isGet && (path.includes('/rewards') || path.includes('/action-templates') || path.includes('/factors'))) {
+      cache.set(path, { data, expiresAt: Date.now() + 60000 });
+    }
+
+    return data as T;
+  })();
+
+  if (isGet) {
+    inFlight.set(path, fetchPromise);
+    fetchPromise
+      .catch(() => {})
+      .finally(() => {
+        inFlight.delete(path);
+      });
   }
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.detail || res.statusText, body.errors);
-  }
-
-  // Handle 204 No Content
-  if (res.status === 204) return undefined as T;
-
-  return res.json();
+  return fetchPromise;
 }
 
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
-  put: <T>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
-  patch: <T>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
-  delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
-  upload: <T>(path: string, formData: FormData) =>
-    apiFetch<T>(path, { method: 'POST', body: formData }),
+  post: <T>(path: string, body?: unknown) => {
+    clearApiCache();
+    return apiFetch<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+  },
+  put: <T>(path: string, body?: unknown) => {
+    clearApiCache();
+    return apiFetch<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
+  },
+  patch: <T>(path: string, body?: unknown) => {
+    clearApiCache();
+    return apiFetch<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
+  },
+  delete: <T>(path: string) => {
+    clearApiCache();
+    return apiFetch<T>(path, { method: 'DELETE' });
+  },
+  upload: <T>(path: string, formData: FormData) => {
+    clearApiCache();
+    return apiFetch<T>(path, { method: 'POST', body: formData });
+  },
 };

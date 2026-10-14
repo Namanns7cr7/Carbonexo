@@ -197,7 +197,36 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
   // ── Action handlers ────────────────────────────────────────────────────────
 
   const addLog = useCallback(async (log: Omit<LogEntry, 'id' | 'createdAt'>) => {
+    const tempId = generateLocalId();
+    // Immediate optimistic local dispatch
+    dispatch({ type: 'addLog', log: { ...log, id: tempId, createdAt: Date.now() } });
+
     if (isAuthenticated()) {
+      // Optimistic snapshot update for authenticated view
+      setApiSnapshot((prev) => {
+        if (!prev) return prev;
+        const newEntry: LogEntry = {
+          id: tempId,
+          category: log.category,
+          label: log.label,
+          emoji: log.emoji,
+          co2: log.co2,
+          note: log.note,
+          date: log.date,
+          createdAt: Date.now(),
+        };
+        const newTotal = +(prev.todayTotal + log.co2).toFixed(1);
+        return {
+          ...prev,
+          todayLogs: [newEntry, ...prev.todayLogs],
+          todayTotal: newTotal,
+          todayBreakdown: {
+            ...prev.todayBreakdown,
+            [log.category]: +((prev.todayBreakdown[log.category] || 0) + log.co2).toFixed(1),
+          },
+        };
+      });
+
       try {
         await createActivity({
           category: log.category,
@@ -211,22 +240,39 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
         await refreshApi();
       } catch (err) {
         console.error('[Carbonexo] addLog failed:', err);
+        await refreshApi();
       }
-    } else {
-      dispatch({ type: 'addLog', log: { ...log, id: generateLocalId(), createdAt: Date.now() } });
     }
   }, [refreshApi]);
 
   const removeLog = useCallback(async (id: string) => {
+    // Immediate optimistic local dispatch
+    dispatch({ type: 'removeLog', id });
+
     if (isAuthenticated()) {
+      setApiSnapshot((prev) => {
+        if (!prev) return prev;
+        const target = prev.todayLogs.find((l) => l.id === id);
+        const diff = target ? target.co2 : 0;
+        const cat = target ? target.category : 'travel';
+        return {
+          ...prev,
+          todayLogs: prev.todayLogs.filter((l) => l.id !== id),
+          todayTotal: Math.max(0, +(prev.todayTotal - diff).toFixed(1)),
+          todayBreakdown: {
+            ...prev.todayBreakdown,
+            [cat]: Math.max(0, +((prev.todayBreakdown[cat] || 0) - diff).toFixed(1)),
+          },
+        };
+      });
+
       try {
         await deleteActivity(id);
         await refreshApi();
       } catch (err) {
         console.error('[Carbonexo] removeLog failed:', err);
+        await refreshApi();
       }
-    } else {
-      dispatch({ type: 'removeLog', id });
     }
   }, [refreshApi]);
 
