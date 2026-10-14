@@ -6,6 +6,7 @@ import { loginWithGoogle } from '@/lib/api/auth';
 
 interface GoogleIdConfig {
   client_id: string;
+  use_fedcm_for_prompt?: boolean;
   callback: (response: { credential: string }) => void;
 }
 
@@ -53,6 +54,7 @@ export function GoogleSignInButton({ onError }: { onError?: (msg: string) => voi
       if (!window.google || !ref.current) return;
       window.google.accounts.id.initialize({
         client_id: CLIENT_ID,
+        use_fedcm_for_prompt: true,
         callback: async (response: { credential: string }) => {
           try {
             const res = await loginWithGoogle(response.credential);

@@ -45,3 +45,7 @@ target/
 
 # local storage stub (uploaded bill files)
 /backend/.local-blob/
+
+# obsidian vault (local notes)
+/.obsidian/
+*.canvas
