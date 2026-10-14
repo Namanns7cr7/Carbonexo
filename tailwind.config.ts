@@ -23,6 +23,8 @@ const config: Config = {
         'lime-soft': 'var(--lime-soft)',
         blue: 'var(--blue)',
         'blue-soft': 'var(--blue-soft)',
+        danger: 'var(--danger)',
+        'danger-soft': 'var(--danger-soft)',
         ink: 'var(--ink)',
         'ink-text': 'var(--ink-text)',
         'ink-muted': 'var(--ink-muted)',

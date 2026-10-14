@@ -49,6 +49,53 @@ export function ScoreRing({
   );
 }
 
+/** Circular gauge for a single before/after reading (% change, % savings, etc). Same visual language as ScoreRing. */
+export function ImpactGauge({
+  value,
+  unit,
+  fraction,
+  size = 130,
+  color = 'var(--lime)',
+  track = 'var(--border)',
+  textColor,
+}: {
+  value: string | number;
+  unit: string;
+  fraction: number; // 0..1 of the ring drawn
+  size?: number;
+  color?: string;
+  track?: string;
+  textColor?: string;
+}) {
+  const r = 52;
+  const c = 2 * Math.PI * r; // ≈ 326.7
+  const offset = c * (1 - Math.max(0, Math.min(1, fraction)));
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r={r} fill="none" stroke={track} strokeWidth="12" />
+        <circle
+          cx="60"
+          cy="60"
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="12"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          transform="rotate(-90 60 60)"
+          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="font-display text-[clamp(20px,5vw,26px)] font-extrabold leading-none" style={{ color: textColor }}>{value}</div>
+        <div className="mt-0.5 text-[11px] font-semibold text-muted">{unit}</div>
+      </div>
+    </div>
+  );
+}
+
 const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /** 7-day (or n-day) bar chart with the peak highlighted. */

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useCarbon } from '@/lib/store';
 import { CATEGORY_META, round1, type Category } from '@/lib/carbon';
 import { Card, PageHead, Eyebrow, EmptyState } from '@/components/app/ui';
@@ -82,16 +83,18 @@ export default function Insights() {
 
       {/* biggest source */}
       {biggestSource && (
-        <Card className="!bg-lime-soft">
-          <Eyebrow>Biggest source</Eyebrow>
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface text-3xl">{CATEGORY_META[biggestSource.category].emoji}</div>
-            <div>
-              <div className="font-display text-xl font-extrabold">{CATEGORY_META[biggestSource.category].label}</div>
-              <div className="text-sm text-muted">{biggestSource.value} kg · {sharePct(biggestSource.value)}% of your week</div>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Card className="!bg-lime-soft">
+            <Eyebrow>Biggest source</Eyebrow>
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface text-3xl">{CATEGORY_META[biggestSource.category].emoji}</div>
+              <div>
+                <div className="font-display text-xl font-extrabold">{CATEGORY_META[biggestSource.category].label}</div>
+                <div className="text-sm text-muted">{biggestSource.value} kg · {sharePct(biggestSource.value)}% of your week</div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       )}
 
       <div className="grid gap-5 sm:grid-cols-2">

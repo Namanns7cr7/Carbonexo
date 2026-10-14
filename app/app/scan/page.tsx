@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Card, PageHead } from '@/components/app/ui';
+import { ImpactGauge } from '@/components/app/charts';
 import { lookupProduct, estimateEmbodiedCarbon, type ProductEstimateResult } from '@/lib/api/products';
 
 const MANUAL_CATEGORIES = [
@@ -85,12 +87,12 @@ export default function ScanPage() {
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             placeholder="e.g. 737628064502"
-            className="flex-1 rounded-[14px] border border-border bg-surface2 px-4 py-3 text-sm outline-none"
+            className="flex-1 rounded-xl border border-border bg-surface2 px-4 py-3 text-sm outline-none"
           />
           <button
             onClick={handleLookup}
             disabled={lookup.status === 'loading' || !barcode.trim()}
-            className="rounded-[14px] bg-lime px-5 py-3 text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+            className="rounded-xl bg-lime px-5 py-3 text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
           >
             {lookup.status === 'loading' ? 'Looking up…' : 'Look up'}
           </button>
@@ -99,7 +101,7 @@ export default function ScanPage() {
         {lookup.status === 'error' && <p className="text-sm text-muted">{lookup.message}</p>}
 
         {lookup.status === 'done' && lookup.found && (
-          <div className="rounded-[14px] border border-border bg-surface2 px-4 py-3 text-sm">
+          <div className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm">
             <div className="font-bold">{lookup.productName ?? 'Unknown product'}</div>
             {lookup.brand && <div className="text-muted">{lookup.brand}</div>}
             {lookup.categoryGuess ? (
@@ -125,7 +127,7 @@ export default function ScanPage() {
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="rounded-[14px] border border-border bg-surface2 px-4 py-3 text-sm outline-none"
+              className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm outline-none"
             >
               <option value="">Select a category…</option>
               {MANUAL_CATEGORIES.map((c) => (
@@ -147,14 +149,14 @@ export default function ScanPage() {
             min={1}
             value={quantity}
             onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-            className="w-28 rounded-[14px] border border-border bg-surface2 px-4 py-3 text-sm outline-none"
+            className="w-28 rounded-xl border border-border bg-surface2 px-4 py-3 text-sm outline-none"
           />
         </div>
 
         <button
           onClick={handleEstimate}
           disabled={!category || estimating}
-          className="rounded-[14px] bg-lime py-3.5 text-[15px] font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          className="rounded-xl bg-lime py-3.5 text-[15px] font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
           {estimating ? 'Estimating…' : 'Estimate embodied carbon'}
         </button>
@@ -162,27 +164,48 @@ export default function ScanPage() {
         {estimateError && <p className="text-sm text-muted">{estimateError}</p>}
       </Card>
 
-      {estimate && (
-        <Card className="flex flex-col gap-3 !bg-lime-soft">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-lime-deep">Estimated embodied carbon</div>
-            <div className="font-display text-[28px] font-extrabold">
-              {estimate.estimatedKgCo2e.toFixed(2)} <span className="text-base font-bold text-muted">kg CO₂e</span>
+      {estimate && (() => {
+        const altKg = estimate.alternativeSuggestion.estimatedKgCo2e;
+        const savingsPct =
+          altKg != null && estimate.estimatedKgCo2e > 0
+            ? Math.round((1 - altKg / estimate.estimatedKgCo2e) * 100)
+            : null;
+        return (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Card className="flex flex-col gap-4 !bg-lime-soft">
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            {savingsPct != null && (
+              <ImpactGauge
+                value={`${savingsPct}%`}
+                unit="lower w/ swap"
+                fraction={Math.min(1, Math.max(0, savingsPct) / 100)}
+                size={130}
+                color="var(--lime)"
+                textColor="var(--lime-deep)"
+              />
+            )}
+            <div className="flex-1">
+              <div className="text-xs font-semibold uppercase tracking-wide text-lime-deep">Estimated embodied carbon</div>
+              <div className="font-display text-[28px] font-extrabold">
+                {estimate.estimatedKgCo2e.toFixed(2)} <span className="text-base font-bold text-muted">kg CO₂e</span>
+              </div>
+              {estimate.factorSource && <div className="mt-1 text-xs text-muted">Source: {estimate.factorSource}</div>}
             </div>
-            {estimate.factorSource && <div className="mt-1 text-xs text-muted">Source: {estimate.factorSource}</div>}
           </div>
 
-          <div className="rounded-[14px] border border-border bg-surface px-4 py-3">
+          <div className="rounded-xl border border-border bg-surface px-4 py-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted">Lower-carbon alternative</div>
             <p className="mt-1 text-sm">{estimate.alternativeSuggestion.text}</p>
-            {estimate.alternativeSuggestion.estimatedKgCo2e != null && (
+            {altKg != null && (
               <p className="mt-1 text-xs text-lime-deep">
-                ≈ {estimate.alternativeSuggestion.estimatedKgCo2e.toFixed(2)} kg CO₂e instead
+                ≈ {altKg.toFixed(2)} kg CO₂e instead
               </p>
             )}
           </div>
         </Card>
-      )}
+        </motion.div>
+        );
+      })()}
     </div>
   );
 }

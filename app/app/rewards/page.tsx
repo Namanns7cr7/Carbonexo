@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { getRewards, redeemReward, getRedemptions, type RewardData, type RedemptionData } from '@/lib/api/rewards';
 import { getBalance } from '@/lib/api/credits';
 import { PageHead, Card } from '@/components/app/ui';
@@ -86,7 +87,7 @@ export default function RewardsPage() {
         </div>
       )}
 
-      <div>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <h2 className="mb-4 text-lg font-bold">Available Rewards</h2>
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
           {rewards.length === 0 ? (
@@ -130,7 +131,7 @@ export default function RewardsPage() {
             })
           )}
         </div>
-      </div>
+      </motion.div>
 
       <Card className="mt-4">
         <h2 className="mb-4 text-lg font-bold">Redemption History</h2>

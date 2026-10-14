@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { getBalance, getHistory, type CreditHistoryEntry } from '@/lib/api/credits';
 import { PageHead, Card } from '@/components/app/ui';
 
@@ -31,13 +32,15 @@ export default function CreditsPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-1">
-          <Card className="flex flex-col items-center justify-center text-center py-8">
-            <span className="text-4xl mb-3">🪙</span>
-            <div className="text-xs font-bold uppercase tracking-wider text-muted mb-1">Current Balance</div>
-            <div className="text-3xl font-black text-text">
-              {balance !== null ? balance : '...'} <span className="text-sm font-bold text-muted">credits</span>
-            </div>
-          </Card>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <Card className="flex flex-col items-center justify-center text-center py-8">
+              <span className="text-4xl mb-3">🪙</span>
+              <div className="text-xs font-bold uppercase tracking-wider text-muted mb-1">Current Balance</div>
+              <div className="text-3xl font-black text-text">
+                {balance !== null ? balance : '...'} <span className="text-sm font-bold text-muted">credits</span>
+              </div>
+            </Card>
+          </motion.div>
         </div>
 
         <div className="md:col-span-2">

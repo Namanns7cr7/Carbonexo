@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { getEmissionFactors, type EmissionFactorData } from '@/lib/api/dashboard';
 import {
   runSimulation,
@@ -10,6 +11,7 @@ import {
 } from '@/lib/api/simulations';
 import { ApiError } from '@/lib/api/client';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
+import { ImpactGauge } from '@/components/app/charts';
 
 const FREQUENCIES: { value: string; label: string }[] = [
   { value: 'per_day', label: 'Per day' },
@@ -205,7 +207,7 @@ export default function Simulate() {
               )}
             </div>
 
-            {error && <p className="text-sm font-semibold text-red-500">{error}</p>}
+            {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
             <button
               type="submit"
@@ -218,30 +220,47 @@ export default function Simulate() {
         </Card>
       )}
 
-      {result && (
+      {result && (() => {
+        const improving = result.deltaCo2Kg <= 0;
+        const pctChange = result.baselineCo2Kg > 0 ? Math.round((result.deltaCo2Kg / result.baselineCo2Kg) * 100) : 0;
+        const gaugeFraction = Math.min(1, Math.abs(pctChange) / 100);
+        const gaugeColor = improving ? 'var(--lime)' : '#e0a86a';
+        const gaugeTextColor = improving ? 'var(--lime-deep)' : '#e0a86a';
+        return (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Card className="flex flex-col gap-4">
           <h2 className="text-[15px] font-bold">Projected impact</h2>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Card className="!p-4 text-center">
-              <div className="font-display text-xl font-extrabold">{result.baselineCo2Kg} kg</div>
-              <div className="mt-0.5 text-[11px] font-semibold text-muted">Baseline CO₂</div>
-            </Card>
-            <Card className="!p-4 text-center">
-              <div className="font-display text-xl font-extrabold" style={{ color: 'var(--lime-deep)' }}>
-                {result.projectedCo2Kg} kg
-              </div>
-              <div className="mt-0.5 text-[11px] font-semibold text-muted">Projected CO₂</div>
-            </Card>
-            <Card className="!p-4 text-center">
-              <div
-                className="font-display text-xl font-extrabold"
-                style={{ color: result.deltaCo2Kg <= 0 ? 'var(--lime-deep)' : '#e0a86a' }}
-              >
-                {result.deltaCo2Kg > 0 ? '+' : ''}{result.deltaCo2Kg} kg
-              </div>
-              <div className="mt-0.5 text-[11px] font-semibold text-muted">Change</div>
-            </Card>
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            <ImpactGauge
+              value={`${pctChange > 0 ? '+' : ''}${pctChange}%`}
+              unit={improving ? 'lower CO₂' : 'higher CO₂'}
+              fraction={gaugeFraction}
+              size={130}
+              color={gaugeColor}
+              textColor={gaugeTextColor}
+            />
+            <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-3">
+              <Card className="!p-4 text-center">
+                <div className="font-display text-xl font-extrabold">{result.baselineCo2Kg} kg</div>
+                <div className="mt-0.5 text-[11px] font-semibold text-muted">Baseline CO₂</div>
+              </Card>
+              <Card className="!p-4 text-center">
+                <div className="font-display text-xl font-extrabold" style={{ color: 'var(--lime-deep)' }}>
+                  {result.projectedCo2Kg} kg
+                </div>
+                <div className="mt-0.5 text-[11px] font-semibold text-muted">Projected CO₂</div>
+              </Card>
+              <Card className="!p-4 text-center">
+                <div
+                  className="font-display text-xl font-extrabold"
+                  style={{ color: result.deltaCo2Kg <= 0 ? 'var(--lime-deep)' : '#e0a86a' }}
+                >
+                  {result.deltaCo2Kg > 0 ? '+' : ''}{result.deltaCo2Kg} kg
+                </div>
+                <div className="mt-0.5 text-[11px] font-semibold text-muted">Change</div>
+              </Card>
+            </div>
           </div>
 
           <div>
@@ -285,7 +304,9 @@ export default function Simulate() {
             </div>
           )}
         </Card>
-      )}
+        </motion.div>
+        );
+      })()}
     </div>
   );
 }

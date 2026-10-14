@@ -9,6 +9,7 @@
  *  - Delegates bill verification to <BillCorrectionModal />.
  */
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { getBills, type BillData } from '@/lib/api/bills';
 import { PageHead, Card } from '@/components/app/ui';
 import { BillUpload } from '@/components/app/BillUpload';
@@ -61,10 +62,12 @@ export default function BillsPage() {
       <div className="grid gap-6 md:grid-cols-3">
         {/* Main column: upload + history */}
         <div className="flex flex-col gap-5 md:col-span-2">
-          <Card>
-            <h2 className="mb-4 text-lg font-bold">Upload New Bill</h2>
-            <BillUpload onUploadSuccess={handleUploadSuccess} />
-          </Card>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <Card>
+              <h2 className="mb-4 text-lg font-bold">Upload New Bill</h2>
+              <BillUpload onUploadSuccess={handleUploadSuccess} />
+            </Card>
+          </motion.div>
 
           <Card>
             <h2 className="mb-4 text-lg font-bold">Upload History</h2>

@@ -39,6 +39,33 @@ export function Loading() {
   );
 }
 
+/** Small pill-style segmented control (e.g. window/metric toggles). */
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="flex rounded-lg border border-border bg-surface2 p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          onClick={() => onChange(o.id)}
+          className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
+            value === o.id ? 'bg-lime text-[#0c1d15]' : 'text-muted hover:text-text'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Empty-state block. */
 export function EmptyState({ emoji, title, sub, action }: { emoji: string; title: string; sub?: string; action?: ReactNode }) {
   return (

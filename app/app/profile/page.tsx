@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useCarbon } from '@/lib/store';
 import { logout } from '@/lib/api/auth';
@@ -50,16 +51,18 @@ export default function Profile() {
       <PageHead eyebrow="Profile" title="Your progress" />
 
       {/* identity */}
-      <Card className="flex items-center gap-4">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-lime text-2xl font-extrabold text-[#0c1d15]">
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-        <div className="flex-1">
-          <div className="font-display text-xl font-extrabold">{profile.name}</div>
-          <div className="text-sm text-muted">Carbon tracker since 2026</div>
-        </div>
-        <Link href="/onboarding" className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold transition-colors hover:border-lime">Edit</Link>
-      </Card>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Card className="flex items-center gap-4">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-lime text-2xl font-extrabold text-[#0c1d15]">
+            {profile.name.charAt(0).toUpperCase()}
+          </span>
+          <div className="flex-1">
+            <div className="font-display text-xl font-extrabold">{profile.name}</div>
+            <div className="text-sm text-muted">Carbon tracker since 2026</div>
+          </div>
+          <Link href="/onboarding" className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold transition-colors hover:border-lime">Edit</Link>
+        </Card>
+      </motion.div>
 
       {/* stat grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

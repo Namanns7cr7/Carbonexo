@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import {
   getGroupDetail,
   getLeaderboard,
@@ -16,7 +17,7 @@ import {
   type LeaderboardWindow,
   type LeaderboardMetric,
 } from '@/lib/api/groups';
-import { PageHead, Card, Loading } from '@/components/app/ui';
+import { PageHead, Card, Loading, SegmentedControl } from '@/components/app/ui';
 
 const WINDOWS: { id: LeaderboardWindow; label: string }[] = [
   { id: 'week', label: 'This week' },
@@ -89,21 +90,23 @@ export default function GroupDetailPage() {
       />
 
       {progress && (
-        <Card>
-          <h2 className="mb-3 text-lg font-bold">Combined weekly goal</h2>
-          <div className="mb-2 flex items-baseline justify-between text-sm">
-            <span className="text-muted">
-              {progress.combinedCurrentKg} / {progress.combinedGoalKg} kg CO₂ saved
-            </span>
-            <span className="font-bold text-lime-deep">{progress.progressPct}%</span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-surface2">
-            <div
-              className="h-full rounded-full bg-lime transition-[width]"
-              style={{ width: `${Math.min(100, progress.progressPct)}%` }}
-            />
-          </div>
-        </Card>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Card>
+            <h2 className="mb-3 text-lg font-bold">Combined weekly goal</h2>
+            <div className="mb-2 flex items-baseline justify-between text-sm">
+              <span className="text-muted">
+                {progress.combinedCurrentKg} / {progress.combinedGoalKg} kg CO₂ saved
+              </span>
+              <span className="font-bold text-lime-deep">{progress.progressPct}%</span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-surface2">
+              <div
+                className="h-full rounded-full bg-lime transition-[width]"
+                style={{ width: `${Math.min(100, progress.progressPct)}%` }}
+              />
+            </div>
+          </Card>
+        </motion.div>
       )}
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -112,32 +115,8 @@ export default function GroupDetailPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold">Leaderboard</h2>
               <div className="flex gap-2">
-                <div className="flex rounded-lg border border-border bg-surface2 p-0.5">
-                  {WINDOWS.map((w) => (
-                    <button
-                      key={w.id}
-                      onClick={() => setWindow(w.id)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
-                        window_ === w.id ? 'bg-lime text-[#0c1d15]' : 'text-muted hover:text-text'
-                      }`}
-                    >
-                      {w.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex rounded-lg border border-border bg-surface2 p-0.5">
-                  {METRICS.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setMetric(m.id)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
-                        metric === m.id ? 'bg-lime text-[#0c1d15]' : 'text-muted hover:text-text'
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl options={WINDOWS} value={window_} onChange={setWindow} />
+                <SegmentedControl options={METRICS} value={metric} onChange={setMetric} />
               </div>
             </div>
 

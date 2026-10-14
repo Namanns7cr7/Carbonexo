@@ -27,6 +27,8 @@
   --lime-soft: #eef4e0;
   --blue: #2f9fc7;
   --blue-soft: #e2f1f7;
+  --danger: #d4483e;
+  --danger-soft: #fbe9e7;
   --ink: #0c1d15;            /* solid dark card surface (on light bg) */
   --ink-text: #ffffff;
   --ink-muted: #9fb3a6;
@@ -54,6 +56,8 @@
   --lime-soft: rgba(163, 230, 53, 0.16);
   --blue: #5fd3e8;
   --blue-soft: rgba(95, 211, 232, 0.16);
+  --danger: #f3786b;
+  --danger-soft: rgba(243, 120, 107, 0.16);
   --ink: linear-gradient(158deg, #193626, #0c1d15 78%);
   --ink-text: #eef5ef;
   --ink-muted: #9fb6a8;
