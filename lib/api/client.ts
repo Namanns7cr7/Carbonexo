@@ -121,8 +121,13 @@ export async function apiFetch<T>(
     }
   }
 
-  // Deduplicate concurrent GET requests to the same path
-  if (isGet && inFlight.has(path)) {
+  // Deduplicate concurrent GET requests to the same path.
+  //
+  // Retries must bypass this. The post-refresh retry below is issued from
+  // *inside* the in-flight promise registered for this same path, so handing it
+  // that promise would make the promise await itself and never settle — every
+  // GET that got a 401 would hang instead of replaying.
+  if (isGet && retryCount === 0 && inFlight.has(path)) {
     return inFlight.get(path) as Promise<T>;
   }
 
@@ -176,7 +181,9 @@ export async function apiFetch<T>(
     return data as T;
   })();
 
-  if (isGet) {
+  // Only the outermost call owns the in-flight entry; a retry resolves through
+  // its parent, so waiters still receive the replayed result.
+  if (isGet && retryCount === 0) {
     inFlight.set(path, fetchPromise);
     fetchPromise
       .catch(() => {})

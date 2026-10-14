@@ -44,3 +44,98 @@ describe('apiFetch', () => {
     await expect(api.get('/x')).rejects.toBeInstanceOf(ApiError);
   });
 });
+
+describe('apiFetch — 401 refresh and replay', () => {
+  afterEach(() => { vi.unstubAllGlobals(); clearTokens(); });
+
+  // Regression: in-flight GET deduplication used to intercept the post-refresh
+  // retry, handing it the promise it was itself running inside. The request
+  // never settled, so any expired-token GET hung forever.
+  it('replays a 401 GET after a successful refresh instead of deadlocking', async () => {
+    setTokens('stale-access', 'good-refresh');
+    let calls = 0;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      calls++;
+      if (String(url).includes('/api/auth/refresh')) {
+        return { ok: true, status: 200, json: async () => ({ accessToken: 'fresh', refreshToken: 'r2' }) };
+      }
+      if (calls === 1) return { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+      return { ok: true, status: 200, json: async () => ({ replayed: true }) };
+    }));
+
+    const result = await Promise.race([
+      api.get<{ replayed: boolean }>('/api/dashboard'),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('request never settled — deadlock regressed')), 2500)),
+    ]);
+
+    expect(result).toEqual({ replayed: true });
+    expect(getAccessToken()).toBe('fresh');
+  }, 6000);
+
+  it('gives up and raises ApiError when the refresh itself fails', async () => {
+    setTokens('stale-access', 'bad-refresh');
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes('/api/auth/refresh')) {
+        return { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+      }
+      return { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+    }));
+
+    await expect(api.get('/api/dashboard')).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('apiFetch — GET deduplication and caching', () => {
+  afterEach(() => { vi.unstubAllGlobals(); clearTokens(); });
+
+  it('collapses concurrent GETs to the same path into one request', async () => {
+    setTokens('tok', 'ref');
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ n: 1 }) }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const [a, b, c] = await Promise.all([api.get('/api/groups'), api.get('/api/groups'), api.get('/api/groups')]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(a).toEqual({ n: 1 });
+    expect(b).toEqual(a);
+    expect(c).toEqual(a);
+  });
+
+  it('does not dedupe across different paths', async () => {
+    setTokens('tok', 'ref');
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ n: 1 }) }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await Promise.all([api.get('/api/groups'), api.get('/api/activities')]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('serves catalog GETs from cache, and a mutation invalidates it', async () => {
+    setTokens('tok', 'ref');
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ items: [] }) }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.get('/api/rewards');
+    await api.get('/api/rewards');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await api.post('/api/rewards/redeem', { id: 'r1' });
+    await api.get('/api/rewards');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('clearTokens drops cached responses so a new session cannot read them', async () => {
+    setTokens('tok', 'ref');
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ items: [] }) }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.get('/api/rewards');
+    clearTokens();
+    setTokens('tok2', 'ref2');
+    await api.get('/api/rewards');
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
