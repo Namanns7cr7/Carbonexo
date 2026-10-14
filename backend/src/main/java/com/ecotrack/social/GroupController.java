@@ -42,7 +42,7 @@ public class GroupController {
     }
 
     @GetMapping("/{id}/leaderboard")
-    public ResponseEntity<List<LeaderboardEntryResponse>> leaderboard(
+    public ResponseEntity<LeaderboardResponse> leaderboard(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "week") String window,
             @RequestParam(defaultValue = "co2_saved") String metric) {

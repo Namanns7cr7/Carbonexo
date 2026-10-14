@@ -35,6 +35,22 @@ public class CannedFallbackProvider implements AIProvider {
                    "Potential saving: ~5 kg CO₂/week by switching 2 car trips to metro.";
         }
 
+        if (prompt.contains("scenario") || prompt.contains("hypothetical")) {
+            return "Nice test run! A change like this could meaningfully shift your footprint over the " +
+                   "horizon you picked and nudge you closer to your weekly goal — plus a few bonus credits " +
+                   "for sticking with it. 🌍";
+        }
+
+        if (prompt.contains("persuasive")) {
+            return "Switching to the greener pick here is an easy win — it meaningfully cuts the embodied " +
+                   "carbon baked into this purchase without changing what you actually need it for.";
+        }
+
+        if (prompt.contains("leaderboard")) {
+            return "This group is on a roll — the leader is setting the pace, and every member chipping in " +
+                   "gets the whole crew closer to its goal. 🏆";
+        }
+
         if (prompt.contains("tip") || prompt.contains("sustainability")) {
             return "Small daily choices add up! Try bringing a reusable bag and water bottle today — " +
                    "it's an easy win that reduces plastic waste and feels great. 🌱";

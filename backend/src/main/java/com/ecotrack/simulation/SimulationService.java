@@ -1,14 +1,19 @@
 package com.ecotrack.simulation;
 
+import com.ecotrack.ai.AIProvider;
+import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.carbon.ActivityLog;
 import com.ecotrack.carbon.ActivityLogRepository;
 import com.ecotrack.carbon.CarbonCalculationService;
+import com.ecotrack.config.AppProperties;
 import com.ecotrack.credit.CreditRuleEngine;
 import com.ecotrack.exception.BadRequestException;
 import com.ecotrack.profile.UserProfile;
 import com.ecotrack.profile.UserProfileRepository;
 import com.ecotrack.simulation.dto.SimulationRequest;
 import com.ecotrack.simulation.dto.SimulationResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +22,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -32,6 +38,8 @@ import java.util.UUID;
  */
 @Service
 public class SimulationService {
+
+    private static final Logger log = LoggerFactory.getLogger(SimulationService.class);
 
     /** Default weekly reduction target when the user has no profile goal set yet. */
     private static final int DEFAULT_WEEKLY_GOAL_PCT = 15;
@@ -51,15 +59,24 @@ public class SimulationService {
     private final CarbonCalculationService carbonService;
     private final CreditRuleEngine creditRuleEngine;
     private final UserProfileRepository profileRepo;
+    private final AIProvider aiProvider;
+    private final PromptRenderer promptRenderer;
+    private final AppProperties props;
 
     public SimulationService(ActivityLogRepository logRepo,
                               CarbonCalculationService carbonService,
                               CreditRuleEngine creditRuleEngine,
-                              UserProfileRepository profileRepo) {
+                              UserProfileRepository profileRepo,
+                              AIProvider aiProvider,
+                              PromptRenderer promptRenderer,
+                              AppProperties props) {
         this.logRepo = logRepo;
         this.carbonService = carbonService;
         this.creditRuleEngine = creditRuleEngine;
         this.profileRepo = profileRepo;
+        this.aiProvider = aiProvider;
+        this.promptRenderer = promptRenderer;
+        this.props = props;
     }
 
     @Transactional(readOnly = true)
@@ -116,10 +133,38 @@ public class SimulationService {
         BigDecimal kgSavedForCredits = baselineCo2Kg.subtract(projectedCo2Kg).max(BigDecimal.ZERO);
         int projectedCreditsDelta = creditRuleEngine.creditsForKgSaved(kgSavedForCredits.doubleValue());
 
+        String aiInsight = buildInsight(deltaCo2Kg, weeklyGoalImpact.projectedProgressPct(),
+                projectedCreditsDelta, request.horizon());
+
         return new SimulationResponse(
                 baselineCo2Kg, projectedCo2Kg, deltaCo2Kg,
-                weeklyGoalImpact, projectedCreditsDelta, breakdown
+                weeklyGoalImpact, projectedCreditsDelta, breakdown, aiInsight
         );
+    }
+
+    /**
+     * AI-generated 1-2 sentence motivational/explanatory insight layered on
+     * top of the deterministic numbers computed above — never the numbers
+     * themselves. Same try/catch-and-static-fallback shape as
+     * {@code EmbodiedCarbonService.buildAiSuggestion()}, so a Gemini outage
+     * never blocks a simulation result.
+     */
+    private String buildInsight(BigDecimal deltaCo2Kg, int projectedProgressPct,
+                                 int projectedCreditsDelta, SimulationRequest.Horizon horizon) {
+        try {
+            String prompt = promptRenderer.render("simulation_insight", Map.of(
+                    "delta_kg", deltaCo2Kg.toString(),
+                    "projected_progress_pct", String.valueOf(projectedProgressPct),
+                    "projected_credits", String.valueOf(projectedCreditsDelta),
+                    "horizon", horizon.name().toLowerCase()
+            ));
+            return aiProvider.generate(prompt, props.ai().fastModel());
+        } catch (Exception e) {
+            log.warn("AI simulation-insight generation failed: {}", e.toString());
+            return "Over the next " + horizon.name().toLowerCase() + ", this change projects to a "
+                    + deltaCo2Kg + " kg CO2e shift — putting you at " + projectedProgressPct
+                    + "% of your weekly goal and worth about " + projectedCreditsDelta + " credits.";
+        }
     }
 
     private BigDecimal projectedKgForItem(SimulationRequest.SimulationItem item,

@@ -267,6 +267,13 @@ export default function Simulate() {
             <span className="font-display text-lg font-extrabold">+{result.projectedCreditsDelta}</span>
           </div>
 
+          {result.aiInsight && (
+            <div className="rounded-xl border border-border bg-lime-soft px-4 py-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-lime-deep">AI insight</div>
+              <p className="mt-1 text-sm">{result.aiInsight}</p>
+            </div>
+          )}
+
           {result.breakdown.length > 0 && (
             <div className="flex flex-col divide-y divide-border">
               {result.breakdown.map((b) => (

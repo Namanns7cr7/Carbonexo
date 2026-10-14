@@ -134,11 +134,30 @@ class EmbodiedCarbonServiceTest {
     // ---- alternative-suggestion logic ----
 
     @Test
-    void estimateUsesSeedAlternativeWhenMapped() {
+    void estimateUsesSeedAlternativeWhenMappedAndGeneratesPersuasionTextViaAi() {
         EmbodiedCarbonFactor electronics = factor("electronics", "Electronics", "85.0000", "refurbished_electronics");
         EmbodiedCarbonFactor refurb = factor("refurbished_electronics", "Refurbished electronics", "15.0000", null);
         when(factorRepo.findActiveByCategory("electronics")).thenReturn(Optional.of(electronics));
         when(factorRepo.findActiveByCategory("refurbished_electronics")).thenReturn(Optional.of(refurb));
+        when(promptRenderer.render(eq("embodied_carbon_persuasion"), anyMap())).thenReturn("Rendered prompt");
+        when(aiProvider.generate(eq("Rendered prompt"), anyString()))
+                .thenReturn("Go refurbished and save 70 kg CO2e instantly.");
+
+        ProductEstimateResponse res = service.estimateEmbodiedCarbon("electronics", BigDecimal.ONE, null);
+
+        assertEquals("seed_alternative", res.alternativeSuggestion().type());
+        assertEquals(new BigDecimal("15.0000"), res.alternativeSuggestion().estimatedKgCo2e());
+        assertEquals("Go refurbished and save 70 kg CO2e instantly.", res.alternativeSuggestion().text());
+        verify(aiProvider).generate(eq("Rendered prompt"), anyString());
+    }
+
+    @Test
+    void estimateFallsBackToStaticPersuasionTextWhenAiProviderThrowsForSeedAlternative() {
+        EmbodiedCarbonFactor electronics = factor("electronics", "Electronics", "85.0000", "refurbished_electronics");
+        EmbodiedCarbonFactor refurb = factor("refurbished_electronics", "Refurbished electronics", "15.0000", null);
+        when(factorRepo.findActiveByCategory("electronics")).thenReturn(Optional.of(electronics));
+        when(factorRepo.findActiveByCategory("refurbished_electronics")).thenReturn(Optional.of(refurb));
+        when(promptRenderer.render(eq("embodied_carbon_persuasion"), anyMap())).thenThrow(new RuntimeException("boom"));
 
         ProductEstimateResponse res = service.estimateEmbodiedCarbon("electronics", BigDecimal.ONE, null);
 

@@ -35,6 +35,7 @@ export default function GroupDetailPage() {
 
   const [group, setGroup] = useState<Group | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardAiSummary, setLeaderboardAiSummary] = useState<string | null>(null);
   const [progress, setProgress] = useState<GoalProgress | null>(null);
   const [window_, setWindow] = useState<LeaderboardWindow>('week');
   const [metric, setMetric] = useState<LeaderboardMetric>('co2_saved');
@@ -55,7 +56,10 @@ export default function GroupDetailPage() {
   const refreshLeaderboard = useCallback(() => {
     if (!groupId) return;
     getLeaderboard(groupId, window_, metric)
-      .then(setLeaderboard)
+      .then((res) => {
+        setLeaderboard(res.entries);
+        setLeaderboardAiSummary(res.aiSummary);
+      })
       .catch((err) => console.error('[GroupDetail] Failed to load leaderboard:', err));
   }, [groupId, window_, metric]);
 
@@ -136,6 +140,13 @@ export default function GroupDetailPage() {
                 </div>
               </div>
             </div>
+
+            {leaderboardAiSummary && (
+              <div className="mb-3 rounded-xl border border-border bg-lime-soft px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-lime-deep">AI summary</div>
+                <p className="mt-1 text-sm">{leaderboardAiSummary}</p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-2">
               {leaderboard.length === 0 ? (

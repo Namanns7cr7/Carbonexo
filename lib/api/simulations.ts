@@ -36,6 +36,7 @@ export interface SimulationResult {
   weeklyGoalImpact: SimulationWeeklyGoalImpact;
   projectedCreditsDelta: number;
   breakdown: SimulationBreakdownItem[];
+  aiInsight: string | null;
 }
 
 /** Runs a read-only "carbon twin" what-if simulation — nothing is persisted. */

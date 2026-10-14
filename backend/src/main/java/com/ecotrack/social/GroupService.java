@@ -1,6 +1,9 @@
 package com.ecotrack.social;
 
+import com.ecotrack.ai.AIProvider;
+import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.carbon.CarbonCalculationService;
+import com.ecotrack.config.AppProperties;
 import com.ecotrack.exception.BadRequestException;
 import com.ecotrack.exception.ResourceNotFoundException;
 import com.ecotrack.profile.UserProfile;
@@ -8,6 +11,8 @@ import com.ecotrack.profile.UserProfileRepository;
 import com.ecotrack.social.dto.*;
 import com.ecotrack.user.User;
 import com.ecotrack.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +32,8 @@ import java.util.stream.Collectors;
 @Service
 public class GroupService {
 
+    private static final Logger log = LoggerFactory.getLogger(GroupService.class);
+
     private static final String INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
     private static final int INVITE_CODE_LENGTH = 8;
     private static final int MAX_INVITE_CODE_ATTEMPTS = 10;
@@ -42,6 +49,9 @@ public class GroupService {
     private final SocialActivityLogRepository activityRepo;
     private final SocialCreditLedgerRepository creditRepo;
     private final CarbonCalculationService carbonService;
+    private final AIProvider aiProvider;
+    private final PromptRenderer promptRenderer;
+    private final AppProperties props;
     private final SecureRandom random = new SecureRandom();
 
     public GroupService(GroupRepository groupRepo,
@@ -50,7 +60,10 @@ public class GroupService {
                          UserProfileRepository profileRepo,
                          SocialActivityLogRepository activityRepo,
                          SocialCreditLedgerRepository creditRepo,
-                         CarbonCalculationService carbonService) {
+                         CarbonCalculationService carbonService,
+                         AIProvider aiProvider,
+                         PromptRenderer promptRenderer,
+                         AppProperties props) {
         this.groupRepo = groupRepo;
         this.memberRepo = memberRepo;
         this.userRepo = userRepo;
@@ -58,6 +71,9 @@ public class GroupService {
         this.activityRepo = activityRepo;
         this.creditRepo = creditRepo;
         this.carbonService = carbonService;
+        this.aiProvider = aiProvider;
+        this.promptRenderer = promptRenderer;
+        this.props = props;
     }
 
     @Transactional
@@ -125,13 +141,13 @@ public class GroupService {
      * @param metric "co2_saved" (sum of activity_logs.co2_kg) or "credits" (sum of credit_ledger.delta)
      */
     @Transactional(readOnly = true)
-    public List<LeaderboardEntryResponse> getLeaderboard(UUID groupId, UUID userId, String window, String metric) {
+    public LeaderboardResponse getLeaderboard(UUID groupId, UUID userId, String window, String metric) {
         Group group = requireGroup(groupId);
         requireMembership(group.getId(), userId);
 
         List<GroupMember> members = memberRepo.findByGroupId(group.getId());
         List<UUID> memberIds = members.stream().map(GroupMember::getUserId).toList();
-        if (memberIds.isEmpty()) return List.of();
+        if (memberIds.isEmpty()) return new LeaderboardResponse(List.of(), null);
 
         Map<UUID, Double> totals = new HashMap<>();
         if ("credits".equalsIgnoreCase(metric)) {
@@ -161,7 +177,36 @@ public class GroupService {
             result.add(new LeaderboardEntryResponse(
                     entry.getKey(), namesById.getOrDefault(entry.getKey(), "Member"), rank++, entry.getValue()));
         }
-        return result;
+
+        String aiSummary = buildLeaderboardSummary(group.getName(), result, metric, window, memberIds.size());
+        return new LeaderboardResponse(result, aiSummary);
+    }
+
+    /**
+     * AI-generated short, encouraging summary sentence layered on top of the
+     * deterministic ranking above — never the ranks/values themselves. Same
+     * try/catch-and-static-fallback shape as
+     * {@code EmbodiedCarbonService.buildAiSuggestion()}, so a Gemini outage
+     * never blocks a leaderboard response.
+     */
+    private String buildLeaderboardSummary(String groupName, List<LeaderboardEntryResponse> ranked,
+                                            String metric, String window, int memberCount) {
+        if (ranked.isEmpty()) return null;
+        LeaderboardEntryResponse top = ranked.get(0);
+        try {
+            String prompt = promptRenderer.render("group_leaderboard_summary", Map.of(
+                    "group_name", groupName,
+                    "top_performer", top.displayName(),
+                    "top_value", String.valueOf(top.value()),
+                    "metric", metric,
+                    "window", window,
+                    "member_count", String.valueOf(memberCount)
+            ));
+            return aiProvider.generate(prompt, props.ai().fastModel());
+        } catch (Exception e) {
+            log.warn("AI leaderboard-summary generation failed for group={}: {}", groupName, e.toString());
+            return top.displayName() + " leads " + groupName + " this " + window + " with " + top.value() + " " + metric + ".";
+        }
     }
 
     /**

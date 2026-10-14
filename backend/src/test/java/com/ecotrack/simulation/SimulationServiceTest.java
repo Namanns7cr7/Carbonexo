@@ -1,5 +1,7 @@
 package com.ecotrack.simulation;
 
+import com.ecotrack.ai.AIProvider;
+import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.carbon.ActivityLogRepository;
 import com.ecotrack.carbon.CarbonCalculationService;
 import com.ecotrack.carbon.EmissionFactor;
@@ -28,6 +30,8 @@ class SimulationServiceTest {
     private final UUID userId = UUID.randomUUID();
     private ActivityLogRepository logRepo;
     private EmissionFactorRepository factorRepo;
+    private AIProvider aiProvider;
+    private PromptRenderer promptRenderer;
 
     private SimulationService build() {
         factorRepo = mock(EmissionFactorRepository.class);
@@ -35,16 +39,21 @@ class SimulationServiceTest {
         UserProfileRepository profileRepo = mock(UserProfileRepository.class);
         CreditRuleRepository ruleRepo = mock(CreditRuleRepository.class);
         AppConfigService appConfig = mock(AppConfigService.class);
+        aiProvider = mock(AIProvider.class);
+        promptRenderer = mock(PromptRenderer.class);
+        var aiConfig = new AppProperties.Ai("canned", "model-default", "model-fast", 5, true, null);
         var props = new AppProperties(null, null, null, null, null,
-                new AppProperties.Carbon(0.45), null);
+                new AppProperties.Carbon(0.45), aiConfig);
 
         CarbonCalculationService carbonService = new CarbonCalculationService(factorRepo, logRepo, appConfig, props);
         CreditRuleEngine creditRuleEngine = new CreditRuleEngine(ruleRepo);
 
         when(logRepo.findByUserIdAndDateRange(eq(userId), any(), any())).thenReturn(List.of());
         when(profileRepo.findByUserIdAndDeletedAtIsNull(userId)).thenReturn(Optional.empty());
+        when(promptRenderer.render(anyString(), anyMap())).thenReturn("Rendered prompt");
+        when(aiProvider.generate(anyString(), anyString())).thenReturn("You're on track for a greener month!");
 
-        return new SimulationService(logRepo, carbonService, creditRuleEngine, profileRepo);
+        return new SimulationService(logRepo, carbonService, creditRuleEngine, profileRepo, aiProvider, promptRenderer, props);
     }
 
     private void stubFactor(String key, String kgPerUnit) {
@@ -131,5 +140,44 @@ class SimulationServiceTest {
         verify(logRepo, never()).saveAll(any());
         verify(logRepo, never()).delete(any());
         verify(logRepo, never()).deleteAll();
+    }
+
+    // ---- AI-generated insight ----
+
+    @Test
+    void simulateReturnsAiGeneratedInsightOnHappyPath() {
+        SimulationService svc = build();
+        stubFactor("car_ride", "0.18");
+        stubFactor("public_transport", "0.05");
+
+        var item = new SimulationRequest.SimulationItem(
+                "car_ride", "transport", new BigDecimal("20"), "per_week",
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+        var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
+
+        SimulationResponse res = svc.simulate(userId, req);
+
+        assertEquals("You're on track for a greener month!", res.aiInsight());
+        verify(promptRenderer).render(eq("simulation_insight"), anyMap());
+        verify(aiProvider).generate(eq("Rendered prompt"), eq("model-fast"));
+    }
+
+    @Test
+    void simulateFallsBackToStaticInsightWhenAiProviderThrows() {
+        SimulationService svc = build();
+        stubFactor("car_ride", "0.18");
+        stubFactor("public_transport", "0.05");
+        when(promptRenderer.render(anyString(), anyMap())).thenThrow(new RuntimeException("boom"));
+
+        var item = new SimulationRequest.SimulationItem(
+                "car_ride", "transport", new BigDecimal("20"), "per_week",
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+        var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
+
+        SimulationResponse res = svc.simulate(userId, req);
+
+        assertNotNull(res.aiInsight());
+        assertTrue(res.aiInsight().contains(res.deltaCo2Kg().toString()));
+        verifyNoInteractions(aiProvider);
     }
 }

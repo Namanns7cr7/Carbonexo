@@ -1,12 +1,16 @@
 package com.ecotrack.social;
 
+import com.ecotrack.ai.AIProvider;
+import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.carbon.CarbonCalculationService;
+import com.ecotrack.config.AppProperties;
 import com.ecotrack.exception.ResourceNotFoundException;
 import com.ecotrack.profile.UserProfile;
 import com.ecotrack.profile.UserProfileRepository;
 import com.ecotrack.social.dto.GoalProgressResponse;
 import com.ecotrack.social.dto.GroupResponse;
 import com.ecotrack.social.dto.LeaderboardEntryResponse;
+import com.ecotrack.social.dto.LeaderboardResponse;
 import com.ecotrack.user.User;
 import com.ecotrack.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +27,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class GroupServiceTest {
@@ -34,6 +41,8 @@ class GroupServiceTest {
     private SocialActivityLogRepository activityRepo;
     private SocialCreditLedgerRepository creditRepo;
     private CarbonCalculationService carbonService;
+    private AIProvider aiProvider;
+    private PromptRenderer promptRenderer;
     private GroupService service;
 
     @BeforeEach
@@ -45,7 +54,14 @@ class GroupServiceTest {
         activityRepo = mock(SocialActivityLogRepository.class);
         creditRepo = mock(SocialCreditLedgerRepository.class);
         carbonService = mock(CarbonCalculationService.class);
-        service = new GroupService(groupRepo, memberRepo, userRepo, profileRepo, activityRepo, creditRepo, carbonService);
+        aiProvider = mock(AIProvider.class);
+        promptRenderer = mock(PromptRenderer.class);
+        var aiConfig = new AppProperties.Ai("canned", "model-default", "model-fast", 5, true, null);
+        var props = new AppProperties(null, null, null, null, null, null, aiConfig);
+        when(promptRenderer.render(anyString(), anyMap())).thenReturn("Rendered prompt");
+        when(aiProvider.generate(anyString(), anyString())).thenReturn("Great week, team!");
+        service = new GroupService(groupRepo, memberRepo, userRepo, profileRepo, activityRepo, creditRepo, carbonService,
+                aiProvider, promptRenderer, props);
     }
 
     private User user(UUID id, String displayName) {
@@ -149,7 +165,8 @@ class GroupServiceTest {
         ));
         when(userRepo.findAllById(anyList())).thenReturn(List.of(user(userA, "Alice"), user(userB, "Bob")));
 
-        List<LeaderboardEntryResponse> board = service.getLeaderboard(groupId, caller, "week", "co2_saved");
+        LeaderboardResponse response = service.getLeaderboard(groupId, caller, "week", "co2_saved");
+        List<LeaderboardEntryResponse> board = response.entries();
 
         assertEquals(2, board.size());
         assertEquals(userB, board.get(0).userId());
@@ -160,6 +177,57 @@ class GroupServiceTest {
 
         // window filter was passed through (not null for "week")
         verify(activityRepo).sumCo2ByUserIds(anyList(), any());
+    }
+
+    @Test
+    void leaderboardIncludesAiGeneratedSummaryOnHappyPath() {
+        UUID groupId = UUID.randomUUID();
+        UUID caller = UUID.randomUUID();
+        UUID userA = UUID.randomUUID();
+        Group g = group(groupId, "Home Crew", "ABCD1234");
+
+        when(groupRepo.findByIdAndDeletedAtIsNull(groupId)).thenReturn(Optional.of(g));
+        when(memberRepo.existsByGroupIdAndUserId(groupId, caller)).thenReturn(true);
+
+        GroupMember mA = new GroupMember(); mA.setGroupId(groupId); mA.setUserId(userA); mA.setRole("owner");
+        when(memberRepo.findByGroupId(groupId)).thenReturn(List.of(mA));
+
+        when(activityRepo.sumCo2ByUserIds(anyList(), any())).thenReturn(List.<Object[]>of(
+                new Object[]{userA, new BigDecimal("5.0")}
+        ));
+        when(userRepo.findAllById(anyList())).thenReturn(List.of(user(userA, "Alice")));
+
+        LeaderboardResponse response = service.getLeaderboard(groupId, caller, "week", "co2_saved");
+
+        assertEquals("Great week, team!", response.aiSummary());
+        verify(promptRenderer).render(eq("group_leaderboard_summary"), anyMap());
+        verify(aiProvider).generate(eq("Rendered prompt"), eq("model-fast"));
+    }
+
+    @Test
+    void leaderboardFallsBackToStaticSummaryWhenAiProviderThrows() {
+        UUID groupId = UUID.randomUUID();
+        UUID caller = UUID.randomUUID();
+        UUID userA = UUID.randomUUID();
+        Group g = group(groupId, "Home Crew", "ABCD1234");
+
+        when(groupRepo.findByIdAndDeletedAtIsNull(groupId)).thenReturn(Optional.of(g));
+        when(memberRepo.existsByGroupIdAndUserId(groupId, caller)).thenReturn(true);
+
+        GroupMember mA = new GroupMember(); mA.setGroupId(groupId); mA.setUserId(userA); mA.setRole("owner");
+        when(memberRepo.findByGroupId(groupId)).thenReturn(List.of(mA));
+
+        when(activityRepo.sumCo2ByUserIds(anyList(), any())).thenReturn(List.<Object[]>of(
+                new Object[]{userA, new BigDecimal("5.0")}
+        ));
+        when(userRepo.findAllById(anyList())).thenReturn(List.of(user(userA, "Alice")));
+        when(promptRenderer.render(anyString(), anyMap())).thenThrow(new RuntimeException("boom"));
+
+        LeaderboardResponse response = service.getLeaderboard(groupId, caller, "week", "co2_saved");
+
+        assertNotNull(response.aiSummary());
+        assertTrue(response.aiSummary().contains("Alice"));
+        verifyNoInteractions(aiProvider);
     }
 
     @Test
@@ -180,7 +248,7 @@ class GroupServiceTest {
         ));
         when(userRepo.findAllById(anyList())).thenReturn(List.of(user(userA, "Alice")));
 
-        List<LeaderboardEntryResponse> board = service.getLeaderboard(groupId, caller, "all", "credits");
+        List<LeaderboardEntryResponse> board = service.getLeaderboard(groupId, caller, "all", "credits").entries();
 
         assertEquals(1, board.size());
         assertEquals(42.0, board.get(0).value());

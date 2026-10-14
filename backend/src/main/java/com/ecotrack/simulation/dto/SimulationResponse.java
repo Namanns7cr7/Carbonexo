@@ -10,7 +10,8 @@ public record SimulationResponse(
         BigDecimal deltaCo2Kg,
         WeeklyGoalImpact weeklyGoalImpact,
         int projectedCreditsDelta,
-        List<BreakdownItem> breakdown
+        List<BreakdownItem> breakdown,
+        String aiInsight
 ) {
 
     /** Impact of the simulated changes on the user's weekly reduction goal. */

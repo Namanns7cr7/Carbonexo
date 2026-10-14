@@ -29,6 +29,11 @@ export interface LeaderboardEntry {
   value: number;
 }
 
+export interface LeaderboardResult {
+  entries: LeaderboardEntry[];
+  aiSummary: string | null;
+}
+
 export interface GoalProgress {
   groupId: string;
   combinedCurrentKg: number;
@@ -60,8 +65,8 @@ export async function getLeaderboard(
   id: string,
   window: LeaderboardWindow = 'week',
   metric: LeaderboardMetric = 'co2_saved'
-): Promise<LeaderboardEntry[]> {
-  return api.get<LeaderboardEntry[]>(
+): Promise<LeaderboardResult> {
+  return api.get<LeaderboardResult>(
     `/api/groups/${id}/leaderboard?window=${window}&metric=${metric}`
   );
 }
