@@ -19,6 +19,13 @@ BACKEND_SVC="carbonexo-backend"
 WEB_SVC="carbonexo-web"
 GOOGLE_CLIENT_ID=""                           # empty = Google sign-in disabled, email/password still works
 AI_PROVIDER="gemini"                          # "canned" (no GCP cost) or "gemini" (needs Vertex AI)
+# Vertex AI (Gemini) is NOT available in asia-south1 — must point at a region
+# that actually serves Gemini models, independent of where Cloud Run/Cloud SQL
+# live. gemini-2.0-flash is deprecated/unavailable for this project; the 2.5
+# models are the confirmed-working names (verified directly against the API).
+AI_LOCATION="us-central1"
+AI_DEFAULT_MODEL="gemini-2.5-pro"
+AI_FAST_MODEL="gemini-2.5-flash"
 # -----------------------------------------------------------------------------
 
 echo "==> Project: $PROJECT_ID  Region: $REGION"
@@ -105,7 +112,9 @@ DB_USER: "$DB_USER"
 AI_PROVIDER: "$AI_PROVIDER"
 GOOGLE_CLIENT_ID: "$GOOGLE_CLIENT_ID"
 GCP_PROJECT_ID: "$PROJECT_ID"
-GCP_LOCATION: "$REGION"
+GCP_LOCATION: "$AI_LOCATION"
+AI_DEFAULT_MODEL: "$AI_DEFAULT_MODEL"
+AI_FAST_MODEL: "$AI_FAST_MODEL"
 CORS_ALLOWED_ORIGINS: "*"
 EOF
 
