@@ -154,10 +154,16 @@ The brief requires justification before adding anything heavy. Assessment:
 - [x] Find and fix the GET-deadlock defect, with regression tests
 - [x] This document
 
-**Phase 1 — Visual direction** ⬜ not started
-- [ ] Extend `globals.css` + `tailwind.config.ts` with depth, lighting, surface and motion tokens (respecting the gradient-token trap)
-- [ ] Motion token scale: durations, easings, spring presets, stagger
-- [ ] Document the token contract so every later phase consumes it
+**Phase 1 — Visual direction** ✅ complete
+- [x] Extend `globals.css` + `tailwind.config.ts` with scene, lighting, depth and motion tokens — all flat colours, so the gradient-token trap does not apply
+- [x] Motion token scale in `lib/motion.ts`: durations, easings, spring presets, stagger
+- [x] Capability tiers (`full` / `lite` / `still`) with a pure resolver + `useMotionTier` hook and a cached, context-releasing WebGL probe
+- [x] Variant factories (`fadeUp`, `sceneEnter`, `stagger`) matching the existing `<Reveal>` feel at `full`
+- [x] 25 tests. Shared JS unchanged at 87.1 kB
+
+Token contract for later phases: never inline a transition object — import from
+`lib/motion.ts`, and gate every effect on `useMotionTier()`. `allowsWebGL(tier)`
+is the only sanctioned check before mounting a 3D scene.
 
 **Phase 2 — Scroll story** ⬜ not started
 - [ ] Scene/chapter primitive with scroll progress + reduced-motion branch

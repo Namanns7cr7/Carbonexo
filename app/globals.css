@@ -114,3 +114,62 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   LIVING WORLD TOKENS  (feat/carbonexo-living-world, Phase 1)
+
+   Scene, lighting, depth and motion tokens for the cinematic
+   chapters and the EcoWorld scene.
+
+   These are deliberately theme-INDEPENDENT: a night sky and warm
+   sunlight read the same whether the chrome around them is light
+   or dark, and keeping them flat colours (never gradients) means
+   they stay safe in Tailwind colour utilities — unlike --bg and
+   --ink, which are gradients in .dark and must be applied via
+   `background`. Only the elevation shadows derive from the
+   theme-aware --shadow pair.
+   ============================================================ */
+:root {
+  /* ---- scene palette ---- */
+  --canopy: #0b3b2a;          /* deep forest green — dense vegetation */
+  --canopy-deep: #06251b;     /* forest floor, shadowed mass */
+  --canopy-lit: #1c6b47;      /* sunlit canopy edge */
+  --midnight: #0a1a33;        /* atmospheric midnight blue — upper sky */
+  --midnight-soft: #16325c;   /* horizon blue */
+  --void: #04080c;            /* space behind the planet */
+  --sunlight: #f5c768;        /* warm low sun */
+  --sunlight-deep: #e09a3c;   /* terminator warmth */
+  --mint: #b8e8d4;            /* soft mint — clean air, water highlight */
+  --water: #2f7f9f;           /* ocean body */
+
+  /* ---- lighting ---- */
+  --light-warm: rgba(245, 199, 104, 0.42);
+  --light-cool: rgba(95, 211, 232, 0.26);
+  --light-rim: rgba(184, 232, 212, 0.55);
+  --haze-thin: rgba(168, 186, 196, 0.10);
+  --haze-thick: rgba(142, 148, 150, 0.30);
+  --smog: rgba(120, 110, 96, 0.44);   /* Ch.2 emission haze */
+
+  /* ---- depth / elevation ---- */
+  --elev-1: 0 2px 8px -4px var(--shadow);
+  --elev-2: 0 10px 26px -16px var(--shadow);
+  --elev-3: 0 22px 48px -26px var(--shadow-strong);
+  --elev-4: 0 40px 88px -40px var(--shadow-strong);
+  --depth-near: 0px;          /* parallax plane offsets */
+  --depth-mid: 28px;
+  --depth-far: 64px;
+
+  /* ---- motion: durations ---- */
+  --dur-xs: 120ms;
+  --dur-sm: 220ms;
+  --dur-md: 380ms;
+  --dur-lg: 620ms;
+  --dur-xl: 980ms;
+  --dur-scene: 1600ms;
+
+  /* ---- motion: easings ---- */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);        /* matches <Reveal> */
+  --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
+  --ease-in-out: cubic-bezier(0.6, 0, 0.3, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);    /* long cinematic settle */
+}

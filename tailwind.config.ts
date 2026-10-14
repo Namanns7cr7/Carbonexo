@@ -29,6 +29,20 @@ const config: Config = {
         'ink-text': 'var(--ink-text)',
         'ink-muted': 'var(--ink-muted)',
         'ink-border': 'var(--ink-border)',
+
+        // ---- living-world scene palette (Phase 1) ----
+        // Flat colours in both themes, so these are safe in colour utilities
+        // (unlike bg/ink, which are gradients in .dark).
+        canopy: 'var(--canopy)',
+        'canopy-deep': 'var(--canopy-deep)',
+        'canopy-lit': 'var(--canopy-lit)',
+        midnight: 'var(--midnight)',
+        'midnight-soft': 'var(--midnight-soft)',
+        void: 'var(--void)',
+        sunlight: 'var(--sunlight)',
+        'sunlight-deep': 'var(--sunlight-deep)',
+        mint: 'var(--mint)',
+        water: 'var(--water)',
       },
       fontFamily: {
         display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
@@ -39,6 +53,26 @@ const config: Config = {
         soft: '0 16px 44px -28px var(--shadow)',
         lift: '0 28px 56px -28px var(--shadow-strong)',
         card: '0 24px 60px -32px var(--shadow-strong)',
+        // ---- elevation scale (Phase 1) ----
+        'elev-1': 'var(--elev-1)',
+        'elev-2': 'var(--elev-2)',
+        'elev-3': 'var(--elev-3)',
+        'elev-4': 'var(--elev-4)',
+      },
+      transitionDuration: {
+        xs: '120ms',
+        sm: '220ms',
+        md: '380ms',
+        lg: '620ms',
+        xl: '980ms',
+        scene: '1600ms',
+      },
+      transitionTimingFunction: {
+        // Mirrors lib/motion.ts EASE — keep the two in sync.
+        out: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
+        'in': 'cubic-bezier(0.5, 0, 0.75, 0)',
+        'in-out': 'cubic-bezier(0.6, 0, 0.3, 1)',
+        entrance: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
         floatA: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-14px)' } },
