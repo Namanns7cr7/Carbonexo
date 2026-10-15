@@ -1,11 +1,36 @@
 'use client';
 
+import { Car, UtensilsCrossed, Zap, ShoppingBag, Trash2, type LucideIcon } from 'lucide-react';
+import type { Category } from '@/lib/carbon';
+
 /**
  * Small decorative SVG illustrations for empty states. Pure inline SVG, no
  * external image/font dependency — fully theme-aware via CSS custom
  * properties (var(--lime), var(--blue), etc.), so it adapts to light/dark
  * automatically like every other visual in the app.
  */
+
+/** Per-category icon, for the colored badge treatment (see CategoryIcon below). */
+export const CATEGORY_ICON: Record<Category, LucideIcon> = {
+  travel: Car,
+  food: UtensilsCrossed,
+  electricity: Zap,
+  shopping: ShoppingBag,
+  waste: Trash2,
+};
+
+/** A category's icon in a soft colored circular badge — the small "image" unit reused across the breakdown list and AI insight card. */
+export function CategoryIcon({ category, color, size = 32 }: { category: Category; color: string; size?: number }) {
+  const Icon = CATEGORY_ICON[category];
+  return (
+    <span
+      className="flex flex-shrink-0 items-center justify-center rounded-full"
+      style={{ width: size, height: size, background: `color-mix(in srgb, ${color} 18%, transparent)` }}
+    >
+      <Icon style={{ width: size * 0.55, height: size * 0.55, color }} strokeWidth={2} />
+    </span>
+  );
+}
 
 /**
  * A potted sprout — used for the "nothing logged yet" empty states.
