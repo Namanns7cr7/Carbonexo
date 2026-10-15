@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Sprout, Sparkles, Flame, TrendingUp } from 'lucide-react';
+import { Sparkles, Flame, TrendingUp } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORY_META } from '@/lib/carbon';
 import { Card } from '@/components/app/ui';
 import { ScoreRing, WeeklyChart, CategoryBars } from '@/components/app/charts';
+import { SproutIllustration } from '@/components/app/illustrations';
 
 function greeting() {
   const h = new Date().getHours();
@@ -65,10 +66,8 @@ export default function Dashboard() {
                     <CategoryBars data={todayBreakdown} />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-3 text-center sm:items-start sm:text-left">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                      <Sprout className="h-6 w-6 text-white" strokeWidth={1.75} />
-                    </div>
+                  <div className="flex flex-col items-center gap-2 text-center sm:items-start sm:text-left">
+                    <SproutIllustration size={108} tone="white" />
                     <div>
                       <div className="text-lg font-bold text-white">Nothing logged yet today</div>
                       <p className="mt-1 text-sm text-white/80">Log your first activity to see your footprint build up.</p>
