@@ -150,6 +150,30 @@ export function fadeUp(tier: MotionTier, options: FadeUpOptions = {}) {
   };
 }
 
+/**
+ * fadeUp for content below the fold: plays when the element scrolls into view.
+ *
+ * The starting offset is NOT tier-dependent, on purpose. useMotionTier starts
+ * at `still` and upgrades after mount, but Framer Motion captures `initial`
+ * only at mount — so a tier-gated offset would always be read as 0 and the
+ * slide would never play for anyone. Reduced motion is honoured instead by the
+ * transition: at `still` it completes in 1ms, which is a snap, not movement.
+ */
+export function revealInView(tier: MotionTier, options: FadeUpOptions & { amount?: number } = {}) {
+  const { delay = 0, distance = 30, duration = DURATION.lg, amount = 0.25 } = options;
+
+  return {
+    initial: { opacity: 0, y: distance },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount },
+    transition: {
+      duration: scaleDuration(duration, tier),
+      delay: tier === 'still' ? 0 : delay,
+      ease: EASE.out,
+    },
+  };
+}
+
 /** Chapter-level arrival: slower, with depth, for full-viewport scenes. */
 export function sceneEnter(tier: MotionTier, options: { delay?: number } = {}) {
   const { delay = 0 } = options;

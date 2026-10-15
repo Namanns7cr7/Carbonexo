@@ -6,6 +6,7 @@ import {
   scaleDuration,
   fadeUp,
   sceneEnter,
+  revealInView,
   stagger,
   DURATION,
   EASE,
@@ -122,6 +123,24 @@ describe('sceneEnter', () => {
     const v = sceneEnter('still', { delay: 1 });
     expect(v.initial).toEqual({ opacity: 0, y: 0, scale: 1 });
     expect(v.transition.delay).toBe(0);
+  });
+});
+
+describe('revealInView', () => {
+  it('keeps its starting offset at every tier, because initial is captured at mount', () => {
+    expect(revealInView('still').initial).toEqual(revealInView('full').initial);
+  });
+
+  it('snaps instead of moving at still', () => {
+    const v = revealInView('still', { delay: 0.4 });
+    expect(v.transition.duration).toBeLessThan(0.01);
+    expect(v.transition.delay).toBe(0);
+  });
+
+  it('plays once when the element enters the viewport', () => {
+    const v = revealInView('full', { amount: 0.4 });
+    expect(v.whileInView).toEqual({ opacity: 1, y: 0 });
+    expect(v.viewport).toEqual({ once: true, amount: 0.4 });
   });
 });
 

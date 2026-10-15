@@ -22,19 +22,28 @@ export function Scene({
   label,
   children,
   className = '',
+  span = 'leaving',
 }: {
   id: string;
   /** Accessible name for the section — what this chapter is about. */
   label: string;
   children: (progress: MotionValue<number>) => ReactNode;
   className?: string;
+  /**
+   * What 0→1 measures.
+   * - `leaving` (default): 0 when the section's top meets the viewport top,
+   *   1 when its bottom leaves it. For an opening scene already on screen.
+   * - `crossing`: 0 when the section's top enters at the bottom of the
+   *   viewport, 1 when its bottom leaves at the top — so 0.5 is roughly
+   *   "centred". For chapters the reader scrolls into.
+   */
+  span?: 'leaving' | 'crossing';
 }) {
   const ref = useRef<HTMLElement>(null);
 
-  // 0 when the section's top meets the viewport top, 1 when its bottom leaves it.
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ['start start', 'end start'],
+    offset: span === 'crossing' ? ['start end', 'end start'] : ['start start', 'end start'],
   });
 
   return (

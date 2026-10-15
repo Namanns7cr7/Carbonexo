@@ -184,6 +184,7 @@ body {
 @keyframes twinkle    { 0%,100% { opacity: .22 } 50% { opacity: .9 } }
 @keyframes haloPulse  { 0%,100% { opacity: .55; transform: scale(1) } 50% { opacity: .85; transform: scale(1.035) } }
 @keyframes moteRise   { 0% { transform: translateY(14px); opacity: 0 } 18%,82% { opacity: .7 } 100% { transform: translateY(-120px); opacity: 0 } }
+@keyframes hazeDrift  { from { background-position: 0 0 }      to { background-position: -900px 0 } }
 
 /* ============================================================
    Print — used by the Reports page's "Download PDF" (window.print()).

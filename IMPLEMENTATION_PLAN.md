@@ -165,10 +165,12 @@ Token contract for later phases: never inline a transition object — import fro
 `lib/motion.ts`, and gate every effect on `useMotionTier()`. `allowsWebGL(tier)`
 is the only sanctioned check before mounting a 3D scene.
 
-**Phase 2 — Scroll story** 🟡 Chapter 1 complete
+**Phase 2 — Scroll story** ✅ complete
 - [x] `Scene` primitive — full-viewport, labelled, exposes its own scroll progress; no pinning, no wheel capture, no programmatic scroll
 - [x] **Ch.1 planet** — `components/chapters/ChapterPlanet.tsx`, mounted at `/welcome`
-- [ ] Ch.2 trace · Ch.3 impact · Ch.4 twin · Ch.5 change · Ch.6 CTA
+- [x] Ch.2 trace · Ch.3 impact · Ch.4 twin · Ch.5 change · Ch.6 CTA — `components/chapters/Chapter{Trace,Impact,Twin,Change,Dawn}.tsx`
+- [x] Every figure derived from `TRACK_OPTIONS` / `ACTIONS` via `lib/story.ts` (16 tests); a catalog rename fails the tests instead of shipping a stale number
+- [x] Superseded `JourneyFlow`, `CarbonSwapSection`, `ProgressSection` (invented streak/kg/badge stats) and `FinalCTA`; navbar anchors `#swap` / `#progress` now land in Ch.5
 - [x] Visible nav retained, native scroll/keyboard/back intact, comprehensible at `still`
 
 Chapter 1 technique notes (CSS/SVG only — no three.js, no R3F, no GSAP):
@@ -183,6 +185,13 @@ Chapter 1 technique notes (CSS/SVG only — no three.js, no R3F, no GSAP):
   SSR and client markup are byte-identical — `Math.random` would mismatch.
 - At `still`: no spin, no parallax, no scroll transform, motes unmounted, text
   fully legible. Verified in the SSR output, which is the `still` state.
+
+Chapters 2–6 technique notes:
+- `Scene` gained `span="crossing"` (progress 0 on entry at the bottom, 1 on exit at the top) for chapters the reader scrolls *into*.
+- `revealInView` in `lib/motion.ts`: the start offset is deliberately tier-independent. `useMotionTier` starts at `still` and Framer captures `initial` only at mount, so a tier-gated offset is always 0 and the slide never plays. Reduced motion is honoured through a 1 ms transition instead. (`fadeUp` in Ch.1 still has this quirk: its entrance is opacity-only in practice.)
+- **Fixed:** Framer Motion writes an inline `transform`, which silently discarded Tailwind's `-translate-x-1/2 -translate-y-1/2` on the Ch.1 planet — it rendered off-centre, down and right. Centring now lives on a plain wrapper; same pattern in Ch.3 and Ch.6.
+- `WindLeaves` moved from `z-[6]` to `z-0`: the leaves fell across chapter text. They now show over the light sections only.
+- Ch.4 is interactive (native radios + range, `aria-live` readout); one re-render per change, nothing per frame.
 
 **Removed invented data:** `HeroSection` claimed "120k+ daily trackers",
 "2.4M kg CO₂ saved together" and a "4.9★ app rating" — none of it real. Chapter 1
