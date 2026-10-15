@@ -1,0 +1,10 @@
+/* Poster spin: slide the map strip by exactly one copy, so the loop is seamless.
+   The surface moves left-to-right — Earth turns eastward. The global
+   prefers-reduced-motion rule in app/globals.css neutralises this too. */
+@keyframes posterSpin {
+  from { transform: translateX(var(--poster-from)); }
+  to   { transform: translateX(var(--poster-to)); }
+}
+.posterSpin {
+  animation: posterSpin 120s linear infinite;
+}

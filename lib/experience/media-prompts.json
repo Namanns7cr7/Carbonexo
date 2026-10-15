@@ -1,0 +1,22 @@
+{
+  "$comment": "Prompts for optional AI-generated media (Open-Higgsfield-AI / muapi.ai). Every output is labelled 'AI-generated' in the UI and never presented as a photograph of a real place or as satellite data.",
+  "slots": [
+    {
+      "id": "interlude-canopy",
+      "kind": "image",
+      "model": "flux-dev",
+      "aspect_ratio": "16:9",
+      "alt": "AI-generated illustration: mist over a dense rainforest canopy at dawn",
+      "prompt": "Cinematic aerial view over a dense tropical rainforest canopy at dawn, low mist drifting between emergent trees, soft warm sunlight from the horizon, deep greens and teal shadows, restrained colour grade, atmospheric perspective, no people, no text, no logos, photographic realism, 35mm, wide"
+    },
+    {
+      "id": "cta-dawn",
+      "kind": "video",
+      "model": "seedance-lite-t2v",
+      "aspect_ratio": "16:9",
+      "duration": 5,
+      "alt": "AI-generated video: sunrise light sweeping slowly across forested hills",
+      "prompt": "Slow cinematic push-in over forested rolling hills at sunrise, golden light gradually sweeping across the canopy, morning haze in the valleys, calm, natural colour grade, no people, no text"
+    }
+  ]
+}

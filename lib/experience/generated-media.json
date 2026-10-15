@@ -1,0 +1,4 @@
+{
+  "$comment": "Written by scripts/experience/generate-media.mjs. Empty until media is generated; components fall back to rendered scenes.",
+  "slots": {}
+}
