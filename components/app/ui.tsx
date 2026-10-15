@@ -105,11 +105,11 @@ export function Button({
   );
 }
 
-/** Empty-state block. */
-export function EmptyState({ emoji, title, sub, action }: { emoji: string; title: string; sub?: string; action?: ReactNode }) {
+/** Empty-state block. `emoji` accepts a literal emoji string (legacy usage) or a ReactNode (e.g. a lucide icon). */
+export function EmptyState({ emoji, title, sub, action }: { emoji: ReactNode; title: string; sub?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-[20px] border border-dashed border-border bg-surface2 px-6 py-10 text-center">
-      <div className="text-4xl">{emoji}</div>
+      <div className={typeof emoji === 'string' ? 'text-4xl' : 'flex items-center justify-center'}>{emoji}</div>
       <div className="text-[15px] font-bold">{title}</div>
       {sub && <p className="max-w-[340px] text-sm text-muted">{sub}</p>}
       {action && <div className="mt-2">{action}</div>}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Sprout, Sparkles, Flame, TrendingUp } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORY_META } from '@/lib/carbon';
 import { Card, EmptyState } from '@/components/app/ui';
@@ -37,8 +38,16 @@ export default function Dashboard() {
 
       {/* score + breakdown */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card className="!p-6">
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+        <Card className="relative overflow-hidden !p-6">
+          <div
+            className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full"
+            style={{ background: 'radial-gradient(circle, var(--glow-a), transparent 70%)' }}
+          />
+          <div
+            className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full"
+            style={{ background: 'radial-gradient(circle, var(--glow-b), transparent 70%)' }}
+          />
+          <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-center">
             <div className="flex flex-col items-center gap-2">
               <ScoreRing value={todayTotal} fraction={fraction} size={150} />
               <span
@@ -56,7 +65,7 @@ export default function Dashboard() {
                 <CategoryBars data={todayBreakdown} />
               ) : (
                 <EmptyState
-                  emoji="🌱"
+                  emoji={<Sprout className="h-9 w-9" style={{ color: 'var(--lime)' }} strokeWidth={1.75} />}
                   title="Nothing logged yet today"
                   sub="Log your first activity to see your footprint build up."
                   action={
@@ -74,7 +83,9 @@ export default function Dashboard() {
       {/* AI insight */}
       {biggestSource && (
         <Card className="flex items-start gap-3 !bg-lime-soft" >
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[11px] bg-lime text-base">✦</div>
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[11px] bg-lime">
+            <Sparkles className="h-4 w-4 text-[#0c1d15]" strokeWidth={2} />
+          </div>
           <div>
             <div className="text-sm font-bold">AI Insight</div>
             <p className="mt-0.5 text-sm leading-[1.5] text-muted">
@@ -89,7 +100,10 @@ export default function Dashboard() {
         {/* weekly chart */}
         <Card>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-[15px] font-bold">This week</h2>
+            <h2 className="flex items-center gap-1.5 text-[15px] font-bold">
+              <TrendingUp className="h-4 w-4 text-muted" strokeWidth={2} />
+              This week
+            </h2>
             <Link href="/app/insights" className="text-xs font-semibold text-lime-deep hover:underline">Insights →</Link>
           </div>
           <WeeklyChart data={weekTotals} />
@@ -98,17 +112,20 @@ export default function Dashboard() {
         {/* streak */}
         <Card>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-[15px] font-bold">Streak</h2>
+            <h2 className="flex items-center gap-1.5 text-[15px] font-bold">
+              <Flame className="h-4 w-4" style={{ color: 'var(--blue)' }} strokeWidth={2} />
+              Streak
+            </h2>
             <span className="text-xs font-semibold text-muted">{streak} day{streak === 1 ? '' : 's'}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 7 }).map((_, i) => (
               <div
                 key={i}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
-                style={{ background: i < streak ? 'var(--lime)' : 'var(--surface2)', border: i < streak ? 'none' : '1px solid var(--border)' }}
+                className="flex h-11 w-11 items-center justify-center rounded-xl"
+                style={{ background: i < streak ? 'var(--blue-soft)' : 'var(--surface2)', border: i < streak ? 'none' : '1px solid var(--border)' }}
               >
-                {i < streak ? '🔥' : ''}
+                {i < streak && <Flame className="h-5 w-5" style={{ color: 'var(--blue)' }} strokeWidth={2} fill="var(--blue)" fillOpacity={0.2} />}
               </div>
             ))}
           </div>
