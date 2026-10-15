@@ -22,11 +22,11 @@
   --text: #0f231a;
   --muted: #5b6b62;
   --border: #e7e9e0;
-  --lime: #84cc16;
-  --lime-deep: #65a30d;
-  --lime-soft: #eef4e0;
-  --blue: #2f9fc7;
-  --blue-soft: #e2f1f7;
+  --lime: #2fae67;
+  --lime-deep: #1e7a47;
+  --lime-soft: #e3f5ea;
+  --blue: #d98a2b;
+  --blue-soft: #fbeedd;
   --danger: #d4483e;
   --danger-soft: #fbe9e7;
   --ink: #0c1d15;            /* solid dark card surface (on light bg) */
@@ -36,8 +36,8 @@
   --shadow: rgba(12, 29, 21, 0.10);
   --shadow-strong: rgba(12, 29, 21, 0.16);
   --glow: rgba(0, 0, 0, 0);
-  --glow-a: rgba(132, 204, 22, 0.12);
-  --glow-b: rgba(47, 159, 199, 0.09);
+  --glow-a: rgba(47, 174, 103, 0.12);
+  --glow-b: rgba(217, 138, 43, 0.09);
   --navbg: rgba(246, 245, 238, 0.78);
 }
 
@@ -51,11 +51,11 @@
   --text: #eef5ef;
   --muted: #9fb6a8;
   --border: rgba(255, 255, 255, 0.13);
-  --lime: #a3e635;
-  --lime-deep: #c5f274;
-  --lime-soft: rgba(163, 230, 53, 0.16);
-  --blue: #5fd3e8;
-  --blue-soft: rgba(95, 211, 232, 0.16);
+  --lime: #4fd38a;
+  --lime-deep: #86e8b3;
+  --lime-soft: rgba(79, 211, 138, 0.16);
+  --blue: #f3b860;
+  --blue-soft: rgba(243, 184, 96, 0.16);
   --danger: #f3786b;
   --danger-soft: rgba(243, 120, 107, 0.16);
   --ink: linear-gradient(158deg, #193626, #0c1d15 78%);
@@ -64,9 +64,9 @@
   --ink-border: rgba(255, 255, 255, 0.11);
   --shadow: rgba(0, 0, 0, 0.5);
   --shadow-strong: rgba(0, 0, 0, 0.66);
-  --glow: rgba(163, 230, 53, 0.34);
-  --glow-a: rgba(163, 230, 53, 0.16);
-  --glow-b: rgba(95, 211, 232, 0.12);
+  --glow: rgba(79, 211, 138, 0.34);
+  --glow-a: rgba(79, 211, 138, 0.16);
+  --glow-b: rgba(243, 184, 96, 0.12);
   --navbg: rgba(7, 14, 10, 0.74);
 }
 
@@ -184,3 +184,33 @@ body {
 @keyframes twinkle    { 0%,100% { opacity: .22 } 50% { opacity: .9 } }
 @keyframes haloPulse  { 0%,100% { opacity: .55; transform: scale(1) } 50% { opacity: .85; transform: scale(1.035) } }
 @keyframes moteRise   { 0% { transform: translateY(14px); opacity: 0 } 18%,82% { opacity: .7 } 100% { transform: translateY(-120px); opacity: 0 } }
+
+/* ============================================================
+   Print — used by the Reports page's "Download PDF" (window.print()).
+   Hides app chrome (.no-print) and flattens the themed card/glass
+   effects to a clean, ink-on-paper document regardless of theme.
+   ============================================================ */
+@media print {
+  .no-print { display: none !important; }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  * {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+  /* flatten the themed card surface (glass/gradient in dark mode) to plain
+     white-on-black ink so the report prints cleanly in any theme */
+  [class*='bg-surface'] {
+    background: #fff !important;
+    border-color: #ccc !important;
+  }
+}

@@ -9,7 +9,7 @@ export type Category = 'travel' | 'food' | 'electricity' | 'shopping' | 'waste';
 export const CATEGORIES: { id: Category; label: string; emoji: string; color: string }[] = [
   { id: 'travel', label: 'Travel', emoji: '🚗', color: 'var(--lime)' },
   { id: 'food', label: 'Food', emoji: '🍽️', color: 'var(--blue)' },
-  { id: 'electricity', label: 'Electricity', emoji: '⚡', color: '#c4d98a' },
+  { id: 'electricity', label: 'Electricity', emoji: '⚡', color: '#8fc9a0' },
   { id: 'shopping', label: 'Shopping', emoji: '🛍️', color: '#e0a86a' },
   { id: 'waste', label: 'Waste', emoji: '🗑️', color: '#9b8cd6' },
 ];

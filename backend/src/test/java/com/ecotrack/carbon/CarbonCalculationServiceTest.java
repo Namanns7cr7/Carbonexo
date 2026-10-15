@@ -5,7 +5,11 @@ import com.ecotrack.config.AppProperties;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -15,10 +19,11 @@ class CarbonCalculationServiceTest {
 
     private EmissionFactorRepository factorRepo;
     private AppConfigService appConfig;
+    private ActivityLogRepository logRepo;
 
     private CarbonCalculationService build() {
         factorRepo = mock(EmissionFactorRepository.class);
-        ActivityLogRepository logRepo = mock(ActivityLogRepository.class);
+        logRepo = mock(ActivityLogRepository.class);
         appConfig = mock(AppConfigService.class);
         var props = new AppProperties(null, null, null, null, null,
                 new AppProperties.Carbon(0.45), null);
@@ -54,5 +59,43 @@ class CarbonCalculationServiceTest {
         when(factorRepo.findActiveByKeyAndRegion(anyString(), anyString())).thenReturn(Optional.empty());
 
         assertEquals(BigDecimal.ZERO, svc.calculateCo2("unknown_key", new BigDecimal("5"), "GLOBAL"));
+    }
+
+    // ---- currentStreak (promoted from DashboardService.computeStreak) ----
+
+    @Test
+    void currentStreakCountsConsecutiveDaysBackwardFromToday() {
+        CarbonCalculationService svc = build();
+        UUID userId = UUID.randomUUID();
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+        LocalDate dayBefore = today.minusDays(2);
+        LocalDate gapDay = today.minusDays(4);
+
+        List<LocalDate> dates = Arrays.asList(today, yesterday, dayBefore, gapDay);
+        when(logRepo.findDistinctDatesByUser(userId)).thenReturn(dates);
+
+        assertEquals(3, svc.currentStreak(userId));
+    }
+
+    @Test
+    void currentStreakIsZeroWhenNoActivityToday() {
+        CarbonCalculationService svc = build();
+        UUID userId = UUID.randomUUID();
+        LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
+
+        when(logRepo.findDistinctDatesByUser(userId)).thenReturn(List.of(twoDaysAgo));
+
+        assertEquals(0, svc.currentStreak(userId));
+    }
+
+    @Test
+    void currentStreakIsZeroWhenNoDatesAtAll() {
+        CarbonCalculationService svc = build();
+        UUID userId = UUID.randomUUID();
+
+        when(logRepo.findDistinctDatesByUser(userId)).thenReturn(List.of());
+
+        assertEquals(0, svc.currentStreak(userId));
     }
 }

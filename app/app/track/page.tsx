@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Check, X, Minus, Plus, Inbox } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORIES, CATEGORY_META, TRACK_OPTIONS, round1, type Category, type TrackOption } from '@/lib/carbon';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
+import { CategoryIcon, OptionIcon } from '@/components/app/illustrations';
+import { RotatingGlobe } from '@/components/app/RotatingGlobe';
 
 const UNIT_LABEL: Record<NonNullable<TrackOption['unit']>, string> = { km: 'km', kWh: 'kWh', item: '×' };
 
@@ -15,6 +18,15 @@ interface Pick {
 }
 
 const keyOf = (c: Category, o: TrackOption) => `${c}:${o.label}`;
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.035 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0 },
+};
 
 export default function Track() {
   const { todayKey, todayLogs, todayTotal, addLog, removeLog } = useCarbon();
@@ -69,14 +81,26 @@ export default function Track() {
     <div className="flex flex-col gap-5">
       <PageHead eyebrow="Daily tracking" title="Log today's activity" sub="Pick a category, select everything you did, adjust amounts, then add them all." />
 
-      {/* running total */}
-      <Card className="flex items-center justify-between !bg-lime-soft">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-lime-deep">Today so far</div>
-          <div className="font-display text-[28px] font-extrabold">{todayTotal} <span className="text-base font-bold text-muted">kg CO₂</span></div>
-        </div>
-        <div className="text-4xl">🌍</div>
-      </Card>
+      {/* running total — bold gradient hero, matching the Dashboard's treatment */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Card className="relative overflow-hidden !p-0">
+          <div
+            className="relative flex items-center justify-between px-6 py-6 sm:px-8"
+            style={{ background: 'linear-gradient(135deg, var(--lime) 0%, var(--lime-deep) 100%)' }}
+          >
+            <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10" />
+            <div className="relative">
+              <div className="text-xs font-bold uppercase tracking-wide text-white/80">Today so far</div>
+              <div className="font-display text-[32px] font-extrabold text-white">
+                {todayTotal} <span className="text-base font-bold text-white/80">kg CO₂</span>
+              </div>
+            </div>
+            <div className="relative hidden sm:block">
+              <RotatingGlobe size={64} />
+            </div>
+          </div>
+        </Card>
+      </motion.div>
 
       {/* category tabs */}
       <div role="tablist" className="flex gap-2 overflow-x-auto pb-1 cx-scroll">
@@ -89,14 +113,15 @@ export default function Track() {
               onClick={() => setCat(c.id)}
               role="tab"
               aria-selected={active}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 whitespace-nowrap rounded-full border py-1.5 pl-2 pr-4 text-sm font-semibold transition-all hover:-translate-y-0.5"
               style={{
                 borderColor: active ? 'var(--lime)' : 'var(--border)',
                 background: active ? 'var(--lime)' : 'var(--surface)',
                 color: active ? '#0c1d15' : 'var(--muted)',
               }}
             >
-              <span role="img" aria-hidden="true">{c.emoji}</span> {c.label}
+              <CategoryIcon category={c.id} color={active ? '#0c1d15' : c.color} size={24} />
+              {c.label}
               {count > 0 && (
                 <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold"
                   style={{ background: active ? '#0c1d15' : 'var(--lime)', color: active ? 'var(--lime)' : '#0c1d15' }}>
@@ -109,21 +134,29 @@ export default function Track() {
       </div>
 
       {/* options (multi-select) */}
-      <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
+      <motion.div
+        key={cat}
+        variants={gridVariants}
+        initial="hidden"
+        animate="show"
+        className="grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]"
+      >
         {options.map((o) => {
           const active = isPicked(o);
           return (
-            <button
+            <motion.button
               key={o.label}
+              variants={itemVariants}
+              whileHover={{ y: -2 }}
               onClick={() => toggle(o)}
               aria-pressed={active}
-              className="relative flex items-center gap-2.5 rounded-[15px] border p-3 text-left transition-all"
+              className="relative flex items-center gap-2.5 rounded-[15px] border p-3 text-left transition-colors"
               style={{
                 borderColor: active ? 'var(--lime)' : 'var(--border)',
                 background: active ? 'var(--lime-soft)' : 'var(--surface)',
               }}
             >
-              <span role="img" aria-hidden="true" className="text-2xl">{o.emoji}</span>
+              <OptionIcon category={cat} label={o.label} color={CATEGORY_META[cat].color} size={36} />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold">{o.label}</span>
                 <span className="block text-xs text-muted">
@@ -131,13 +164,15 @@ export default function Track() {
                 </span>
               </span>
               {active && (
-                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold"
-                  style={{ background: 'var(--lime)', color: '#0c1d15' }}>✓</span>
+                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full"
+                  style={{ background: 'var(--lime)', color: '#0c1d15' }}>
+                  <Check className="h-3 w-3" strokeWidth={3} />
+                </span>
               )}
-            </button>
+            </motion.button>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* selection tray */}
       <AnimatePresence>
@@ -158,14 +193,16 @@ export default function Track() {
                   const est = round1(p.option.factor * p.qty);
                   return (
                     <div key={k} className="flex items-center gap-3 rounded-[14px] border border-border bg-surface2 px-3 py-2.5">
-                      <span className="text-xl">{p.option.emoji}</span>
+                      <OptionIcon category={p.category} label={p.option.label} color={CATEGORY_META[p.category].color} size={32} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-bold">{p.option.label}</div>
                         <div className="text-xs text-muted">{CATEGORY_META[p.category].label} · {est} kg</div>
                       </div>
                       {p.option.unit ? (
                         <div className="flex items-center gap-1.5">
-                          <button onClick={() => setQty(k, p.qty - (p.option.unit === 'km' ? 5 : 1))} aria-label="Decrease quantity" className="h-8 w-8 rounded-lg border border-border bg-surface text-base font-bold">−</button>
+                          <button onClick={() => setQty(k, p.qty - (p.option.unit === 'km' ? 5 : 1))} aria-label="Decrease quantity" className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface transition-colors hover:border-lime">
+                            <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </button>
                           <input
                             type="number"
                             min={1}
@@ -175,12 +212,16 @@ export default function Track() {
                             className="w-12 rounded-lg border border-border bg-surface py-1.5 text-center text-sm font-bold outline-none"
                           />
                           <span className="w-7 text-xs font-semibold text-muted">{p.option.unit}</span>
-                          <button onClick={() => setQty(k, p.qty + (p.option.unit === 'km' ? 5 : 1))} aria-label="Increase quantity" className="h-8 w-8 rounded-lg border border-border bg-surface text-base font-bold">+</button>
+                          <button onClick={() => setQty(k, p.qty + (p.option.unit === 'km' ? 5 : 1))} aria-label="Increase quantity" className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface transition-colors hover:border-lime">
+                            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </button>
                         </div>
                       ) : (
                         <span className="text-xs text-muted">×1</span>
                       )}
-                      <button onClick={() => remove(k)} aria-label="Remove" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-lime hover:text-text">✕</button>
+                      <button onClick={() => remove(k)} aria-label="Remove" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-lime hover:text-text">
+                        <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      </button>
                     </div>
                   );
                 })}
@@ -205,9 +246,9 @@ export default function Track() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="rounded-xl border border-lime bg-lime-soft px-4 py-3 text-center text-sm font-bold text-lime-deep"
+            className="flex items-center justify-center gap-2 rounded-xl border border-lime bg-lime-soft px-4 py-3 text-center text-sm font-bold text-lime-deep"
           >
-            ✓ Logged! Your footprint updated.
+            <Check className="h-4 w-4" strokeWidth={3} /> Logged! Your footprint updated.
           </motion.div>
         )}
       </AnimatePresence>
@@ -216,19 +257,18 @@ export default function Track() {
       <div>
         <h2 className="mb-3 text-[15px] font-bold">Today&apos;s log</h2>
         {todayLogs.length === 0 ? (
-          <EmptyState emoji="📭" title="No entries yet" sub="Add an activity above to start tracking today." />
+          <EmptyState emoji={<Inbox className="h-9 w-9" style={{ color: 'var(--muted)' }} strokeWidth={1.5} />} title="No entries yet" sub="Add an activity above to start tracking today." />
         ) : (
-          <div className="flex flex-col gap-2">
+          <motion.div variants={gridVariants} initial="hidden" animate="show" className="flex flex-col gap-2">
             {todayLogs.map((l) => (
               <motion.div
                 key={l.id}
                 layout
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
+                variants={itemVariants}
                 className="flex items-center justify-between rounded-[14px] border border-border bg-surface px-4 py-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{l.emoji}</span>
+                  <OptionIcon category={l.category} label={l.label} color={CATEGORY_META[l.category].color} size={32} />
                   <div>
                     <div className="text-sm font-bold">{l.label}</div>
                     {l.note && <div className="text-xs text-muted">{l.note}</div>}
@@ -237,12 +277,12 @@ export default function Track() {
                 <div className="flex items-center gap-3">
                   <span className="font-display text-sm font-bold" style={{ color: l.co2 === 0 ? 'var(--lime-deep)' : 'var(--text)' }}>{l.co2} kg</span>
                   <button onClick={() => removeLog(l.id)} aria-label="Remove" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-lime hover:text-text">
-                    ✕
+                    <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                   </button>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

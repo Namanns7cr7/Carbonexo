@@ -1,6 +1,7 @@
 'use client';
 
 import { CATEGORY_META, round1, type Category } from '@/lib/carbon';
+import { CategoryIcon } from '@/components/app/illustrations';
 
 /** Circular score ring (matches the landing dashboard ring). */
 export function ScoreRing({
@@ -143,9 +144,10 @@ export function CategoryBars({ data, max }: { data: Record<Category, number>; ma
         const meta = CATEGORY_META[cat];
         return (
           <div key={cat}>
-            <div className="mb-1 flex items-center justify-between text-[13px]">
-              <span className="font-semibold">
-                {meta.emoji} {meta.label}
+            <div className="mb-1.5 flex items-center justify-between text-[13px]">
+              <span className="flex items-center gap-2 font-semibold">
+                <CategoryIcon category={cat} color={meta.color} size={24} />
+                {meta.label}
               </span>
               <span className="font-bold" style={{ color: meta.color }}>{round1(val)} kg</span>
             </div>

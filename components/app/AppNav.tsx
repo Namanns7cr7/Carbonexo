@@ -2,32 +2,51 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
+import {
+  Home,
+  Plus,
+  Lightbulb,
+  CheckCircle,
+  Sparkles,
+  FlaskConical,
+  PackageSearch,
+  Users,
+  Zap,
+  Coins,
+  ShoppingBag,
+  Award,
+  FileText,
+  type LucideIcon,
+} from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCarbon } from '@/lib/store';
 
 import { CreditBadge } from './CreditBadge';
 
-export const NAV = [
-  { href: '/app', label: 'Home', icon: '🏠' },
-  { href: '/app/track', label: 'Track', icon: '➕' },
-  { href: '/app/insights', label: 'Insights', icon: '💡' },
-  { href: '/app/actions', label: 'Actions', icon: '✅' },
-  { href: '/app/coach', label: 'Coach', icon: '✦' },
-  { href: '/app/simulate', label: 'Simulate', icon: '🧪' },
-  { href: '/app/scan', label: 'Scan', icon: '📦' },
-  { href: '/app/groups', label: 'Groups', icon: '👥' },
-  { href: '/app/bills', label: 'Bills', icon: '⚡' },
-  { href: '/app/credits', label: 'Credits', icon: '🪙' },
-  { href: '/app/rewards', label: 'Store', icon: '🛍️' },
+export const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/app', label: 'Home', icon: Home },
+  { href: '/app/track', label: 'Track', icon: Plus },
+  { href: '/app/insights', label: 'Insights', icon: Lightbulb },
+  { href: '/app/actions', label: 'Actions', icon: CheckCircle },
+  { href: '/app/coach', label: 'Coach', icon: Sparkles },
+  { href: '/app/simulate', label: 'Simulate', icon: FlaskConical },
+  { href: '/app/scan', label: 'Scan', icon: PackageSearch },
+  { href: '/app/groups', label: 'Groups', icon: Users },
+  { href: '/app/bills', label: 'Bills', icon: Zap },
+  { href: '/app/credits', label: 'Credits', icon: Coins },
+  { href: '/app/rewards', label: 'Store', icon: ShoppingBag },
+  { href: '/app/score', label: 'Score', icon: Award },
+  { href: '/app/reports', label: 'Reports', icon: FileText },
 ];
 
-export const MOBILE_NAV = [
-  { href: '/app', label: 'Home', icon: '🏠' },
-  { href: '/app/track', label: 'Track', icon: '➕' },
-  { href: '/app/coach', label: 'Coach', icon: '✦' },
-  { href: '/app/bills', label: 'Bills', icon: '⚡' },
-  { href: '/app/rewards', label: 'Store', icon: '🛍️' },
+export const MOBILE_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/app', label: 'Home', icon: Home },
+  { href: '/app/track', label: 'Track', icon: Plus },
+  { href: '/app/coach', label: 'Coach', icon: Sparkles },
+  { href: '/app/bills', label: 'Bills', icon: Zap },
+  { href: '/app/rewards', label: 'Store', icon: ShoppingBag },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -51,19 +70,21 @@ export function Sidebar() {
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto cx-scroll">
         {NAV.map((n) => {
           const active = isActive(pathname, n.href);
+          const Icon = n.icon;
           return (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="flex items-center gap-3 rounded-[13px] px-3.5 py-3 text-[15px] font-semibold transition-colors"
-              style={{
-                background: active ? 'var(--lime-soft)' : 'transparent',
-                color: active ? 'var(--lime-deep)' : 'var(--muted)',
-              }}
-            >
-              <span className="text-lg">{n.icon}</span>
-              {n.label}
-            </Link>
+            <motion.div key={n.href} whileHover={{ x: 2 }} transition={{ duration: 0.15 }}>
+              <Link
+                href={n.href}
+                className="flex items-center gap-3 rounded-[13px] px-3.5 py-3 text-[15px] font-semibold transition-colors"
+                style={{
+                  background: active ? 'var(--lime-soft)' : 'transparent',
+                  color: active ? 'var(--lime-deep)' : 'var(--muted)',
+                }}
+              >
+                <Icon className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                {n.label}
+              </Link>
+            </motion.div>
           );
         })}
       </nav>
@@ -113,6 +134,7 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border px-1.5 pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 md:hidden" style={{ background: 'var(--navbg)', backdropFilter: 'blur(14px)' }}>
       {MOBILE_NAV.map((n) => {
         const active = isActive(pathname, n.href);
+        const Icon = n.icon;
         return (
           <Link
             key={n.href}
@@ -120,7 +142,7 @@ export function BottomNav() {
             className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-semibold transition-colors"
             style={{ color: active ? 'var(--lime-deep)' : 'var(--muted)' }}
           >
-            <span className="text-[19px] leading-none" style={{ filter: active ? 'none' : 'grayscale(0.2)' }}>{n.icon}</span>
+            <Icon className="h-[19px] w-[19px]" strokeWidth={2.25} style={{ opacity: active ? 1 : 0.8 }} />
             {n.label}
           </Link>
         );

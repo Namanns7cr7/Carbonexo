@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getBalance, getHistory, type CreditHistoryEntry } from '@/lib/api/credits';
 import { PageHead, Card } from '@/components/app/ui';
+import { useCountUp } from '@/lib/useCountUp';
+
+function BalanceValue({ balance }: { balance: number }) {
+  const { ref, display } = useCountUp(balance, { duration: 1200 });
+  return (
+    <span ref={ref} className="text-3xl font-black text-text">
+      {display} <span className="text-sm font-bold text-muted">credits</span>
+    </span>
+  );
+}
 
 export default function CreditsPage() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -37,7 +47,7 @@ export default function CreditsPage() {
               <span className="text-4xl mb-3">🪙</span>
               <div className="text-xs font-bold uppercase tracking-wider text-muted mb-1">Current Balance</div>
               <div className="text-3xl font-black text-text">
-                {balance !== null ? balance : '...'} <span className="text-sm font-bold text-muted">credits</span>
+                {balance !== null ? <BalanceValue balance={balance} /> : '...'}
               </div>
             </Card>
           </motion.div>

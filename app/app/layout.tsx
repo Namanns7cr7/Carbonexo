@@ -29,13 +29,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <div className="relative min-h-screen" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-        <AmbientBackground />
-        <Sidebar />
-        <div className="relative z-[1] md:pl-[248px]">
-          <MobileTopBar />
+        <div className="no-print">
+          <AmbientBackground />
+        </div>
+        <div className="no-print">
+          <Sidebar />
+        </div>
+        <div className="relative z-[1] md:pl-[248px] print:pl-0">
+          <div className="no-print">
+            <MobileTopBar />
+          </div>
           <main id="main-content" className="mx-auto max-w-[880px] px-5 pb-28 pt-6 md:px-10 md:pb-14 md:pt-10">{children}</main>
         </div>
-        <BottomNav />
+        <div className="no-print">
+          <BottomNav />
+        </div>
       </div>
     </AuthGuard>
   );
