@@ -1,6 +1,13 @@
 'use client';
 
-import { Car, UtensilsCrossed, Zap, ShoppingBag, Trash2, type LucideIcon } from 'lucide-react';
+import {
+  Car, UtensilsCrossed, Zap, ShoppingBag, Trash2, type LucideIcon,
+  Bike, Bus, TrainFront, Plane, Footprints,
+  Beef, Drumstick, Fish, Salad, Leaf, Milk, Package,
+  Plug, Snowflake, Flame, WashingMachine,
+  Shirt, Smartphone, ShoppingCart,
+  CupSoda, Apple,
+} from 'lucide-react';
 import type { Category } from '@/lib/carbon';
 
 /**
@@ -18,6 +25,58 @@ export const CATEGORY_ICON: Record<Category, LucideIcon> = {
   shopping: ShoppingBag,
   waste: Trash2,
 };
+
+/** Per-track-option icon (the individual activity picked within a category), by category then label — replaces emoji in Track/CategoryBars/today's-log rows. */
+export const TRACK_OPTION_ICON: Record<Category, Record<string, LucideIcon>> = {
+  travel: {
+    'Car ride': Car,
+    Motorbike: Bike,
+    Bus: Bus,
+    'Metro / Train': TrainFront,
+    Flight: Plane,
+    Bike: Bike,
+    Walk: Footprints,
+  },
+  food: {
+    'Beef meal': Beef,
+    'Chicken meal': Drumstick,
+    'Fish meal': Fish,
+    'Veg meal': Salad,
+    'Vegan meal': Leaf,
+    Dairy: Milk,
+    'Food delivery': Package,
+  },
+  electricity: {
+    'Home electricity': Plug,
+    'Air conditioning': Snowflake,
+    'Geyser / heater': Flame,
+    'Laundry + dryer': WashingMachine,
+  },
+  shopping: {
+    'Clothing item': Shirt,
+    Electronics: Smartphone,
+    'Online order': Package,
+    Groceries: ShoppingCart,
+  },
+  waste: {
+    'General waste': Trash2,
+    'Plastic bottle': CupSoda,
+    'Food waste': Apple,
+  },
+};
+
+/** An activity option's icon in a soft colored circular badge, falling back to the category icon if the specific label isn't mapped. */
+export function OptionIcon({ category, label, color, size = 32 }: { category: Category; label: string; color: string; size?: number }) {
+  const Icon = TRACK_OPTION_ICON[category]?.[label] ?? CATEGORY_ICON[category];
+  return (
+    <span
+      className="flex flex-shrink-0 items-center justify-center rounded-full"
+      style={{ width: size, height: size, background: `color-mix(in srgb, ${color} 18%, transparent)` }}
+    >
+      <Icon style={{ width: size * 0.55, height: size * 0.55, color }} strokeWidth={2} />
+    </span>
+  );
+}
 
 /** A category's icon in a soft colored circular badge — the small "image" unit reused across the breakdown list and AI insight card. */
 export function CategoryIcon({ category, color, size = 32 }: { category: Category; color: string; size?: number }) {
