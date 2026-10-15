@@ -82,7 +82,7 @@ public class DashboardService {
         }
 
         // Streak
-        int streak = computeStreak(userId);
+        int streak = carbonService.currentStreak(userId);
 
         // Total saved (estimate based on profile baseline)
         UserProfile profile = profileRepo.findByUserIdAndDeletedAtIsNull(userId).orElse(null);
@@ -104,19 +104,6 @@ public class DashboardService {
                 biggestCategory, biggestValue, streak, totalSaved,
                 todayLogResponses
         );
-    }
-
-    private int computeStreak(UUID userId) {
-        List<LocalDate> dates = logRepo.findDistinctDatesByUser(userId);
-        if (dates.isEmpty()) return 0;
-        Set<LocalDate> dateSet = new HashSet<>(dates);
-        int streak = 0;
-        LocalDate check = LocalDate.now();
-        while (dateSet.contains(check)) {
-            streak++;
-            check = check.minusDays(1);
-        }
-        return streak;
     }
 
     private double scale1(BigDecimal v) {

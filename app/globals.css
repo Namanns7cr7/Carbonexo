@@ -114,3 +114,33 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   Print — used by the Reports page's "Download PDF" (window.print()).
+   Hides app chrome (.no-print) and flattens the themed card/glass
+   effects to a clean, ink-on-paper document regardless of theme.
+   ============================================================ */
+@media print {
+  .no-print { display: none !important; }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  * {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+  /* flatten the themed card surface (glass/gradient in dark mode) to plain
+     white-on-black ink so the report prints cleanly in any theme */
+  [class*='bg-surface'] {
+    background: #fff !important;
+    border-color: #ccc !important;
+  }
+}

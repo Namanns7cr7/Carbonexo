@@ -77,15 +77,14 @@ class DashboardServiceTest {
 
     @Test
     void computeStreakCorrectlyCountsConsecutiveDays() {
+        // The streak-walking algorithm itself now lives on CarbonCalculationService
+        // (currentStreak) — see CarbonCalculationServiceTest for coverage of the
+        // actual day-walking logic. Here we just verify DashboardService wires the
+        // promoted method's result straight through into the response.
         UUID userId = UUID.randomUUID();
         LocalDate today = LocalDate.now();
-        LocalDate yesterday = today.minusDays(1);
-        LocalDate dayBefore = today.minusDays(2);
-        LocalDate gapDay = today.minusDays(4);
 
-        // dates: today, yesterday, dayBefore, and then a gap
-        List<LocalDate> dates = Arrays.asList(today, yesterday, dayBefore, gapDay);
-        when(logRepo.findDistinctDatesByUser(userId)).thenReturn(dates);
+        when(carbonService.currentStreak(userId)).thenReturn(3);
         when(logRepo.sumCo2ByUserAndDate(any(), any())).thenReturn(BigDecimal.ZERO);
         when(logRepo.breakdownByCategory(any(), any(), any())).thenReturn(new ArrayList<>());
         when(profileRepo.findByUserIdAndDeletedAtIsNull(userId)).thenReturn(Optional.empty());
@@ -94,5 +93,6 @@ class DashboardServiceTest {
         DashboardResponse resp = service.getDashboard(userId);
 
         assertEquals(3, resp.streak());
+        verify(carbonService).currentStreak(userId);
     }
 }

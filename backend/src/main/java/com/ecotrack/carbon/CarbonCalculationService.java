@@ -10,8 +10,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -100,6 +102,26 @@ public class CarbonCalculationService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal saved = baselineTotal.subtract(actual);
         return saved.max(BigDecimal.ZERO).setScale(1, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Current consecutive-day logging streak for a user: counts backward from
+     * today while the user has at least one non-deleted activity log on each
+     * day, stopping at the first gap. Promoted from {@code DashboardService}
+     * (formerly a private, duplicated-prone helper) so other features (e.g.
+     * the Carbon Credit Score) can reuse the exact same semantics.
+     */
+    public int currentStreak(UUID userId) {
+        List<LocalDate> dates = logRepo.findDistinctDatesByUser(userId);
+        if (dates.isEmpty()) return 0;
+        Set<LocalDate> dateSet = new HashSet<>(dates);
+        int streak = 0;
+        LocalDate check = LocalDate.now();
+        while (dateSet.contains(check)) {
+            streak++;
+            check = check.minusDays(1);
+        }
+        return streak;
     }
 
     /** Get all active emission factors for a region. */

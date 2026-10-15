@@ -66,6 +66,45 @@ export function SegmentedControl<T extends string>({
   );
 }
 
+const BUTTON_VARIANT: Record<string, string> = {
+  primary: 'bg-lime text-[#0c1d15] hover:-translate-y-0.5',
+  secondary: 'border border-border bg-surface text-text hover:border-lime',
+  ghost: 'bg-transparent text-muted hover:text-text hover:bg-surface2',
+  danger: 'bg-danger text-white hover:-translate-y-0.5',
+};
+
+const BUTTON_SIZE: Record<string, string> = {
+  sm: 'px-3.5 py-2 text-xs',
+  md: 'px-5 py-2.5 text-sm',
+  lg: 'px-5 py-3 text-sm',
+};
+
+/** Themed button — consolidates the hand-rolled button classes used across the app. */
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  className = '',
+  children,
+  as: As = 'button',
+  ...rest
+}: {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  children: ReactNode;
+  as?: 'button' | 'a';
+  [k: string]: unknown;
+}) {
+  return (
+    <As
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] ${BUTTON_VARIANT[variant]} ${BUTTON_SIZE[size]} ${className}`}
+      {...rest}
+    >
+      {children}
+    </As>
+  );
+}
+
 /** Empty-state block. */
 export function EmptyState({ emoji, title, sub, action }: { emoji: string; title: string; sub?: string; action?: ReactNode }) {
   return (

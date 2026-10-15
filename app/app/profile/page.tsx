@@ -6,8 +6,18 @@ import { useRouter } from 'next/navigation';
 import { useCarbon } from '@/lib/store';
 import { logout } from '@/lib/api/auth';
 import { round1 } from '@/lib/carbon';
-import { Card, PageHead } from '@/components/app/ui';
+import { Card, PageHead, Button } from '@/components/app/ui';
 import { usePwaInstall } from '@/lib/usePwaInstall';
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0 },
+};
 
 export default function Profile() {
   const router = useRouter();
@@ -82,19 +92,25 @@ export default function Profile() {
       {/* badges */}
       <div>
         <h2 className="mb-3 text-[15px] font-bold">Badges</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <motion.div
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+          variants={gridVariants}
+          initial="hidden"
+          animate="show"
+        >
           {badges.map((b) => (
-            <Card
-              key={b.title}
-              className="flex flex-col items-center gap-1 text-center !p-4"
-              style={{ opacity: b.earned ? 1 : 0.45, borderColor: b.earned ? 'var(--lime)' : 'var(--border)' }}
-            >
-              <span className="text-3xl" style={{ filter: b.earned ? 'none' : 'grayscale(1)' }}>{b.emoji}</span>
-              <span className="text-[13px] font-bold">{b.title}</span>
-              <span className="text-[11px] text-muted">{b.earned ? b.desc : 'Locked'}</span>
-            </Card>
+            <motion.div key={b.title} variants={itemVariants} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+              <Card
+                className="flex flex-col items-center gap-1 text-center !p-4"
+                style={{ opacity: b.earned ? 1 : 0.45, borderColor: b.earned ? 'var(--lime)' : 'var(--border)' }}
+              >
+                <span className="text-3xl" style={{ filter: b.earned ? 'none' : 'grayscale(1)' }}>{b.emoji}</span>
+                <span className="text-[13px] font-bold">{b.title}</span>
+                <span className="text-[11px] text-muted">{b.earned ? b.desc : 'Locked'}</span>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
 
       {/* preferences */}
@@ -116,22 +132,16 @@ export default function Profile() {
           <div className="text-[15px] font-bold">📲 Install Carbonexo</div>
           <p className="text-sm text-muted">Add it to your home screen for one-tap daily tracking.</p>
         </div>
-        <button
-          onClick={promptInstall}
-          className="rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5"
-        >
+        <Button variant="primary" onClick={promptInstall}>
           {installed ? '✓ Installed' : 'Install app'}
-        </button>
+        </Button>
       </Card>
 
       {/* account actions */}
       <div className="flex flex-wrap items-center gap-4 pt-1">
-        <button
-          onClick={onLogout}
-          className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold transition-colors hover:border-lime"
-        >
+        <Button variant="secondary" onClick={onLogout}>
           Log out
-        </button>
+        </Button>
         <button onClick={onReset} className="text-sm font-semibold text-muted underline-offset-2 transition-colors hover:text-text hover:underline">
           Reset all data
         </button>

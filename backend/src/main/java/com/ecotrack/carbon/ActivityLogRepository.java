@@ -30,4 +30,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, UUID> 
     @Query("SELECT DISTINCT a.activityDate FROM ActivityLog a " +
            "WHERE a.userId = :userId AND a.deletedAt IS NULL ORDER BY a.activityDate DESC")
     List<LocalDate> findDistinctDatesByUser(UUID userId);
+
+    /** Count of distinct activity-log dates on/after {@code since} (inclusive). */
+    @Query("SELECT COUNT(DISTINCT a.activityDate) FROM ActivityLog a " +
+           "WHERE a.userId = :userId AND a.deletedAt IS NULL AND a.activityDate >= :since")
+    int countDistinctDatesByUserSince(UUID userId, LocalDate since);
 }

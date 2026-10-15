@@ -129,8 +129,52 @@ export async function apiFetch<T>(
   return res.json();
 }
 
+/**
+ * Like apiFetch, but for endpoints that return a raw text body (e.g. CSV)
+ * instead of JSON. Mirrors apiFetch's auth-header attachment and 401
+ * refresh-and-retry behavior exactly, without the res.json() assumption.
+ */
+export async function apiFetchText(
+  path: string,
+  options: RequestInit = {},
+  retryCount = 0
+): Promise<string> {
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (res.status === 401 && retryCount === 0) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      return apiFetchText(path, options, retryCount + 1);
+    }
+    clearTokens();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+    throw new ApiError(401, 'Session expired', {});
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new ApiError(res.status, body || res.statusText);
+  }
+
+  return res.text();
+}
+
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
+  getText: (path: string) => apiFetchText(path),
   post: <T>(path: string, body?: unknown) =>
     apiFetch<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) =>
