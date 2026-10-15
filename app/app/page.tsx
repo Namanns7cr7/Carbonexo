@@ -8,6 +8,7 @@ import { CATEGORY_META } from '@/lib/carbon';
 import { Card } from '@/components/app/ui';
 import { ScoreRing, WeeklyChart, CategoryBars } from '@/components/app/charts';
 import { SproutIllustration } from '@/components/app/illustrations';
+import { RotatingGlobe } from '@/components/app/RotatingGlobe';
 
 function greeting() {
   const h = new Date().getHours();
@@ -47,6 +48,9 @@ export default function Dashboard() {
           >
             <div className="pointer-events-none absolute -right-12 -top-20 h-60 w-60 rounded-full bg-white/10" />
             <div className="pointer-events-none absolute -bottom-16 -left-8 h-44 w-44 rounded-full bg-white/10" />
+            <div className="absolute right-4 top-4 hidden sm:block sm:right-6 sm:top-6">
+              <RotatingGlobe size={76} />
+            </div>
             <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-center">
               <div className="flex flex-col items-center gap-2">
                 <ScoreRing value={todayTotal} fraction={fraction} size={150} color="#ffffff" track="rgba(255,255,255,0.28)" textColor="#ffffff" />
