@@ -293,13 +293,17 @@ export function ledgerFacts(history: { delta: number; ruleKey: string | null; re
 // ─── Story (landing) ─────────────────────────────────────────────────────────
 
 /**
- * Landing-page vitality from story progress 0…1: a dark, hazed planet that
- * greens as the visitor reads on. Illustrative — it tracks the story, not data.
+ * Landing-page vitality from story progress 0…1: a dark, muted planet that
+ * greens as the visitor reads on. It opens at 0.3 — subdued and cinematic, not
+ * the fully degraded floor, which reads as grime rather than drama on a first
+ * screen. Illustrative — it tracks the story, not data.
  */
+export const STORY_START = 0.3;
+
 export function storyVitality(progress: number): number {
   const t = Math.max(0, Math.min(1, progress));
   const e = t * t * (3 - 2 * t);
-  return 0.06 + 0.94 * e;
+  return STORY_START + (1 - STORY_START) * e;
 }
 
 // ─── Assembly ────────────────────────────────────────────────────────────────

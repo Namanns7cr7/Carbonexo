@@ -50,9 +50,10 @@ export const earthFragment = /* glsl */ `
     float veg = smoothstep(0.0, 0.06, rawDay.g - max(rawDay.r * 0.92, rawDay.b));
     float lum = dot(rawDay, vec3(0.299, 0.587, 0.114));
 
-    // Degraded: land desaturates toward dust, oceans toward grey.
-    vec3 dust = vec3(lum * 1.12, lum * 0.96, lum * 0.74);
-    vec3 parched = mix(mix(vec3(lum), rawDay, 0.25), dust, land * 0.7) * 0.82;
+    // Degraded: colour drains out and the land dries a little; it dims rather
+    // than turning brown, so a low value reads as somber, not dirty.
+    vec3 dry = vec3(lum * 1.06, lum * 0.98, lum * 0.86);
+    vec3 parched = mix(mix(vec3(lum), rawDay, 0.3), dry, land * 0.35) * 0.78;
     // Lush: existing greenery deepens and spreads into semi-arid land; seas clear.
     vec3 grown = rawDay * vec3(0.72, 1.24, 0.8) + vec3(0.0, 0.03, 0.008);
     vec3 lush = mix(rawDay, grown, land * (0.35 + 0.65 * veg) * (1.0 - smoothstep(0.55, 0.85, lum)));
@@ -76,12 +77,12 @@ export const earthFragment = /* glsl */ `
     // amber-grey; a living planet tints it toward emerald-cyan.
     float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     float dusk = smoothstep(-0.25, 0.0, ndl) * (1.0 - smoothstep(0.0, 0.35, ndl));
-    vec3 sky = mix(vec3(0.62, 0.52, 0.40), mix(vec3(0.28, 0.58, 1.0), vec3(0.24, 0.86, 0.72), up * 0.55), smoothstep(0.0, 0.5, vitality));
+    vec3 sky = mix(vec3(0.3, 0.42, 0.58), mix(vec3(0.28, 0.58, 1.0), vec3(0.24, 0.86, 0.72), up * 0.55), smoothstep(0.0, 0.5, vitality));
     vec3 rim = mix(sky, vec3(1.0, 0.55, 0.3), dusk * 0.6) * fres * (0.18 + 0.82 * day);
 
     vec3 col = mix(nightSide, lit, day) + spec * vec3(1.0, 0.94, 0.82) * (0.4 + 0.6 * vitality) + rim;
-    // A brown haze over the lit hemisphere when degraded.
-    col = mix(col, vec3(0.36, 0.31, 0.25) * (0.25 + 0.75 * day), down * (0.22 + 0.4 * fres));
+    // A thin grey haze over the lit hemisphere when degraded, thickest at the limb.
+    col = mix(col, vec3(0.3, 0.31, 0.33) * (0.25 + 0.75 * day), down * (0.1 + 0.35 * fres));
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -136,7 +137,7 @@ export const atmosphereFragment = /* glsl */ `
     float intensity = pow(t, 1.8);
     float sunward = smoothstep(-0.35, 0.45, dot(normalize(vNormalW), normalize(sunDir)));
     vec3 clear = mix(vec3(0.32, 0.64, 1.0), vec3(0.26, 0.9, 0.74), clamp(vitality * 2.0 - 1.0, 0.0, 1.0) * 0.5);
-    vec3 smog = vec3(0.6, 0.48, 0.34);
+    vec3 smog = vec3(0.3, 0.42, 0.6);
     vec3 lit = mix(smog, clear, smoothstep(0.0, 0.55, vitality));
     vec3 col = mix(vec3(0.04, 0.09, 0.22), lit, sunward);
     gl_FragColor = vec4(col * intensity * 1.1, intensity);

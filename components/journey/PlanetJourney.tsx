@@ -32,6 +32,9 @@ import { SceneImpact } from './SceneImpact';
 import { SceneFuture } from './SceneFuture';
 import s from './journey.module.css';
 
+/** Static-poster width on narrow screens, as % of the viewport width; PlanetJourney scales from this. */
+const NARROW_POSTER_PCT = 74;
+
 const NAV: { id: SceneId; label: string }[] = [
   { id: 'world', label: 'Your world' },
   { id: 'footprint', label: 'Footprint' },
@@ -59,7 +62,8 @@ export function PlanetJourney() {
     return () => mq.removeEventListener('change', on);
   }, []);
 
-  const frames = useMemo(() => keyframes({ ...ctx, narrow }), [ctx, narrow]);
+  const daylit = tier !== 'full';
+  const frames = useMemo(() => keyframes({ ...ctx, narrow, daylit }), [ctx, narrow, daylit]);
   const anchorRef = useRef<GlobeAnchor>({ key: 'scene:planet', ...frames.planet });
   // Story channel of the Living World: illustrative, driven by reading progress, never by data.
   const vitalityRef = useRef(storyVitality(0));
@@ -103,6 +107,7 @@ export function PlanetJourney() {
         if (c) next = { ...base, key: `iso:${c.iso}`, lat: c.at.lat, lon: c.at.lon, dist: 2.3, drift: 0 };
       }
     }
+    const storyDist = next.dist;
     if (narrow) next = { ...next, dist: next.dist * portraitScale(window.innerWidth / vh) };
     anchorRef.current = next;
 
@@ -111,8 +116,19 @@ export function PlanetJourney() {
       poster.current.style.setProperty('--vitality', vitalityRef.current.toFixed(3));
       // The static fallback has no camera — slide the poster to the scene's framing instead.
       // With WebGL the projection does this, so the layer must stay put.
-      poster.current.style.transform =
-        tierRef.current === 'full' ? '' : `translate(${(next.frameX ?? 0) * 100}vw, ${-(next.frameY ?? 0) * 100}vh) scale(${Math.min(1.25, 3 / next.dist)})`;
+      if (tierRef.current === 'full') {
+        poster.current.style.transform = '';
+      } else if (narrow) {
+        // Phones: the poster is a fixed NARROW_POSTER_PCT of the width (see the
+        // LivingEarth posterSize below), so the framing is a plain scale from
+        // that — ~74% of the width on the opening scene, smaller as the story
+        // pulls back — sitting in the open space above the copy.
+        const targetPct = 74 * Math.min(1.15, 6.2 / storyDist);
+        const scale = targetPct / NARROW_POSTER_PCT;
+        poster.current.style.transform = `translate(0, ${-(next.frameY ?? 0) * 78}vh) scale(${scale.toFixed(3)})`;
+      } else {
+        poster.current.style.transform = `translate(${(next.frameX ?? 0) * 100}vw, ${-(next.frameY ?? 0) * 100}vh) scale(${Math.min(1.25, 3 / next.dist)})`;
+      }
     }
     if (progress.current) {
       const max = document.documentElement.scrollHeight - vh;
@@ -182,6 +198,7 @@ export function PlanetJourney() {
             onSelectCountry={(iso) => setSelection((p) => ({ ...p, iso, tab: p.tab === 'trip' ? 'co2' : p.tab }))}
             route={route}
             vitalityRef={vitalityRef}
+            posterSize={narrow ? `${NARROW_POSTER_PCT}%` : undefined}
             label="Planet Earth, lit as it is right now. Its colour shifts from hazed to green as the story unfolds; that change is illustrative, not data."
           />
         </div>

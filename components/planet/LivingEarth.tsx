@@ -69,6 +69,8 @@ export interface LivingEarthProps {
   pulse?: number;
   /** Clear colour behind the 3D planet. */
   background?: string;
+  /** Fixed CSS width for the static poster, when the page frames it itself (see PlanetJourney). */
+  posterSize?: string;
 }
 
 export function LivingEarth({
@@ -88,6 +90,7 @@ export function LivingEarth({
   vitalityRef: externalVitality,
   pulse = 0,
   background,
+  posterSize,
 }: LivingEarthProps) {
   const tier = useMotionTier();
   const ownVitality = useRef(vitality ?? 0.5);
@@ -214,7 +217,7 @@ export function LivingEarth({
             <EarthPoster
               center={{ lat: posterAnchor.lat, lon: posterAnchor.lon }}
               spinning={tier === 'lite'}
-              size={`min(86%, ${Math.round((100 / posterAnchor.dist) * 2.6)}%)`}
+              size={posterSize ?? `min(86%, ${Math.round((100 / posterAnchor.dist) * 2.6)}%)`}
             />
           </div>
         </div>

@@ -185,7 +185,8 @@ describe('milestones', () => {
 
 describe('story', () => {
   it('runs from a dark planet to a living one, monotonically', () => {
-    expect(storyVitality(0)).toBeCloseTo(0.06, 6);
+    expect(storyVitality(0)).toBeCloseTo(0.3, 6);
+    expect(storyVitality(0)).toBeLessThan(0.5); // opens muted, below the unaltered imagery
     expect(storyVitality(1)).toBe(1);
     expect(storyVitality(0.5)).toBeGreaterThan(storyVitality(0.25));
   });

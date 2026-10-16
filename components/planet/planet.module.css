@@ -25,10 +25,9 @@
 /* Living World colour for the poster. --vitality: 0 degraded … 1 lush, 0.5 = the imagery as-is. */
 .living {
   filter:
-    saturate(calc(0.3 + 1.1 * var(--vitality, 0.5)))
-    hue-rotate(calc((var(--vitality, 0.5) - 0.5) * 18deg))
-    brightness(calc(0.72 + 0.4 * var(--vitality, 0.5)))
-    sepia(calc(max(0, 0.5 - var(--vitality, 0.5)) * 0.9));
+    saturate(calc(0.45 + 0.95 * var(--vitality, 0.5)))
+    hue-rotate(calc(max(0, var(--vitality, 0.5) - 0.5) * 16deg))
+    brightness(calc(0.78 + 0.34 * var(--vitality, 0.5)));
   transition: filter 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 @media (prefers-reduced-motion: reduce) {

@@ -52,44 +52,71 @@ export function EarthPoster({
   const sx = 50 + 46 * Math.sin((Math.max(-90, Math.min(90, dLon)) * Math.PI) / 180);
   const sy = 50 - 40 * Math.sin((sun.lat * Math.PI) / 180);
   const sunBehind = Math.abs(dLon) > 90;
+  // Daylight fades over ~30% of the disc around the terminator, like civil twilight.
+  const dayMask = sunBehind
+    ? 'radial-gradient(circle at 50% 50%, rgba(0,0,0,0.06), transparent 60%)'
+    : `radial-gradient(circle at ${sx}% ${sy}%, #000 0%, #000 ${Math.round(30 + (90 - Math.abs(dLon)) * 0.35)}%, transparent ${Math.round(62 + (90 - Math.abs(dLon)) * 0.35)}%)`;
 
   return (
-    <div aria-hidden="true" className="relative" style={{ width: size, aspectRatio: '1' }}>
+    <div aria-hidden="true" data-earth-poster className="relative" style={{ width: size, aspectRatio: '1' }}>
       <div
         className="absolute -inset-[7%] rounded-full"
         style={{
-          // Halo follows health: amber haze when degraded, emerald-blue when alive.
+          // A thin, bright atmosphere hugging the limb (not a blurred donut). Its tint
+          // follows health: cool grey haze when low, blue-emerald when alive.
           background:
-            'radial-gradient(circle, transparent 60%, color-mix(in srgb, rgba(95,170,232,0.32) calc(var(--vitality, 0.5) * 100%), rgba(180,130,70,0.34)) 68%, transparent 76%)',
-          filter: 'blur(10px)',
+            'radial-gradient(circle, transparent 62.5%, color-mix(in srgb, rgba(120,190,255,0.55) calc(var(--vitality, 0.5) * 100%), rgba(90,130,180,0.42)) 67.5%, transparent 71.5%)',
+          filter: 'blur(3px)',
         }}
       />
       <div className={`absolute inset-0 overflow-hidden rounded-full ${styles.living}`} style={{ background: '#0d3146' }}>
+        {/* Night: the Black Marble city lights, everywhere underneath. */}
+        <MapStrip url={EARTH_TEXTURES['2k'].night} shift={shift} spinning={spinning} />
+        {/* Day: the Blue Marble, revealed only around the real sun position, so the
+            terminator falls where it does on the planet right now. */}
         <div
-          className={`absolute inset-y-0 left-0 ${spinning ? styles.posterSpin : ''}`}
-          style={
-            {
-              width: `${COPIES * 200}%`,
-              backgroundImage: `url(${EARTH_TEXTURES['2k'].day})`,
-              backgroundSize: `${100 / COPIES}% 100%`,
-              backgroundRepeat: 'repeat-x',
-              transform: `translateX(${shift}%)`,
-              '--poster-from': `${shift}%`,
-              '--poster-to': `${shift + 100 / COPIES}%`,
-            } as React.CSSProperties
-          }
-        />
-        {/* sphere shading: limb darkening + real day/night */}
+          className="absolute inset-0"
+          style={{
+            WebkitMaskImage: dayMask,
+            maskImage: dayMask,
+          }}
+        >
+          <MapStrip url={EARTH_TEXTURES['2k'].day} shift={shift} spinning={spinning} />
+        </div>
+        {/* sphere shading: limb darkening */}
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 50%, transparent 52%, rgba(2,6,10,0.45) 78%, rgba(2,6,10,0.85) 100%)' }} />
+        {/* sphere: a soft specular bloom on the lit side, a curved terminator shadow, and a lit limb */}
         <div
           className="absolute inset-0"
           style={{
             background: sunBehind
-              ? 'radial-gradient(circle at 50% 50%, rgba(2,6,10,0.55), rgba(2,6,10,0.9) 70%)'
-              : `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.10) 0%, transparent 34%, rgba(2,6,10,0.35) 58%, rgba(2,6,10,0.88) 82%)`,
+              ? 'none'
+              : `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 14%, transparent 30%)`,
+            mixBlendMode: 'screen',
           }}
         />
-        <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset 0 0 40px 10px rgba(2,6,10,0.6), inset 0 0 6px 1px rgba(140,200,255,0.35)' }} />
+        <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset -18px -10px 60px 12px rgba(2,6,10,0.7), inset 0 0 3px 1px rgba(150,205,255,0.55), inset 0 0 18px 2px rgba(110,180,255,0.18)' }} />
       </div>
     </div>
+  );
+}
+
+/** One copy-strip of an equirectangular map, slid so `shift` centres the view. */
+function MapStrip({ url, shift, spinning }: { url: string; shift: number; spinning: boolean }) {
+  return (
+    <div
+      className={`absolute inset-y-0 left-0 ${spinning ? styles.posterSpin : ''}`}
+      style={
+        {
+          width: `${COPIES * 200}%`,
+          backgroundImage: `url(${url})`,
+          backgroundSize: `${100 / COPIES}% 100%`,
+          backgroundRepeat: 'repeat-x',
+          transform: `translateX(${shift}%)`,
+          '--poster-from': `${shift}%`,
+          '--poster-to': `${shift + 100 / COPIES}%`,
+        } as React.CSSProperties
+      }
+    />
   );
 }

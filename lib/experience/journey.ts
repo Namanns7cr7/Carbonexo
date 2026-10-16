@@ -34,6 +34,12 @@ export interface JourneyContext {
   sunriseLon: number;
   /** Portrait / narrow viewport: planet stacks above copy instead of beside it. Narrow distances assume a square frame; the page scales them by 1/aspect in portrait (see portraitScale). */
   narrow: boolean;
+  /**
+   * The static (no-WebGL) globe is drawing the planet. It has no atmosphere
+   * glow or lighting depth, so a disc that is mostly night reads as a dark
+   * blob; the opening frame then sits well inside the day side instead.
+   */
+  daylit?: boolean;
 }
 
 /** Approximate home longitude from the UTC offset: 15° per hour. */
@@ -42,10 +48,12 @@ export function homeLongitude(timezoneOffsetMinutes: number): number {
   return Math.max(-180, Math.min(180, lon));
 }
 
-export function keyframes({ homeLon, sunriseLon, narrow }: JourneyContext): Record<SceneId, Keyframe> {
+export function keyframes({ homeLon, sunriseLon, narrow, daylit = false }: JourneyContext): Record<SceneId, Keyframe> {
+  // 3D: just sunward of the morning terminator (city lights on the limb). Static: well into daylight.
+  const openLon = sunriseLon + (daylit ? 50 : 14);
   if (narrow) {
     return {
-      planet: { lat: 14, lon: sunriseLon + 40, dist: 5.0, frameX: 0, frameY: 0.34, drift: 2, dim: 0.05 },
+      planet: { lat: 14, lon: openLon, dist: 6.2, frameX: 0, frameY: 0.27, drift: 2, dim: 0.05 },
       world: { lat: 20, lon: homeLon, dist: 3.4, frameX: 0, frameY: 0.3, drift: 0, dim: 0 },
       footprint: { lat: 8, lon: homeLon + 30, dist: 4.6, frameX: 0, frameY: 0.3, drift: 1.2, dim: 0.55 },
       impact: { lat: -6, lon: homeLon + 60, dist: 4.8, frameX: 0, frameY: 0.3, drift: 1.2, dim: 0.6 },
@@ -53,7 +61,9 @@ export function keyframes({ homeLon, sunriseLon, narrow }: JourneyContext): Reco
     };
   }
   return {
-    planet: { lat: 14, lon: sunriseLon + 40, dist: 3.9, frameX: 0.24, frameY: 0, drift: 2, dim: 0 },
+    // Just sunward of the real morning terminator: night and city lights on the
+    // copy side, daylight beyond — the most cinematic true view of the planet.
+    planet: { lat: 14, lon: openLon, dist: 3.9, frameX: 0.24, frameY: 0, drift: 2, dim: 0 },
     world: { lat: 20, lon: homeLon, dist: 2.75, frameX: 0.2, frameY: 0, drift: 0, dim: 0 },
     footprint: { lat: 8, lon: homeLon + 30, dist: 6.2, frameX: -0.34, frameY: 0, drift: 1.2, dim: 0.35 },
     impact: { lat: -6, lon: homeLon + 60, dist: 5.8, frameX: 0.3, frameY: 0, drift: 1.2, dim: 0.4 },
