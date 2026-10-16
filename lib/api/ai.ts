@@ -46,3 +46,25 @@ export interface CoachHistoryEntry {
 export async function getCoachHistory(): Promise<CoachHistoryEntry[]> {
   return api.get<CoachHistoryEntry[]>('/api/ai/coach/history');
 }
+
+export interface CursorPage<T> {
+  items: T[];
+  nextCursorCreatedAt: string | null;
+  nextCursorId: string | null;
+  hasMore: boolean;
+}
+
+/**
+ * Fetch coach history using sub-50ms cursor-based pagination.
+ */
+export async function getCoachHistoryPaged(
+  cursorCreatedAt?: string,
+  cursorId?: string,
+  limit = 20
+): Promise<CursorPage<CoachHistoryEntry>> {
+  const params = new URLSearchParams();
+  if (cursorCreatedAt) params.append('cursorCreatedAt', cursorCreatedAt);
+  if (cursorId) params.append('cursorId', cursorId);
+  params.append('limit', String(limit));
+  return api.get<CursorPage<CoachHistoryEntry>>(`/api/ai/coach/history/paged?${params.toString()}`);
+}

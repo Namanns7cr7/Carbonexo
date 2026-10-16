@@ -6,8 +6,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---- Fonts (or load via next/font — see README) ---- */
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ---- Fonts: loaded via next/font in app/layout.tsx (--font-display/-sans/-mono) ---- */
 
 /* ============================================================
    THEME TOKENS — Premium Enterprise Color System
@@ -82,7 +81,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;

@@ -5,6 +5,7 @@ import com.ecotrack.exception.BadRequestException;
 import com.ecotrack.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,5 +67,40 @@ class RewardServiceTest {
         assertNotNull(resp);
         verify(credits).debitCredits(eq(user), eq(100), anyString(), eq("redemption"), eq(rewardId));
         verify(redemptionRepo).save(any(Redemption.class));
+    }
+
+    @Test
+    void getRedemptionsUsesProjectionQuery() {
+        var mockResponse = new com.ecotrack.reward.dto.RedemptionResponse(
+                UUID.randomUUID(), rewardId, "Eco Tote", 100, "PENDING", "2026-10-16T12:00:00Z");
+        when(redemptionRepo.findRedemptionResponsesByUserId(user)).thenReturn(List.of(mockResponse));
+
+        var results = svc.getRedemptions(user);
+
+        assertEquals(1, results.size());
+        assertEquals("Eco Tote", results.get(0).rewardTitle());
+        verify(redemptionRepo).findRedemptionResponsesByUserId(user);
+        verify(redemptionRepo, never()).findByUserIdOrderByCreatedAtDesc(any());
+    }
+
+    @Test
+    void getRedemptionsFallsBackToLegacyWhenProjectionThrows() {
+        when(redemptionRepo.findRedemptionResponsesByUserId(user)).thenThrow(new RuntimeException("DB projection timeout"));
+        
+        Redemption r = new Redemption();
+        r.setUserId(user);
+        r.setRewardId(rewardId);
+        r.setCostCredits(100);
+        r.setStatus("PENDING");
+        when(redemptionRepo.findByUserIdOrderByCreatedAtDesc(user)).thenReturn(List.of(r));
+
+        Reward rew = reward(100, 10, true);
+        when(rewardRepo.findById(rewardId)).thenReturn(Optional.of(rew));
+
+        var results = svc.getRedemptions(user);
+
+        assertEquals(1, results.size());
+        assertEquals("Eco Tote", results.get(0).rewardTitle());
+        verify(redemptionRepo).findByUserIdOrderByCreatedAtDesc(user);
     }
 }

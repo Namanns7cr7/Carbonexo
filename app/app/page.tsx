@@ -31,6 +31,7 @@ import {
 import { useCarbon } from '@/lib/store';
 import { CATEGORY_META, round1, type Category } from '@/lib/carbon';
 import { Card } from '@/components/app/ui';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { ScoreRing, WeeklyChart, CategoryBars } from '@/components/app/charts';
 import { SproutIllustration, CategoryIcon } from '@/components/app/illustrations';
 
@@ -305,9 +306,9 @@ export default function Dashboard() {
         {/* ── Left Column: Analytics (8 cols) ─────────────────── */}
         <div className="flex flex-col gap-6 lg:col-span-8">
           {/* Emissions Core — Score Ring + Category Breakdown */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
+          <GlassCard delay={0.1} className="!rounded-[22px] !p-0 border border-emerald-500/25 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
             <div className="gradient-border rounded-[22px]">
-              <Card className="relative overflow-hidden !rounded-[22px] !p-0">
+              <Card className="relative overflow-hidden !rounded-[22px] !p-0 bg-transparent">
                 {/* Gradient header strip */}
                 <div
                   className="relative px-6 py-7 sm:px-8 sm:py-8"
@@ -363,54 +364,52 @@ export default function Dashboard() {
                 </div>
               </Card>
             </div>
-          </motion.div>
+          </GlassCard>
 
           {/* Weekly Emissions Trajectory */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
-            <Card className="!rounded-[22px] p-5 transition-all hover:shadow-soft sm:p-6">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--lime-soft), var(--blue-soft))' }}>
-                      <BarChart3 className="h-4 w-4" style={{ color: 'var(--blue)' }} strokeWidth={2.5} />
-                    </span>
-                    <h2 className="text-base font-extrabold tracking-tight">Emissions Trajectory</h2>
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted">Daily trend vs. Science-Based Target (8.5 kg threshold)</p>
+          <GlassCard delay={0.15} className="!rounded-[22px] p-5 sm:p-6 border border-emerald-500/20 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--lime-soft), var(--blue-soft))' }}>
+                    <BarChart3 className="h-4 w-4" style={{ color: 'var(--blue)' }} strokeWidth={2.5} />
+                  </span>
+                  <h2 className="text-base font-extrabold tracking-tight">Emissions Trajectory</h2>
                 </div>
-                <Link href="/app/insights" className="text-xs font-bold text-blue hover:underline">Full Analytics →</Link>
+                <p className="mt-0.5 text-xs text-muted">Daily trend vs. Science-Based Target (8.5 kg threshold)</p>
               </div>
+              <Link href="/app/insights" className="text-xs font-bold text-blue hover:underline">Full Analytics →</Link>
+            </div>
 
-              {weekHasData ? (
-                <WeeklyChart data={weekTotals} height={150} targetBudget={8.5} />
-              ) : (
-                <div className="flex h-[150px] flex-col items-center justify-center gap-2 text-center">
-                  <BarChart3 className="h-8 w-8 text-muted/30" strokeWidth={1.5} />
-                  <p className="text-sm text-muted">No data yet this week</p>
-                </div>
-              )}
+            {weekHasData ? (
+              <WeeklyChart data={weekTotals} height={150} targetBudget={8.5} />
+            ) : (
+              <div className="flex h-[150px] flex-col items-center justify-center gap-2 text-center">
+                <BarChart3 className="h-8 w-8 text-muted/30" strokeWidth={1.5} />
+                <p className="text-sm text-muted">No data yet this week</p>
+              </div>
+            )}
 
-              {/* Summary row */}
-              <div className="mt-5 grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-surface2 py-3.5 text-center">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted">7-Day Total</div>
-                  <div className="mt-0.5 font-mono text-lg font-extrabold">{weekTotal} <span className="text-xs text-muted font-normal">kg</span></div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Daily Avg</div>
-                  <div className="mt-0.5 font-mono text-lg font-extrabold">
-                    {round1(weekTotal / Math.max(1, weekTotals.filter((d) => d.total > 0).length))} <span className="text-xs text-muted font-normal">kg</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Best Day</div>
-                  <div className="mt-0.5 font-mono text-lg font-extrabold" style={{ color: 'var(--lime)' }}>
-                    {round1(Math.min(...weekTotals.filter((d) => d.total > 0).map((d) => d.total) || [0]))} <span className="text-xs text-muted font-normal">kg</span>
-                  </div>
+            {/* Summary row */}
+            <div className="mt-5 grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-surface2 py-3.5 text-center">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted">7-Day Total</div>
+                <div className="mt-0.5 font-mono text-lg font-extrabold">{weekTotal} <span className="text-xs text-muted font-normal">kg</span></div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Daily Avg</div>
+                <div className="mt-0.5 font-mono text-lg font-extrabold">
+                  {round1(weekTotal / Math.max(1, weekTotals.filter((d) => d.total > 0).length))} <span className="text-xs text-muted font-normal">kg</span>
                 </div>
               </div>
-            </Card>
-          </motion.div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Best Day</div>
+                <div className="mt-0.5 font-mono text-lg font-extrabold" style={{ color: 'var(--lime)' }}>
+                  {round1(Math.min(...weekTotals.filter((d) => d.total > 0).map((d) => d.total) || [0]))} <span className="text-xs text-muted font-normal">kg</span>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
 
           {/* Hotspot Category Matrix */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
@@ -519,10 +518,10 @@ export default function Dashboard() {
 
         {/* ── Right Column: Intelligence & Actions (4 cols) ──── */}
         <div className="flex flex-col gap-6 lg:col-span-4">
-          {/* AI Climate Advisor — Premium gradient card */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.4 }}>
-            <div className="relative overflow-hidden rounded-[22px] p-[1px]" style={{ background: 'linear-gradient(135deg, #10b981, #6366f1, #8b5cf6)' }}>
-              <div className="rounded-[21px] bg-surface p-5" style={{ background: 'var(--card)' }}>
+          {/* AI Climate Advisor — Premium Glassmorphic card */}
+          <GlassCard delay={0.12} className="!rounded-[22px] border border-emerald-500/30 bg-slate-900/60 shadow-lg shadow-emerald-500/10 p-[1px]">
+            <div className="relative overflow-hidden rounded-[21px] p-[1px]" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))' }}>
+              <div className="rounded-[20px] bg-slate-950/80 p-5 backdrop-blur-md">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #10b981, #6366f1)' }}>
@@ -530,7 +529,7 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <div className="gradient-text text-[10px] font-extrabold uppercase tracking-wider">AI Climate Advisor</div>
-                      <div className="text-sm font-extrabold text-text">Hotspot Analysis</div>
+                      <div className="text-sm font-extrabold text-white">Hotspot Analysis</div>
                     </div>
                   </div>
                   <span className="relative flex h-2.5 w-2.5">
@@ -539,10 +538,10 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                <p className="mt-3.5 text-[13px] leading-relaxed text-muted">
+                <p className="mt-3.5 text-[13px] leading-relaxed text-slate-300">
                   {biggestSource ? (
                     <>
-                      <strong className="text-text">{CATEGORY_META[biggestSource.category].label}</strong> is your biggest source ({biggestSource.value} kg). Switching 2 commutes could save <strong className="gradient-text">~8.4 kg CO₂</strong> and earn 40 credits.
+                      <strong className="text-white">{CATEGORY_META[biggestSource.category].label}</strong> is your biggest source ({biggestSource.value} kg). Switching 2 commutes could save <strong className="gradient-text">~8.4 kg CO₂</strong> and earn 40 credits.
                     </>
                   ) : (
                     'Log activities to get AI-powered reduction recommendations.'
@@ -559,51 +558,49 @@ export default function Dashboard() {
                 </Link>
               </div>
             </div>
-          </motion.div>
+          </GlassCard>
 
           {/* Carbon Swaps */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17, duration: 0.4 }}>
-            <Card className="!rounded-[22px] p-5 transition-all hover:shadow-soft">
-              <div className="mb-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--accent-amber), var(--accent-teal))' }}>
-                    <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </span>
-                  <h3 className="text-sm font-extrabold">Carbon Swaps</h3>
-                </div>
-                <span className="rounded-full bg-lime-soft px-2 py-0.5 text-[10px] font-bold text-lime-deep">1-Click</span>
+          <GlassCard delay={0.17} className="!rounded-[22px] p-5 border border-emerald-500/20 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
+            <div className="mb-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--accent-amber), var(--accent-teal))' }}>
+                  <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
+                </span>
+                <h3 className="text-sm font-extrabold">Carbon Swaps</h3>
               </div>
+              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">1-Click</span>
+            </div>
 
-              <div className="flex flex-col gap-2.5">
-                {SWAP_RECOMMENDATIONS.map((swap) => {
-                  const SwapIcon = swap.icon;
-                  return (
-                    <div key={swap.id} className="rounded-2xl border border-border bg-surface2 p-3.5 transition-all hover:border-lime/40 hover:shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <SwapIcon className="h-4 w-4 text-lime" />
-                          <span className="text-xs font-bold text-text">{swap.title}</span>
-                        </div>
-                        <span className="font-mono text-xs font-bold text-lime-deep">-{swap.saved} kg</span>
+            <div className="flex flex-col gap-2.5">
+              {SWAP_RECOMMENDATIONS.map((swap) => {
+                const SwapIcon = swap.icon;
+                return (
+                  <div key={swap.id} className="rounded-2xl border border-border bg-surface2/60 backdrop-blur-sm p-3.5 transition-all hover:border-emerald-500/40 hover:shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <SwapIcon className="h-4 w-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-text">{swap.title}</span>
                       </div>
-                      <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted">
-                        <span className="line-through opacity-60">{swap.from}</span>
-                        <span className="gradient-text font-bold">→</span>
-                        <span className="font-semibold text-text">{swap.to}</span>
-                      </div>
-                      <button
-                        onClick={() => handleApplySwap(swap)}
-                        disabled={loggingId === swap.id}
-                        className="mt-2.5 w-full rounded-xl border border-border bg-surface py-2 text-center text-xs font-bold text-text transition-all hover:bg-lime hover:text-white hover:border-lime hover:shadow-glow-lime disabled:opacity-50"
-                      >
-                        {loggingId === swap.id ? 'Applying...' : `Apply Swap (+${swap.credits} Credits)`}
-                      </button>
+                      <span className="font-mono text-xs font-bold text-emerald-400">-{swap.saved} kg</span>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </motion.div>
+                    <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted">
+                      <span className="line-through opacity-60">{swap.from}</span>
+                      <span className="gradient-text font-bold">→</span>
+                      <span className="font-semibold text-text">{swap.to}</span>
+                    </div>
+                    <button
+                      onClick={() => handleApplySwap(swap)}
+                      disabled={loggingId === swap.id}
+                      className="mt-2.5 w-full rounded-xl border border-border bg-surface py-2 text-center text-xs font-bold text-text transition-all hover:bg-emerald-600 hover:text-white hover:border-emerald-500 hover:shadow-glow-lime disabled:opacity-50"
+                    >
+                      {loggingId === swap.id ? 'Applying...' : `Apply Swap (+${swap.credits} Credits)`}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </GlassCard>
 
           {/* Quick Logger */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.4 }}>

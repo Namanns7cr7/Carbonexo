@@ -3,7 +3,9 @@
  * and typed error handling. All API calls go through this.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+import { SNAPSHOT_STORAGE_KEY } from '../constants';
+
+const BASE_URL =process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -25,6 +27,8 @@ export function clearTokens() {
   inFlight.clear();
   if (typeof window !== 'undefined') {
     localStorage.removeItem('cx-refresh');
+    // the cached dashboard snapshot belongs to this session's user
+    localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
   }
 }
 

@@ -104,4 +104,56 @@ class AIServiceTest {
         assertEquals("Eat more greens", tip);
         verify(renderer).render(eq("sustainability_tip"), argThat(map -> "Vegan".equals(map.get("diet"))));
     }
+
+    @Test
+    void chatFallsBackGracefullyWhenProviderThrows() {
+        UUID userId = UUID.randomUUID();
+        when(coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId)).thenReturn(new ArrayList<>());
+        when(renderer.render(eq("coach_system"), anyMap())).thenReturn("System Prompt");
+        when(aiProvider.generate(anyString(), anyString())).thenThrow(new RuntimeException("Vertex AI timeout"));
+
+        var response = service.chat(userId, "What should I eat?");
+
+        assertNotNull(response);
+        assertNotNull(response.result());
+        assertTrue(response.result().contains("optimizing my climate intelligence"));
+        verify(coachRepo, times(2)).save(any(CoachMessage.class));
+    }
+
+    @Test
+    void getChatHistoryPagedFetchesInitialPage() {
+        UUID userId = UUID.randomUUID();
+        CoachMessage msg = new CoachMessage();
+        msg.setUserId(userId);
+        msg.setContent("Test message");
+
+        when(coachRepo.findInitialCursorPage(eq(userId), any())).thenReturn(List.of(msg));
+
+        var page = service.getChatHistoryPaged(userId, null, null, 10);
+
+        assertNotNull(page);
+        assertEquals(1, page.items().size());
+        assertEquals("Test message", page.items().get(0).getContent());
+        verify(coachRepo).findInitialCursorPage(eq(userId), any());
+    }
+
+    @Test
+    void getChatHistoryPagedFetchesBeforeCursor() {
+        UUID userId = UUID.randomUUID();
+        java.time.Instant cursorTime = java.time.Instant.now();
+        UUID cursorId = UUID.randomUUID();
+
+        CoachMessage msg = new CoachMessage();
+        msg.setUserId(userId);
+        msg.setContent("Older message");
+
+        when(coachRepo.findPagedBeforeCursor(eq(userId), eq(cursorTime), eq(cursorId), any())).thenReturn(List.of(msg));
+
+        var page = service.getChatHistoryPaged(userId, cursorTime, cursorId, 10);
+
+        assertNotNull(page);
+        assertEquals(1, page.items().size());
+        assertEquals("Older message", page.items().get(0).getContent());
+        verify(coachRepo).findPagedBeforeCursor(eq(userId), eq(cursorTime), eq(cursorId), any());
+    }
 }

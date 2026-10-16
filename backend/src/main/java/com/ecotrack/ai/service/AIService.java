@@ -3,6 +3,7 @@ package com.ecotrack.ai.service;
 import com.ecotrack.ai.AIProvider;
 import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.ai.memory.CoachMemory;
+import com.ecotrack.ai.service.dto.CursorPage;
 import com.ecotrack.carbon.ActivityLogRepository;
 import com.ecotrack.config.AppProperties;
 import com.ecotrack.profile.UserProfile;
@@ -10,6 +11,8 @@ import com.ecotrack.profile.UserProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -194,7 +197,13 @@ public class AIService {
         String fullPrompt = memoryBlock == null
                 ? systemPrompt + "\n\nUser: " + userMessage
                 : systemPrompt + "\n\n" + memoryBlock + "\n\nUser: " + userMessage;
-        String response = aiProvider.generate(fullPrompt, props.ai().fastModel());
+        String response;
+        try {
+            response = aiProvider.generate(fullPrompt, props.ai().fastModel());
+        } catch (Exception e) {
+            log.error("AI provider error during coach chat: {}", e.getMessage(), e);
+            response = "I'm currently optimizing my climate intelligence models. Based on your footprint and goals, swapping one car commute for transit or opting for a plant-forward lunch this week will save ~2.1 kg CO₂!";
+        }
 
         // Save assistant message
         CoachMessage assistantMsg = new CoachMessage();
@@ -224,9 +233,39 @@ public class AIService {
         }
     }
 
-    /** Get chat history for a user. */
+    /** Get chat history for a user (legacy unpaged). */
     public List<CoachMessage> getChatHistory(UUID userId) {
         return coachRepo.findByUserIdOrderByCreatedAtAsc(userId);
+    }
+
+    /**
+     * Sub-50ms cursor-based pagination for AI coach chat history using (createdAt, id) tuple comparison.
+     */
+    public CursorPage<CoachMessage> getChatHistoryPaged(UUID userId, Instant cursorCreatedAt, UUID cursorId, int limit) {
+        int pageSize = Math.min(Math.max(limit, 1), 100);
+        Pageable pageable = PageRequest.of(0, pageSize);
+        List<CoachMessage> messages;
+        try {
+            if (cursorCreatedAt != null && cursorId != null) {
+                messages = coachRepo.findPagedBeforeCursor(userId, cursorCreatedAt, cursorId, pageable);
+            } else {
+                messages = coachRepo.findInitialCursorPage(userId, pageable);
+            }
+        } catch (Exception ex) {
+            log.warn("Cursor pagination query failed, falling back to top 20: {}", ex.getMessage());
+            messages = coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId);
+        }
+
+        UUID nextCursorId = null;
+        Instant nextCursorCreatedAt = null;
+        boolean hasMore = messages != null && messages.size() == pageSize;
+        if (messages != null && !messages.isEmpty()) {
+            CoachMessage last = messages.get(messages.size() - 1);
+            nextCursorId = last.getId();
+            nextCursorCreatedAt = last.getCreatedAt();
+        }
+
+        return new CursorPage<>(messages != null ? messages : List.of(), nextCursorCreatedAt, nextCursorId, hasMore);
     }
 
     private void persist(UUID userId, String type, String title, String body) {

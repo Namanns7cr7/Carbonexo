@@ -8,6 +8,7 @@ import { getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { CLIMATE_KNOWLEDGE_BASE, generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
 import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Sparkles, Terminal, X } from 'lucide-react';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 interface Msg {
   id: number | string;
@@ -245,125 +246,155 @@ export default function Coach() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-150px)] min-h-[460px] flex-col md:h-[calc(100vh-110px)] relative">
-      {/* header */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-gradient-to-br from-lime to-emerald-400 text-lg shadow-sm">
-            <Sparkles className="h-5 w-5 text-[#0c1d15]" />
-          </div>
-          <div>
-            <div className="text-[15px] font-bold flex items-center gap-1.5">
-              Carbonexo Coach
-              <span className="text-[10px] font-semibold bg-lime-soft text-lime-deep px-1.5 py-0.5 rounded border border-lime/30">
-                Scientifically Grounded
-              </span>
+    <>
+      <GlassCard className="flex h-[calc(100vh-150px)] min-h-[460px] flex-col md:h-[calc(100vh-110px)] relative p-4 sm:p-6 border border-emerald-500/20 bg-slate-900/60 backdrop-blur-md shadow-lg shadow-emerald-500/5">
+        {/* header */}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-gradient-to-br from-emerald-500 to-teal-400 text-lg shadow-md shadow-emerald-500/20">
+              <Sparkles className="h-5 w-5 text-slate-950" />
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-lime-deep">
-              <span className="h-[7px] w-[7px] rounded-full bg-lime animate-pulse" /> Live Climate Data Engine Active
+            <div>
+              <div className="text-[15px] font-bold flex items-center gap-1.5 text-white">
+                Carbonexo Coach
+                <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                  Scientifically Grounded
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                Live Climate Data Engine Active
+              </div>
             </div>
           </div>
+
+          {/* View Knowledge Base Button */}
+          <button
+            onClick={() => setShowSourcesModal(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-slate-800/80 hover:border-emerald-500 hover:text-emerald-300 transition-all shadow-sm text-slate-200"
+          >
+            <BookOpen className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Scientific Sources (Free/Open)</span>
+          </button>
         </div>
 
-        {/* View Knowledge Base Button */}
-        <button
-          onClick={() => setShowSourcesModal(true)}
-          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border bg-surface2 hover:border-lime hover:text-lime-deep transition-all shadow-sm"
-        >
-          <BookOpen className="h-3.5 w-3.5 text-lime-deep" />
-          <span>Scientific Sources (Free/Open)</span>
-        </button>
-      </div>
+        {/* messages */}
+        <div ref={scrollRef} className="cx-scroll flex-1 space-y-3 overflow-y-auto pr-1">
+          {msgs.map((m) =>
+            m.role === 'user' ? (
+              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
+                <div className="max-w-[82%] rounded-[18px_18px_5px_18px] bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2.5 text-[14.5px] font-medium leading-[1.5] text-white shadow-md shadow-emerald-600/20">
+                  {m.text}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start gap-2.5">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-emerald-500/15 text-emerald-400 text-sm mt-0.5 border border-emerald-500/20">
+                  ✦
+                </div>
+                <div className="max-w-[84%] rounded-[18px_18px_18px_5px] border border-emerald-500/20 bg-slate-800/80 backdrop-blur-sm px-4 py-3 text-[14px] leading-[1.55] shadow-sm text-slate-100">
+                  {/* Source Badge if present */}
+                  {m.source && (
+                    <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />
+                      <span>Source: {m.source.split(';')[0]}</span>
+                    </div>
+                  )}
 
-      {/* messages */}
-      <div ref={scrollRef} className="cx-scroll flex-1 space-y-3 overflow-y-auto pr-1">
-        {msgs.map((m) =>
-          m.role === 'user' ? (
-            <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
-              <div className="max-w-[82%] rounded-[18px_18px_5px_18px] bg-lime px-4 py-2.5 text-[14.5px] font-medium leading-[1.5] text-[#0c1d15] shadow-sm">
-                {m.text}
+                  <FormattedMessage text={m.text} />
+
+                  {m.prompt && (
+                    <PromptInspector
+                      prompt={m.prompt}
+                      provider={m.provider}
+                      model={m.model}
+                      source={m.source}
+                      citation={m.citation}
+                    />
+                  )}
+                </div>
+              </motion.div>
+            )
+          )}
+
+          {/* Animated skeleton loaders & pulse indicators for real-time streaming feedback */}
+          {typing && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start gap-2.5"
+            >
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-emerald-500/20 text-emerald-400 text-sm mt-0.5 border border-emerald-500/30">
+                <Sparkles className="h-4 w-4 animate-spin text-emerald-400" />
               </div>
-            </motion.div>
-          ) : (
-            <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start gap-2.5">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-lime-soft text-sm mt-0.5">
-                ✦
-              </div>
-              <div className="max-w-[84%] rounded-[18px_18px_18px_5px] border border-border bg-surface2 px-4 py-3 text-[14px] leading-[1.55] shadow-sm">
-                {/* Source Badge if present */}
-                {m.source && (
-                  <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-lime/10 text-lime-deep border border-lime/25">
-                    <CheckCircle2 className="h-2.5 w-2.5" />
-                    <span>Source: {m.source.split(';')[0]}</span>
+              <div className="w-full max-w-[84%] rounded-[18px_18px_18px_5px] border border-emerald-500/30 bg-slate-900/90 backdrop-blur-md p-4 shadow-lg shadow-emerald-500/5">
+                {/* Pulse and streaming feedback header */}
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    </span>
+                    <span>Gemini 2.0 Flash synthesizing response...</span>
                   </div>
-                )}
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400 border border-emerald-500/20 animate-pulse">
+                    Streaming Real-time
+                  </span>
+                </div>
 
-                <FormattedMessage text={m.text} />
-
-                {m.prompt && (
-                  <PromptInspector
-                    prompt={m.prompt}
-                    provider={m.provider}
-                    model={m.model}
-                    source={m.source}
-                    citation={m.citation}
-                  />
-                )}
+                {/* Animated skeleton lines with shimmering gradient */}
+                <div className="space-y-2.5">
+                  <div className="h-3.5 w-5/6 rounded-md bg-gradient-to-r from-emerald-500/10 via-emerald-500/25 to-emerald-500/10 animate-pulse" />
+                  <div className="h-3.5 w-full rounded-md bg-gradient-to-r from-emerald-500/15 via-emerald-500/30 to-emerald-500/15 animate-pulse [animation-delay:150ms]" />
+                  <div className="h-3.5 w-3/4 rounded-md bg-gradient-to-r from-emerald-500/10 via-emerald-500/25 to-emerald-500/10 animate-pulse [animation-delay:300ms]" />
+                </div>
               </div>
             </motion.div>
-          )
-        )}
-        {typing && (
-          <div className="flex justify-start gap-2.5">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-lime-soft text-sm">✦</div>
-            <div className="flex items-center gap-1.5 rounded-[18px_18px_18px_5px] border border-border bg-surface2 px-4 py-3">
-              <span className="text-xs text-muted font-medium mr-1">Calculating verified metrics</span>
-              {[0, 0.2, 0.4].map((d) => (
-                <span key={d} className="h-1.5 w-1.5 rounded-full bg-lime" style={{ animation: `blink 1.2s ${d}s infinite` }} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* suggestions */}
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {SCIENTIFIC_SUGGESTIONS.map((q) => (
-          <button
-            key={q}
-            onClick={() => send(q)}
-            disabled={typing}
-            className="rounded-full border border-border bg-surface/80 backdrop-blur px-3 py-1.5 text-[12px] font-semibold text-muted transition-all hover:border-lime hover:text-lime-deep hover:bg-lime-soft/40 disabled:opacity-50"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
+        {/* suggestions */}
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {SCIENTIFIC_SUGGESTIONS.map((q) => (
+            <button
+              key={q}
+              onClick={() => send(q)}
+              disabled={typing}
+              className="rounded-full border border-emerald-500/25 bg-slate-900/80 backdrop-blur px-3 py-1.5 text-[12px] font-semibold text-slate-300 transition-all hover:border-emerald-500 hover:text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
 
-      {/* input */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          send(input);
-        }}
-        className="mt-3 flex items-center gap-2 rounded-[16px] border border-border bg-surface p-1.5 pl-4 shadow-sm focus-within:border-lime transition-all"
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask your coach anything about carbon, diet, travel, or appliances..."
-          aria-label="Ask your coach"
-          className="flex-1 bg-transparent text-[14.5px] outline-none"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || typing}
-          className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-lime text-lg font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-40 shadow-sm"
-          aria-label="Send"
+        {/* input */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
+          className="mt-3 flex items-center gap-2 rounded-[16px] border border-emerald-500/30 bg-slate-950/70 p-1.5 pl-4 shadow-lg focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all backdrop-blur-md"
         >
-          ↑
-        </button>
-      </form>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask your coach anything about carbon, diet, travel, or appliances..."
+            aria-label="Ask your coach"
+            className="flex-1 bg-transparent text-[14.5px] outline-none text-white placeholder-slate-400"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || typing}
+            className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-emerald-500 text-lg font-bold text-slate-950 transition-all hover:bg-emerald-400 hover:shadow-glow-lime hover:-translate-y-0.5 disabled:opacity-40 shadow-sm"
+            aria-label="Send"
+          >
+            ↑
+          </button>
+        </form>
+      </GlassCard>
 
       {/* Knowledge Base Modal */}
       <AnimatePresence>
@@ -439,6 +470,6 @@ export default function Coach() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
