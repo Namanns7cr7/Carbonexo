@@ -87,6 +87,33 @@ class SimulationServiceTest {
     }
 
     @Test
+    void replaceWithACustomReplacementUsesItsStatedRate() {
+        SimulationService svc = build();
+        stubFactor("car_ride", "0.18");
+
+        var item = new SimulationRequest.SimulationItem(
+                "car_ride", "travel", new BigDecimal("20"), "per_week",
+                SimulationRequest.DeltaType.REPLACE_WITH, null, null, null, null,
+                "Electric cycle", new BigDecimal("0.01"));
+        SimulationResponse res = svc.simulate(userId, new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH));
+
+        BigDecimal expectedProjected = new BigDecimal("86.6").multiply(new BigDecimal("0.01")).setScale(3, RoundingMode.HALF_UP);
+        assertEquals(expectedProjected, res.breakdown().get(0).projectedKg());
+        assertTrue(res.deltaCo2Kg().compareTo(BigDecimal.ZERO) < 0);
+    }
+
+    @Test
+    void replaceWithNeedsSomeReplacement() {
+        SimulationService svc = build();
+        stubFactor("car_ride", "0.18");
+        var item = new SimulationRequest.SimulationItem(
+                "car_ride", "travel", new BigDecimal("20"), "per_week",
+                SimulationRequest.DeltaType.REPLACE_WITH, null, null, null, null, "Half-specified", null);
+        assertThrows(com.ecotrack.exception.BadRequestException.class,
+                () -> svc.simulate(userId, new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH)));
+    }
+
+    @Test
     void reduceByScenarioLowersTheQuantityBeforeApplyingTheSameFactor() {
         SimulationService svc = build();
         stubFactor("home_electricity", "0.45");

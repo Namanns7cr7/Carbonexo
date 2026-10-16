@@ -175,11 +175,20 @@ public class SimulationService {
                                            String region) {
         if (item.deltaType() == SimulationRequest.DeltaType.REPLACE_WITH) {
             String replacementKey = item.replacementFactorKey();
-            if (replacementKey == null || replacementKey.isBlank()) {
-                throw new BadRequestException("replacementFactorKey is required for REPLACE_WITH changes");
-            }
             BigDecimal horizonQuantity = item.quantity().multiply(weeklyOccurrences).multiply(horizonWeeks);
-            return carbonService.calculateCo2(replacementKey, horizonQuantity, region);
+            boolean hasCatalogReplacement = replacementKey != null && !replacementKey.isBlank();
+            boolean hasCustomReplacement = item.customReplacementLabel() != null && !item.customReplacementLabel().isBlank()
+                    && item.customReplacementFactorKgPerUnit() != null
+                    && item.customReplacementFactorKgPerUnit().signum() >= 0;
+            if (hasCatalogReplacement) {
+                return carbonService.calculateCo2(replacementKey, horizonQuantity, region);
+            }
+            if (hasCustomReplacement) {
+                // Same read-only, never-persisted treatment as a custom baseline activity.
+                return horizonQuantity.multiply(item.customReplacementFactorKgPerUnit()).setScale(3, RoundingMode.HALF_UP);
+            }
+            throw new BadRequestException(
+                    "REPLACE_WITH needs replacementFactorKey or both customReplacementLabel and customReplacementFactorKgPerUnit");
         }
 
         // REDUCE_BY: cut the per-occurrence quantity by `amount` (never below zero).
