@@ -30,7 +30,6 @@ const MILESTONES: Milestone[] = [
   { id: 'first-action', mark: '✅', label: 'First swap done', detail: 'Complete one action from your plan.', earned: (d) => (d.actionsDone ?? 0) >= 1 },
   { id: 'week', mark: '🗓️', label: 'A full week', detail: 'Seven different days tracked.', earned: (d) => (d.daysTracked ?? 0) >= 7 },
   { id: 'five-actions', mark: '🌿', label: 'Five swaps', detail: 'Five actions completed.', earned: (d) => (d.actionsDone ?? 0) >= 5 },
-  { id: 'ten-kg', mark: '🌍', label: '10 kg avoided', detail: 'Estimated, from completed actions.', earned: (d) => (d.savedEstimateKg ?? 0) >= 10 },
 ];
 
 export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) {
@@ -47,7 +46,7 @@ export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) 
             Every action, stamped.
           </h2>
           <p className="mb-8 max-w-[480px] text-[16px] leading-[1.6] text-muted">
-            Your Impact Passport keeps the record: days tracked, swaps completed, and the emissions those swaps are estimated to avoid.
+            Your Impact Passport keeps the record: days tracked, swaps completed, and how heavy a typical logged day is.
           </p>
 
           <TactileCard className={`mb-6 rounded-[24px] p-6 ${s.panel}`} style={{ background: 'linear-gradient(150deg,#123324 0%,#0a1f16 60%,#06130d 100%)' }}>
@@ -68,10 +67,10 @@ export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) 
             <dl className="mt-5 grid grid-cols-3 gap-3">
               <Stat label="Days tracked" value={real ? String(d.daysTracked ?? 0) : '—'} />
               <Stat label="Swaps done" value={real ? String(d.actionsDone ?? 0) : '—'} />
-              <Stat label="Avoided (est.)" value={real ? `${(d.savedEstimateKg ?? 0).toFixed(1)} kg` : '—'} />
+              <Stat label="Avg / logged day" value={real && d.avgPerLoggedDayKg !== null ? `${d.avgPerLoggedDayKg.toFixed(1)} kg` : '—'} />
             </dl>
             <p className="mt-4 text-[11.5px] leading-[1.5] text-muted">
-              Avoided emissions are estimates from the action catalog, not measurements. Green Points are in-app rewards — not certified carbon credits.
+              Figures come from what you log; each entry is an estimate from emission factors. Carbonexo does not claim measured savings. Green Points are in-app rewards — not certified carbon credits.
             </p>
           </TactileCard>
         </div>

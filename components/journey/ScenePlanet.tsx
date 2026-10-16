@@ -60,7 +60,7 @@ export const ScenePlanet = forwardRef<HTMLElement>(function ScenePlanet(_, ref) 
             >
               Explore Your Impact <span aria-hidden>↓</span>
             </MagneticButton>
-            <MagneticButton href="/onboarding" strength={5} className="rounded-[14px] border border-border bg-surface px-[26px] py-4 text-base font-semibold text-text">
+            <MagneticButton href="/register" strength={5} className="rounded-[14px] border border-border bg-surface px-[26px] py-4 text-base font-semibold text-text">
               Start Tracking →
             </MagneticButton>
           </motion.div>
@@ -68,6 +68,7 @@ export const ScenePlanet = forwardRef<HTMLElement>(function ScenePlanet(_, ref) 
             <Fact term="Day & night" value={clock ? `as of ${clock}` : 'live'} />
             <Fact term="Data" value="OWID · Ember · GCP" />
             <Fact term="Grab the planet" value="drag to turn it" />
+            <Fact term="Planet colour" value="illustrative · follows the story" />
           </motion.dl>
         </div>
       </div>

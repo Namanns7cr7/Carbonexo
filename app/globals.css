@@ -47,13 +47,15 @@
 }
 
 .dark {
-  --bg: #0a0e1a;
-  --surface: rgba(255, 255, 255, 0.04);
-  --surface2: rgba(255, 255, 255, 0.06);
-  --card: rgba(15, 23, 42, 0.7);
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --border: rgba(255, 255, 255, 0.08);
+  /* Living World: dark Earth and forest. The app chrome sits in the same
+     night the planet does, so landing → app reads as one place. */
+  --bg: #050c0a;
+  --surface: rgba(214, 255, 236, 0.035);
+  --surface2: rgba(214, 255, 236, 0.06);
+  --card: rgba(9, 22, 17, 0.78);
+  --text: #eef6f1;
+  --muted: #93a89d;
+  --border: rgba(190, 255, 225, 0.09);
   --lime: #34d399;
   --lime-deep: #6ee7b7;
   --lime-soft: rgba(52, 211, 153, 0.12);
@@ -61,16 +63,16 @@
   --blue-soft: rgba(129, 140, 248, 0.12);
   --danger: #f87171;
   --danger-soft: rgba(248, 113, 113, 0.12);
-  --ink: linear-gradient(158deg, #1e293b, #0f172a 78%);
-  --ink-text: #f1f5f9;
-  --ink-muted: #94a3b8;
+  --ink: linear-gradient(158deg, #0f2a20, #06140f 78%);
+  --ink-text: #eef6f1;
+  --ink-muted: #93a89d;
   --ink-border: rgba(255, 255, 255, 0.08);
   --shadow: rgba(0, 0, 0, 0.5);
   --shadow-strong: rgba(0, 0, 0, 0.6);
   --glow: rgba(52, 211, 153, 0.25);
-  --glow-a: rgba(52, 211, 153, 0.15);
-  --glow-b: rgba(129, 140, 248, 0.1);
-  --navbg: rgba(10, 14, 26, 0.85);
+  --glow-a: rgba(52, 211, 153, 0.13);
+  --glow-b: rgba(47, 127, 159, 0.12);
+  --navbg: rgba(5, 12, 10, 0.86);
   --accent-violet: #a78bfa;
   --accent-amber: #fbbf24;
   --accent-teal: #2dd4bf;

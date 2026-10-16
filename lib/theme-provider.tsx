@@ -14,8 +14,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // hydrate from storage / system preference
   useEffect(() => {
     const stored = localStorage.getItem('cx-theme') as Theme | null;
-    const initial =
-      stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    // Carbonexo lives on the dark Earth by default; light stays one tap away.
+    const initial: Theme = stored ?? 'dark';
     setTheme(initial);
   }, []);
 

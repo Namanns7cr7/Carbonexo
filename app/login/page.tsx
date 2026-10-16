@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { login, setTokens } from '@/lib/api/auth';
+import { login } from '@/lib/api/auth';
 import { Logo } from '@/components/Logo';
-import { AmbientBackground } from '@/components/AmbientBackground';
+import { WorldBackdrop } from '@/components/living-world/WorldBackdrop';
 import { Card } from '@/components/app/ui';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-      <AmbientBackground />
+      <WorldBackdrop />
       <div className="relative z-10 w-full max-w-[440px]">
         <div className="mb-8 flex flex-col items-center text-center">
           <Link href="/" aria-label="Carbonexo home">
@@ -70,7 +70,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-blue-soft/20 border border-blue/30 px-4 py-3 text-xs font-semibold text-blue text-center">
+              <div role="alert" className="flex items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-center text-xs font-semibold text-danger">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span>{error}</span>
               </div>
@@ -95,28 +95,12 @@ export default function LoginPage() {
             <span className="relative bg-surface px-3 text-xs font-semibold text-muted uppercase">or</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setTokens('demo-access-token', 'demo-refresh-token');
-              try {
-                const raw = localStorage.getItem('carbonexo:v1');
-                if (raw) {
-                  const parsed = JSON.parse(raw);
-                  if (parsed && parsed.profile) {
-                    parsed.profile.onboarded = true;
-                    parsed.profile.name = parsed.profile.name && parsed.profile.name !== 'You' ? parsed.profile.name : 'Alex';
-                    localStorage.setItem('carbonexo:v1', JSON.stringify(parsed));
-                  }
-                }
-              } catch {}
-              window.location.assign('/app');
-            }}
-            className="flex items-center justify-center gap-2 w-full rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/10 py-3 text-center text-sm font-bold text-emerald-600 dark:text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500"
+          <Link
+            href="/welcome"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/10 py-3 text-center text-sm font-bold text-emerald-600 transition-all hover:border-emerald-500 hover:bg-emerald-500/20 dark:text-emerald-400"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>Continue to Demo Dashboard &rarr;</span>
-          </button>
+            <span>Take the tour first &rarr;</span>
+          </Link>
         </Card>
 
         <p className="mt-6 text-center text-sm text-muted">

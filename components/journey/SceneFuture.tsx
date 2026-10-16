@@ -98,7 +98,7 @@ export const SceneFuture = forwardRef<HTMLElement>(function SceneFuture(_, ref) 
                 Start tracking your daily footprint and build better habits with Carbonexo.
               </p>
               <div className="flex flex-wrap justify-center gap-3.5">
-                <MagneticButton href="/onboarding" className="rounded-[14px] bg-[#0c1d15] px-[30px] py-4 text-base font-bold text-white">
+                <MagneticButton href="/register" className="rounded-[14px] bg-[#0c1d15] px-[30px] py-4 text-base font-bold text-white">
                   Start Tracking Now →
                 </MagneticButton>
                 <MagneticButton href="/login" strength={5} className="rounded-[14px] bg-white/90 px-7 py-4 text-base font-bold text-[#0c1d15]">

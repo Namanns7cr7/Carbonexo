@@ -51,7 +51,7 @@ export const SceneFootprint = forwardRef<HTMLElement>(function SceneFootprint(_,
             </motion.div>
             <motion.div {...enter(0.16)} className="mt-7 flex flex-wrap items-center gap-3.5">
               <MagneticButton
-                href={d.mode === 'real' ? '/app/track' : '/onboarding'}
+                href={d.mode === 'real' ? '/app/track' : '/register'}
                 className="rounded-[14px] bg-lime px-6 py-3.5 text-[15px] font-bold text-[#0c1d15]"
                 style={{ boxShadow: '0 12px 30px -12px var(--lime)' }}
               >

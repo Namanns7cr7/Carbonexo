@@ -24,6 +24,7 @@ import { COUNTRY_CO2 } from '@/lib/experience/co2';
 import { tripView, TRIPS } from '@/lib/experience/trips';
 import { SCENES, anchorAt, homeLongitude, keyframes, portraitScale, storyPosition, type SceneId } from '@/lib/experience/journey';
 import type { GlobeAnchor } from '@/lib/physics/globe';
+import { storyVitality } from '@/lib/living-world/derive';
 import { ScenePlanet } from './ScenePlanet';
 import { SceneWorld, type WorldSelection } from './SceneWorld';
 import { SceneFootprint } from './SceneFootprint';
@@ -60,6 +61,8 @@ export function PlanetJourney() {
 
   const frames = useMemo(() => keyframes({ ...ctx, narrow }), [ctx, narrow]);
   const anchorRef = useRef<GlobeAnchor>({ key: 'scene:planet', ...frames.planet });
+  // Story channel of the Living World: illustrative, driven by reading progress, never by data.
+  const vitalityRef = useRef(storyVitality(0));
   const scrim = useRef<HTMLDivElement>(null);
   const poster = useRef<HTMLDivElement>(null);
   const progress = useRef<HTMLDivElement>(null);
@@ -82,6 +85,10 @@ export function PlanetJourney() {
     const pos = storyPosition(centers, window.scrollY + vh / 2);
     const { anchor, dim, scene: at } = anchorAt(frames, pos);
 
+    // Dark, hazed Earth at the top of the story; a living one by the end.
+    const story = (pos.index + pos.t) / (SCENES.length - 1);
+    vitalityRef.current = storyVitality(story);
+
     // In the World scene, a selection takes the camera to it.
     const sel = selRef.current;
     let next = anchor;
@@ -101,6 +108,7 @@ export function PlanetJourney() {
 
     if (scrim.current) scrim.current.style.opacity = String(dim);
     if (poster.current) {
+      poster.current.style.setProperty('--vitality', vitalityRef.current.toFixed(3));
       // The static fallback has no camera — slide the poster to the scene's framing instead.
       // With WebGL the projection does this, so the layer must stay put.
       poster.current.style.transform =
@@ -173,7 +181,8 @@ export function PlanetJourney() {
             selectedIso={scene === 'world' && selection.tab !== 'trip' ? selection.iso : null}
             onSelectCountry={(iso) => setSelection((p) => ({ ...p, iso, tab: p.tab === 'trip' ? 'co2' : p.tab }))}
             route={route}
-            label="Planet Earth, lit as it is right now."
+            vitalityRef={vitalityRef}
+            label="Planet Earth, lit as it is right now. Its colour shifts from hazed to green as the story unfolds; that change is illustrative, not data."
           />
         </div>
         <div ref={scrim} aria-hidden className="pointer-events-none absolute inset-0 bg-[#030709] transition-opacity duration-300" style={{ opacity: 0 }} />
@@ -235,7 +244,7 @@ function JourneyNav({ active, progressRef }: { active: SceneId; progressRef: Rea
             Sign in
           </Link>
           <Link
-            href="/onboarding"
+            href="/register"
             className="hidden whitespace-nowrap rounded-xl bg-lime px-5 py-[11px] text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-px md:inline-block"
           >
             Start Tracking
@@ -262,7 +271,7 @@ function JourneyNav({ active, progressRef }: { active: SceneId; progressRef: Rea
           <Link href="/login" onClick={() => setOpen(false)} className="rounded-[10px] px-1.5 py-3 text-base font-semibold text-muted">
             Sign in
           </Link>
-          <Link href="/onboarding" onClick={() => setOpen(false)} className="mt-2 rounded-xl bg-lime py-3.5 text-center text-[15px] font-bold text-[#0c1d15]">
+          <Link href="/register" onClick={() => setOpen(false)} className="mt-2 rounded-xl bg-lime py-3.5 text-center text-[15px] font-bold text-[#0c1d15]">
             Start Tracking
           </Link>
         </div>

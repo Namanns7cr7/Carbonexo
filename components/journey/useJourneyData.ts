@@ -31,7 +31,8 @@ export interface FootprintView {
   suggestion: ActionTemplate | null;
   streak: number | null;
   actionsDone: number | null;
-  savedEstimateKg: number | null;
+  /** Average over days with anything logged, last 7 days. Never a 'saved' figure. */
+  avgPerLoggedDayKg: number | null;
   daysTracked: number | null;
 }
 
@@ -65,7 +66,10 @@ export function useJourneyData(): FootprintView {
         suggestion: big ? ACTIONS.find((a) => a.category === big.category) ?? null : null,
         streak: carbon.streak,
         actionsDone: carbon.completedCount,
-        savedEstimateKg: Math.round(carbon.totalSaved * 10) / 10,
+        avgPerLoggedDayKg: (() => {
+          const logged = carbon.weekTotals.filter((w) => w.total > 0);
+          return logged.length ? Math.round((logged.reduce((s, w) => s + w.total, 0) / logged.length) * 10) / 10 : null;
+        })(),
         daysTracked: days.size,
       };
     }
@@ -84,7 +88,7 @@ export function useJourneyData(): FootprintView {
       suggestion: top ? ACTIONS.find((a) => a.category === top.category) ?? null : null,
       streak: null,
       actionsDone: null,
-      savedEstimateKg: null,
+      avgPerLoggedDayKg: null,
       daysTracked: null,
     };
   }, [authed, carbon]);
