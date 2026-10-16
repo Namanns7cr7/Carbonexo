@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carbonexo — Complete App Architecture, Formulas, Database & End-to-End Workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070a10;
+      --bg-gradient: radial-gradient(ellipse 90% 50% at 50% -10%, rgba(16, 185, 129, 0.18), transparent 70%), #070a10;
+      --bg-surface: #0e1520;
+      --bg-surface-hover: #131c2a;
+      --bg-surface-subtle: #162234;
+      --bg-terminal: #070d18;
+      
+      --border: rgba(255, 255, 255, 0.09);
+      --border-bright: rgba(52, 211, 153, 0.4);
+      --border-accent: rgba(163, 230, 53, 0.4);
+      
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --color-lime: #a3e635;
+      --color-emerald: #10b981;
+      --color-teal: #14b8a6;
+      --color-cyan: #38bdf8;
+      --color-blue: #3b82f6;
+      --color-indigo: #6366f1;
+      --color-purple: #c084fc;
+      --color-amber: #fbbf24;
+      --color-rose: #f43f5e;
+      
+      --card-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.55);
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-gradient: radial-gradient(ellipse 90% 50% at 50% -10%, rgba(16, 185, 129, 0.14), transparent 70%), #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-hover: #f8fafc;
+      --bg-surface-subtle: #f1f5f9;
+      --border: rgba(15, 23, 42, 0.1);
+      --border-bright: rgba(16, 185, 129, 0.5);
+      --text: #0f172a;
+      --text-muted: #334155;
+      --text-dim: #64748b;
+      --card-shadow: 0 12px 36px -10px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    /* Top Sticky Header */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(14, 21, 32, 0.9);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+    [data-theme="light"] .top-nav {
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #a3e635 0%, #10b981 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #062414;
+      font-weight: 900;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.35rem;
+      list-style: none;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--text);
+      background: var(--bg-surface-subtle);
+    }
+
+    .btn-launch {
+      background: linear-gradient(135deg, #a3e635 0%, #10b981 100%);
+      color: #062414 !important;
+      padding: 0.55rem 1.25rem;
+      border-radius: 9999px;
+      font-weight: 800;
+      text-decoration: none;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-launch:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 2.5rem 0 3.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3.5rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--color-emerald);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.3rem, 5.5vw, 3.8rem);
+      font-weight: 900;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 25%, #34d399 70%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    [data-theme="light"] .hero h1 {
+      background: linear-gradient(135deg, #0f172a 25%, #059669 70%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-lead {
+      max-width: 860px;
+      margin: 0 auto 2.5rem;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .app-modules-pill-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin: 2rem 0 1rem;
+    }
+    .module-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.45rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .module-pill:hover {
+      border-color: var(--color-emerald);
+      color: var(--text);
+      transform: translateY(-2px);
+    }
+
+    /* Section Styles */
+    .section-block {
+      margin-bottom: 5rem;
+      scroll-margin-top: 5.5rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.85rem;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title span.num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #a3e635 0%, #10b981 100%);
+      color: #062414;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 900;
+    }
+
+    .section-lead {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
+      max-width: 960px;
+    }
+
+    /* Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.65rem;
+      box-shadow: var(--card-shadow);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 1.18rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    /* Tags */
+    .tag {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      letter-spacing: 0.06em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .tag-travel { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-food { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .tag-energy { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-shop { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .tag-api { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .tag-twin { background: rgba(6, 182, 212, 0.15); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+    /* Formula Box */
+    .formula-box {
+      background: #090f19;
+      border: 1px solid rgba(45, 212, 191, 0.25);
+      border-left: 4px solid var(--color-emerald);
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+      color: #38bdf8;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .formula-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #34d399;
+      margin-bottom: 0.4rem;
+    }
+
+    .param-list {
+      list-style: none;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0.75rem 0;
+    }
+    .param-list li {
+      padding: 0.28rem 0;
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+    }
+    .param-key {
+      font-family: var(--font-mono);
+      color: var(--color-emerald);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .example-box {
+      font-size: 0.82rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      margin-top: 0.85rem;
+      line-height: 1.5;
+    }
+    .example-box code {
+      font-family: var(--font-mono);
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--color-emerald);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    /* Terminal Code Blocks */
+    .code-terminal {
+      background: #070d18 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 0.85rem 0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .terminal-bar {
+      background: #0f172a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.55rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ef4444; }
+    .dot-y { background: #f59e0b; }
+    .dot-g { background: #10b981; }
+
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .code-terminal pre {
+      background: #070d18 !important;
+      padding: 1.15rem 1.25rem !important;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: #f1f5f9 !important;
+      line-height: 1.6;
+      margin: 0 !important;
+    }
+
+    /* Syntax Tokens */
+    .tok-comment { color: #64748b !important; font-style: italic; }
+    .tok-key { color: #38bdf8 !important; font-weight: 600; }
+    .tok-str { color: #34d399 !important; }
+    .tok-num { color: #fbbf24 !important; font-weight: 600; }
+    .tok-bool { color: #c084fc !important; font-weight: 700; }
+
+    /* Tables */
+    .table-wrapper {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      box-shadow: var(--card-shadow);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
+    th {
+      background: var(--bg-surface-subtle);
+      color: var(--text);
+      font-weight: 700;
+      padding: 0.9rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td { padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); color: var(--text); }
+    .badge-code {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    /* Workflow Diagram & Steps */
+    .workflow-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.25rem;
+      margin: 2rem 0;
+      box-shadow: var(--card-shadow);
+    }
+
+    .workflow-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .step-node {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem 1.25rem;
+      transition: all 0.2s;
+    }
+    .step-node:hover {
+      border-color: var(--color-emerald);
+      transform: translateY(-2px);
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a3e635 0%, #10b981 100%);
+      color: #062414;
+      font-weight: 900;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .step-title {
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+
+    .step-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Redirection Banner at Bottom */
+    .redirect-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(56, 189, 248, 0.18));
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      border-radius: 24px;
+      padding: 3rem 2rem;
+      text-align: center;
+      margin-top: 5rem;
+      box-shadow: 0 15px 40px -15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.75rem;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      border-color: var(--color-emerald);
+      transform: translateY(-2px);
+    }
+  
+    .image-showcase {
+      margin: 2.25rem 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    .image-showcase img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+      max-height: 480px;
+    }
+    .image-showcase-caption {
+      padding: 1rem 1.5rem;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .image-showcase-caption strong {
+      color: var(--text);
+    }
+    .hero-visual-card {
+      margin: 2.5rem auto 1.5rem;
+      max-width: 1080px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      box-shadow: 0 20px 60px -15px rgba(16, 185, 129, 0.25);
+      position: relative;
+      text-align: left;
+    }
+    .hero-visual-card img {
+      width: 100%;
+      display: block;
+      max-height: 440px;
+      object-fit: cover;
+    }
+    .hero-visual-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem 2rem;
+      background: linear-gradient(to top, rgba(7, 10, 16, 0.95) 15%, rgba(7, 10, 16, 0.7) 65%, transparent 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .module-code {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--color-emerald);
+      margin-right: 0.4rem;
+      border: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .pill-index {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--color-emerald);
+      margin-right: 0.35rem;
+    }
+
+  
+    /* Motion & Dynamic Visuals */
+    .ambient-glow-1 {
+      position: fixed;
+      top: 5%;
+      left: 10%;
+      width: 550px;
+      height: 550px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.09) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(80px);
+      animation: floatGlow1 18s ease-in-out infinite alternate;
+    }
+    .ambient-glow-2 {
+      position: fixed;
+      bottom: 10%;
+      right: 5%;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(90px);
+      animation: floatGlow2 22s ease-in-out infinite alternate;
+    }
+    @keyframes floatGlow1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(80px, 100px) scale(1.2); }
+    }
+    @keyframes floatGlow2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-90px, -70px) scale(1.25); }
+    }
+
+    .card, .pillar-card, .simulator-box {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+    .card:hover, .pillar-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 45px -12px rgba(16, 185, 129, 0.22);
+    }
+
+    /* Laser scan line over images */
+    .image-showcase {
+      position: relative;
+    }
+    .image-showcase::after, .hero-visual-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #38bdf8, #34d399, transparent);
+      box-shadow: 0 0 16px 3px rgba(52, 211, 153, 0.85);
+      animation: scanBeam 5s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 5;
+    }
+    @keyframes scanBeam {
+      0% { top: 0%; opacity: 0; }
+      12% { opacity: 0.9; }
+      88% { opacity: 0.9; }
+      100% { top: 94%; opacity: 0; }
+    }
+
+    /* Button Shimmer */
+    .btn-launch, .btn-demo {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-launch::after, .btn-demo::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 45%;
+      height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transform: rotate(25deg);
+      animation: btnShimmer 4s infinite;
+    }
+    @keyframes btnShimmer {
+      0% { left: -60%; }
+      30%, 100% { left: 140%; }
+    }
+
+    /* Scroll reveal */
+    .reveal-item {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-item.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation with Quick Redirection -->
+  <header class="top-nav">
+    <a href="/app" class="brand">
+      <div class="brand-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+      <span>Carbonexo Full App Architecture</span>
+    </a>
+
+    <nav>
+      <ul class="nav-links">
+        <li><a href="#formulas">1. All Formulas</a></li>
+        <li><a href="#datasets">2. Datasets</a></li>
+        <li><a href="#tables">3. Database Tables</a></li>
+        <li><a href="#apis">4. REST APIs</a></li>
+        <li><a href="#workflow">5. End-to-End Workflow</a></li>
+      </ul>
+    </nav>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <a href="/pitch.html" style="color: var(--color-emerald); font-weight: 700; font-size: 0.85rem; text-decoration: none; padding: 0.45rem 0.75rem; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
+        Judge Pitch Deck
+      </a>
+      <a href="/app" class="btn-launch">
+        Launch Carbonexo App &rarr;
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero Header -->
+    <section class="hero">
+      <div class="hero-badge">Enterprise Full-Stack Architecture • Verified Scientific Engine</div>
+      <h1>Complete App Architecture, Formulas, Database & End-to-End Workflow</h1>
+      <p class="hero-lead">
+        Carbonexo is an enterprise-grade autonomous carbon accounting platform covering <strong>all 6 core application modules</strong>: 
+        Daily Activity Tracking, Action Plan Optimization, Carbon Twin Counterfactual Simulations, OCR Energy Bill Auditing, Grounded AI Coaching, and an Auditable Eco-Credit Ledger.
+      </p>
+
+      
+      <div class="hero-visual-card reveal-item">
+        <img src="images/architecture-telemetry.jpg" alt="Carbonexo Full Architecture & Telemetry Pipeline">
+        <div class="hero-visual-overlay">
+          <div>
+            <div style="font-weight: 800; font-size: 1.15rem; color: #fff; margin-bottom: 0.25rem;">Enterprise Telemetry & Computational Carbon Architecture</div>
+            <div style="font-size: 0.85rem; color: #a7f3d0;">Grounded in UK DEFRA 2024, Oxford Science LCA, and US EPA eGRID Subregional Models</div>
+          </div>
+          <span class="badge-code" style="background: rgba(16, 185, 129, 0.25); border-color: rgba(52, 211, 153, 0.6); color: #34d399;">
+            All 6 Production Modules
+          </span>
+        </div>
+      </div>
+
+      <div class="app-modules-pill-bar">
+        <a href="#formula-track" class="module-pill"><span class="pill-index">01</span> Daily Tracking</a>
+        <a href="#formula-actions" class="module-pill"><span class="pill-index">02</span> Action Plans</a>
+        <a href="#formula-twin" class="module-pill"><span class="pill-index">03</span> Carbon Twin</a>
+        <a href="#formula-bills" class="module-pill"><span class="pill-index">04</span> OCR Bill Auditing</a>
+        <a href="#formula-coach" class="module-pill"><span class="pill-index">05</span> AI Coach</a>
+        <a href="#formula-credits" class="module-pill"><span class="pill-index">06</span> Credit Ledger</a>
+      </div>
+
+      <div style="margin-top: 2rem;">
+        <a href="/app" class="btn-launch" style="font-size: 1.05rem; padding: 0.8rem 2rem;">
+          Open Live Application (All Modules Active) &rarr;
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 1: ALL FORMULAS ACROSS ALL MODULES -->
+    <section id="formulas" class="section-block reveal-item">
+      <div class="section-header">
+        <h2 class="section-title"><span class="num">1</span> Mathematical Formulas Used Across All Modules</h2>
+        <span class="badge-code">GHG Protocol Scope 1, 2 & 3 Tier-1/2 Methods</span>
+      </div>
+      <p class="section-lead">
+        Below are the exact mathematical equations implemented in <code>lib/carbon.ts</code>, <code>lib/data/climate-knowledge.ts</code>, <code>lib/api/simulations.ts</code>, and <code>lib/store.ts</code>.
+      </p>
+
+      <div class="grid-2">
+        <!-- MODULE 1: DAILY TRACKING -->
+        <div id="formula-track" class="card reveal-item" style="border-top: 4px solid #10b981;">
+          <div class="card-title">
+            <span><span class="module-code">MOD-01</span> Daily Activity Multi-Modal Tracking</span>
+            <span class="tag tag-travel">Track Screen</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Computes gross emissions across 5 categories: Travel, Food, Electricity, Shopping, and Waste.
+          </p>
+          <div class="formula-box">
+            <div class="formula-badge">DAILY LOG EQUATION</div>
+            E_item = Quantity × Factor_category<br><br>
+            E_daily_total = ∑ E_travel + ∑ E_food + ∑ E_elec + ∑ E_shop + ∑ E_waste
+          </div>
+          <ul class="param-list">
+            <li><span class="param-key">Travel Factors:</span> Petrol Car (0.18 kg/km), Bus (0.08), Metro (0.04), Flight (0.25), Bike (0)</li>
+            <li><span class="param-key">Food Factors:</span> Beef meal (5.0 kg/item), Chicken (1.2), Veg (0.6), Vegan (0.4)</li>
+            <li><span class="param-key">Electricity Factor:</span> Grid average (0.45 kg CO₂e / kWh)</li>
+            <li><span class="param-key">Shopping:</span> New clothing (10 kg), Electronics (30 kg), Online delivery (2.5 kg)</li>
+            <li><span class="param-key">Waste:</span> General bag (0.5 kg), Food waste (0.4 kg), Plastic bottle (0.2 kg)</li>
+          </ul>
+          <div class="example-box">
+            <strong>Worked Example:</strong> 10 km car commute + 1 beef lunch + 4 kWh AC:<br>
+            <code>(10 × 0.18) + (1 × 5.0) + (4 × 0.45) = 1.8 + 5.0 + 1.8 = 8.6 kg CO₂e/day</code>.
+          </div>
+        </div>
+
+        <!-- MODULE 2: ACTION PLAN -->
+        <div id="formula-actions" class="card reveal-item" style="border-top: 4px solid #3b82f6;">
+          <div class="card-title">
+            <span><span class="module-code">MOD-02</span> Action Plan Habit Commitments</span>
+            <span class="tag tag-food">Actions Screen</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Calculates verified weekly carbon abatement when user activates micro-commitments.
+          </p>
+          <div class="formula-box">
+            <div class="formula-badge">HABIT ABATEMENT EQUATION</div>
+            ΔE_action = Baseline_emissions_week - Shifted_emissions_week<br><br>
+            E_weekly_score = 100 - [ (E_week - Goal_week) / Peer_average ] × 100
+          </div>
+          <ul class="param-list">
+            <li><span class="param-key">Metro Swap (2 days):</span> Saves <strong>8.0 kg CO₂e/week</strong> (Easy)</li>
+            <li><span class="param-key">Two Meat-Free Days:</span> Saves <strong>6.4 kg CO₂e/week</strong> (Easy)</li>
+            <li><span class="param-key">AC 30-min Timer:</span> Saves <strong>2.1 kg CO₂e/week</strong> (Easy)</li>
+            <li><span class="param-key">Carpool Long Trips:</span> Saves <strong>5.5 kg CO₂e/week</strong> (Medium)</li>
+            <li><span class="param-key">Buy 1 Fewer Item (2nd-hand):</span> Saves <strong>9.0 kg CO₂e/week</strong> (Hard)</li>
+          </ul>
+          <div class="example-box">
+            <strong>Worked Example:</strong> Activating Metro + Meat-Free + AC Timer reduces weekly footprint by <code>8.0 + 6.4 + 2.1 = 16.5 kg CO₂e/week</code> (~858 kg/year).
+          </div>
+        </div>
+
+        
+      <!-- FIGURE 1: GREEN MOBILITY & TRANSIT LCA -->
+      <div class="image-showcase reveal-item">
+        <img src="images/green-mobility-transit.jpg" alt="Green Electric Transit and Multi-Modal Mobility">
+        <div class="image-showcase-caption">
+          <span><strong>Figure 1: Multi-Modal Transit Decarbonization</strong> &mdash; 79.5% lifecycle emission reduction swapping car trips to electric rail (UK DEFRA 2024)</span>
+          <span class="badge-code">Verified Scope 3 Modal Shift</span>
+        </div>
+      </div>
+
+        <!-- MODULE 3: CARBON TWIN SIMULATOR -->
+        <div id="formula-twin" class="card reveal-item" style="border-top: 4px solid #06b6d4;">
+          <div class="card-title">
+            <span><span class="pill-index">03</span> Carbon Twin Engine</span>
+            <span class="tag tag-twin">Simulate Screen</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Runs counterfactual behavioral forecasting before lifestyle decisions are committed.
+          </p>
+          <div class="formula-box">
+            <div class="formula-badge">COUNTERFACTUAL FORECASTING MATRIX</div>
+            ΔE_weekly = Frequency_wk × Distance × (EF_baseline - EF_alternative)<br><br>
+            ΔE_annual = ΔE_weekly × 52 weeks<br><br>
+            Trees_equivalent = ΔE_annual ÷ 21.77 kg/tree/year
+          </div>
+          <ul class="param-list">
+            <li><span class="param-key">Modal Shift Reduction:</span> <code>(0.171 - 0.035) / 0.171 = 79.5%</code> direct cut</li>
+            <li><span class="param-key">Gasoline Avoided:</span> <code>Gallons = ΔE_annual ÷ 8.887 kg/gal</code></li>
+            <li><span class="param-key">Credit Minting:</span> <code>Credits = ⌊ ΔE_weekly × 10 ⌋</code></li>
+          </ul>
+          <div class="example-box">
+            <strong>Worked Example:</strong> Swapping 3 car trips (15km) to metro weekly eliminates <code>3 × 15 × (0.171 - 0.035) = 6.12 kg/week</code> (318 kg/yr = 14.6 Tree-years + 61 Eco Credits).
+          </div>
+        </div>
+
+        
+      <!-- FIGURE 1: DIGITAL TWIN SIMULATION IMAGE SHOWCASE -->
+      <div class="image-showcase">
+        <img src="images/digital-twin-command.jpg" alt="Carbon Twin Decarbonization Simulation HUD">
+        <div class="image-showcase-caption">
+          <span><strong>Figure 1: Digital Twin Command Interface</strong> &mdash; 3D energy flow modeling & counterfactual habit forecasting</span>
+          <span class="badge-code">Real-Time Simulation Engine</span>
+        </div>
+      </div>
+
+        <!-- MODULE 4: OCR BILL SCANNER -->
+        <div id="formula-bills" class="card reveal-item" style="border-top: 4px solid #f59e0b;">
+          <div class="card-title">
+            <span><span class="module-code">MOD-04</span> OCR Utility Bill Audit & Verification</span>
+            <span class="tag tag-energy">Bills Screen</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Vision OCR extracts utility billing periods, power units, and subregional grid emission factors.
+          </p>
+          <div class="formula-box">
+            <div class="formula-badge">UTILITY GRID EMISSION AUDIT</div>
+            E_electricity_bill = Units_kWh_extracted × EF_subregion_grid<br><br>
+            Daily_burn_rate = E_electricity_bill ÷ Days_in_billing_cycle
+          </div>
+          <ul class="param-list">
+            <li><span class="param-key">EF_subregion_grid:</span> 0.450 kg CO₂e/kWh (US/Global avg) to 0.820 (Coal heavy)</li>
+            <li><span class="param-key">Thermostat Optimization:</span> Each +1°C on AC cuts electricity consumption by 7.5%</li>
+            <li><span class="param-key">Confidence Score:</span> OCR token string matching threshold &ge; 0.90</li>
+          </ul>
+          <div class="example-box">
+            <strong>Worked Example:</strong> 320 kWh monthly power bill extracted at 0.45 kg/kWh = <code>144.0 kg CO₂e</code> (4.8 kg/day).
+          </div>
+        </div>
+
+        
+      <!-- FIGURE 2: OCR ENERGY AUDIT SHOWCASE -->
+      <div class="image-showcase">
+        <img src="images/ocr-energy-audit.jpg" alt="Automated Smart Meter & Utility Bill Audit">
+        <div class="image-showcase-caption">
+          <span><strong>Figure 2: Optical Energy Scanning & Subgrid Analytics</strong> &mdash; Automated extraction of kWh and subregional carbon intensity</span>
+          <span class="badge-code">Confidence Score &ge; 98.6%</span>
+        </div>
+      </div>
+
+        <!-- MODULE 5: GROUNDED AI COACH -->
+        <div id="formula-coach" class="card reveal-item" style="border-top: 4px solid #a855f7;">
+          <div class="card-title">
+            <span><span class="pill-index">05</span> AI Coach & RAG Retrieval</span>
+            <span class="tag tag-api">Coach Screen</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Retrieves peer-reviewed facts and synthesizes personalized reduction plans with EPA tree equivalencies.
+          </p>
+          <div class="formula-box">
+            <div class="formula-badge">RAG CONTEXT SYNTHESIS MATRIX</div>
+            Prompt_Context = { User_Metrics: (todayTotal, streak, topSource),<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Grounding_DB: (DEFRA_2024, Oxford_2018, EPA_eGRID),<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Output_Spec: [Explanation, Math_Savings, Tree_Eq, Citation] }
+          </div>
+          <ul class="param-list">
+            <li><span class="param-key">Grounding Source:</span> UK DEFRA 2024 (0.171 kg/km car vs 0.035 kg/km metro)</li>
+            <li><span class="param-key">Dietary Grounding:</span> Oxford University (Beef 60.0 kg/kg vs Lentils 0.9 kg/kg)</li>
+            <li><span class="param-key">Inspection:</span> 1-Click Prompt & Citation inspector reveals exact grounding prompt</li>
+          </ul>
+        </div>
+
+        
+      <!-- FIGURE 4: AI CLIMATE INTELLIGENCE LABORATORY -->
+      <div class="image-showcase reveal-item">
+        <img src="images/ai-climate-intelligence.jpg" alt="AI Climate Intelligence & Planetary Modeling">
+        <div class="image-showcase-caption">
+          <span><strong>Figure 4: Grounded AI Climate Intelligence Laboratory</strong> &mdash; Real-time global carbon telemetry, zero-hallucination RAG grounding, and generative mitigation advice</span>
+          <span class="badge-code">Gemini Flash RAG Grounded</span>
+        </div>
+      </div>
+
+        <!-- MODULE 6: ECO CREDITS & STREAK MULTIPLIER -->
+        <div id="formula-credits" class="card reveal-item" style="border-top: 4px solid #fbbf24;">
+          <div class="card-title">
+            <span><span class="module-code">MOD-06</span> Eco-Credit Ledger & Streak Multipliers</span>
+            <span class="tag tag-shop">Credits & Score</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Double-entry incentive ledger with consecutive logging multiplier and real certified tree planting.
+          </p>
+          <div class="formula-box">
+            <div class="formula-badge">STREAK INCENTIVE FORMULA</div>
+            Multiplier_streak = 1.0 + min(0.5, Streak_days × 0.10)<br><br>
+            Credits_minted = ⌊ Avoided_kg × 10 × Multiplier_streak ⌋<br><br>
+            Tree_Certificate_Threshold = 500 Credits (1 Real Urban Tree Planted)
+          </div>
+          <ul class="param-list">
+            <li><span class="param-key">Daily Log Bonus:</span> +10 Credits per consecutive tracking day</li>
+            <li><span class="param-key">Streak Cap:</span> Max 1.5x multiplier achieved at 5-day active streak</li>
+            <li><span class="param-key">Redemption:</span> Exchange 500 Credits in Store for verified Tree Certificate</li>
+          </ul>
+        </div>
+      </div>
+    
+      <!-- FIGURE 3: ECO CREDIT & TREE SEQUESTRATION -->
+      <div class="image-showcase">
+        <img src="images/eco-forest.jpg" alt="Auditable Tree Planting & Carbon Sequestration">
+        <div class="image-showcase-caption">
+          <span><strong>Figure 3: Verified Biomass Carbon Sequestration</strong> &mdash; 21.77 kg CO₂e per urban seedling (US EPA National Standard)</span>
+          <span class="badge-code">Permanent Offset Verification</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- SECTION 2: SCIENTIFIC DATASETS USED -->
+    <section id="datasets" class="section-block reveal-item">
+      <div class="section-header">
+        <h2 class="section-title"><span class="num">2</span> Scientific Datasets & Data Sources</h2>
+        <span class="badge-code">100% Free Open-Access • No Paid API Lock-In</span>
+      </div>
+      <p class="section-lead">
+        Carbonexo eliminates expensive proprietary API subscriptions by curating official open-access government and academic repositories.
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Dataset & Source Organization</th>
+              <th>Application Module Used In</th>
+              <th>Primary Emission Factors</th>
+              <th>Official Reference / License</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>UK DEFRA / DESNZ 2024</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">Dept. for Energy Security & Net Zero</span></td>
+              <td>Daily Track, Carbon Twin Simulate, Action Plan, AI Coach</td>
+              <td><span class="badge-code">Car: 0.171 kg/km</span><br><span class="badge-code">Metro: 0.035 kg/km</span><br><span class="badge-code">Flight: 0.245 kg/km</span></td>
+              <td>DESNZ (2024) <em>UK Government GHG Conversion Factors</em> (Open Government License)</td>
+            </tr>
+            <tr>
+              <td><strong>Oxford University Science Study</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">Poore & Nemecek meta-study (Science)</span></td>
+              <td>Food Track, Diet Twin Simulator, AI Coach</td>
+              <td><span class="badge-code">Beef: 60.0 kg/kg</span><br><span class="badge-code">Poultry: 9.9 kg/kg</span><br><span class="badge-code">Lentils: 0.9 kg/kg</span></td>
+              <td>Poore & Nemecek (2018) <em>Science 360(6392)</em>. 38,700 farms, 119 countries.</td>
+            </tr>
+            <tr>
+              <td><strong>US EPA eGRID 2024</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">Environmental Protection Agency</span></td>
+              <td>Electricity Track, OCR Bill Parser, AC Optimization</td>
+              <td><span class="badge-code">Grid mix: 0.450 kg/kWh</span><br><span class="badge-code">Coal peak: 0.820 kg/kWh</span></td>
+              <td>US EPA (2024) <em>eGRID Subregion Output Emission Rates</em> (US Public Domain)</td>
+            </tr>
+            <tr>
+              <td><strong>US EPA GHG Equivalencies</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">Greenhouse Gas Calculator</span></td>
+              <td>Dashboard, Twin Simulator, AI Coach, Tree Certificates</td>
+              <td><span class="badge-code">1 Tree = 21.77 kg/yr</span><br><span class="badge-code">1 Gal Gas = 8.887 kg</span></td>
+              <td>US EPA (2024) <em>Greenhouse Gas Equivalencies Calculator Methodology</em></td>
+            </tr>
+            <tr>
+              <td><strong>IPCC Sixth Assessment (AR6)</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">Working Group III Mitigation</span></td>
+              <td>Score Screen, Reports, 2030 Paris Accord Targets</td>
+              <td><span class="badge-code">2030 Cap: 8.5 kg/day</span><br><span class="badge-code">2050 Cap: 2.1 kg/day</span></td>
+              <td>IPCC (2022) <em>Working Group III: Mitigation of Climate Change</em>, Chapters 5 & 10</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 3: DATABASE SCHEMA & TABLES -->
+    <section id="tables" class="section-block reveal-item">
+      <div class="section-header">
+        <h2 class="section-title"><span class="num">3</span> Complete Database Schema & Data Dictionary</h2>
+        <span class="badge-code">Relational PostgreSQL / JPA / Client Cache</span>
+      </div>
+      <p class="section-lead">
+        Carbonexo structures the entire application state into 6 normalized relational database domains:
+      </p>
+
+      <div class="grid-2">
+        <!-- Table 1: users & profiles -->
+        <div class="card reveal-item">
+          <div class="card-title">
+            <span><span class="module-code">DB-01</span> Identity & Profiles</span>
+            <span class="badge-code">users / user_profiles</span>
+          </div>
+          <div class="table-wrapper" style="margin: 0.5rem 0;">
+            <table>
+              <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>UUID</td><td>Primary Key</td></tr>
+                <tr><td><code>email</code></td><td>VARCHAR(128)</td><td>Unique login credential</td></tr>
+                <tr><td><code>password_hash</code></td><td>VARCHAR(256)</td><td>BCrypt salted hash</td></tr>
+                <tr><td><code>name</code></td><td>VARCHAR(64)</td><td>Display name (e.g. 'Sakshi')</td></tr>
+                <tr><td><code>travel_mode</code></td><td>VARCHAR(32)</td><td>Baseline commute habit</td></tr>
+                <tr><td><code>daily_km</code></td><td>DECIMAL(5,2)</td><td>Baseline commute distance</td></tr>
+                <tr><td><code>weekly_goal_pct</code></td><td>INT</td><td>Target carbon reduction %</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 2: activity_logs -->
+        <div class="card reveal-item">
+          <div class="card-title">
+            <span><span class="module-code">DB-02</span> Carbon Activity Ledger</span>
+            <span class="badge-code">activity_logs</span>
+          </div>
+          <div class="table-wrapper" style="margin: 0.5rem 0;">
+            <table>
+              <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>UUID</td><td>Primary Key</td></tr>
+                <tr><td><code>user_id</code></td><td>UUID</td><td>Foreign Key → users.id</td></tr>
+                <tr><td><code>category</code></td><td>VARCHAR(24)</td><td>'travel'|'food'|'electricity'|'shopping'|'waste'</td></tr>
+                <tr><td><code>label</code></td><td>VARCHAR(64)</td><td>e.g. 'Car ride', 'Beef meal'</td></tr>
+                <tr><td><code>co2_kg</code></td><td>DECIMAL(8,3)</td><td>Calculated carbon footprint</td></tr>
+                <tr><td><code>quantity</code></td><td>DECIMAL(8,2)</td><td>Magnitude (km, kWh, items)</td></tr>
+                <tr><td><code>unit</code></td><td>VARCHAR(12)</td><td>'km' | 'kWh' | 'item'</td></tr>
+                <tr><td><code>log_date</code></td><td>DATE</td><td>Occurrence date (YYYY-MM-DD)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 3: simulations & swaps -->
+        <div class="card reveal-item">
+          <div class="card-title">
+            <span><span class="module-code">DB-03</span> Twin Simulations</span>
+            <span class="badge-code">simulations</span>
+          </div>
+          <div class="table-wrapper" style="margin: 0.5rem 0;">
+            <table>
+              <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>UUID</td><td>Simulation Run ID</td></tr>
+                <tr><td><code>user_id</code></td><td>UUID</td><td>FK → users.id</td></tr>
+                <tr><td><code>baseline_id</code></td><td>VARCHAR(48)</td><td>e.g. 'travel-car'</td></tr>
+                <tr><td><code>alternative_id</code></td><td>VARCHAR(48)</td><td>e.g. 'travel-metro'</td></tr>
+                <tr><td><code>frequency_wk</code></td><td>INT</td><td>Swaps committed per week</td></tr>
+                <tr><td><code>weekly_saved_kg</code></td><td>DECIMAL(8,2)</td><td>Avoided weekly footprint</td></tr>
+                <tr><td><code>annual_saved_kg</code></td><td>DECIMAL(8,2)</td><td>Avoided annual footprint</td></tr>
+                <tr><td><code>tree_years_eq</code></td><td>DECIMAL(6,1)</td><td>EPA urban tree equivalents</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 4: bills & OCR -->
+        <div class="card reveal-item">
+          <div class="card-title">
+            <span><span class="module-code">DB-04</span> OCR Energy Bills</span>
+            <span class="badge-code">bills / ocr_results</span>
+          </div>
+          <div class="table-wrapper" style="margin: 0.5rem 0;">
+            <table>
+              <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>UUID</td><td>Bill Record ID</td></tr>
+                <tr><td><code>user_id</code></td><td>UUID</td><td>FK → users.id</td></tr>
+                <tr><td><code>utility_provider</code></td><td>VARCHAR(64)</td><td>Extracted electric utility name</td></tr>
+                <tr><td><code>billing_period</code></td><td>VARCHAR(48)</td><td>Extracted date range</td></tr>
+                <tr><td><code>units_kwh</code></td><td>DECIMAL(8,2)</td><td>Extracted power units</td></tr>
+                <tr><td><code>co2_kg</code></td><td>DECIMAL(8,2)</td><td>Units × Grid Emission Factor</td></tr>
+                <tr><td><code>confidence_score</code></td><td>DECIMAL(3,2)</td><td>Computer vision OCR confidence</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 5: credit_ledger -->
+        <div class="card reveal-item">
+          <div class="card-title">
+            <span><span class="module-code">DB-05</span> Eco Credits Ledger</span>
+            <span class="badge-code">credit_ledger / rewards</span>
+          </div>
+          <div class="table-wrapper" style="margin: 0.5rem 0;">
+            <table>
+              <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>UUID</td><td>Transaction ID</td></tr>
+                <tr><td><code>user_id</code></td><td>UUID</td><td>FK → users.id</td></tr>
+                <tr><td><code>credits_delta</code></td><td>INT</td><td>Amount credited (+) or spent (-)</td></tr>
+                <tr><td><code>rule_code</code></td><td>VARCHAR(32)</td><td>'STREAK_BONUS' | 'METRO_SWAP'</td></tr>
+                <tr><td><code>kg_avoided</code></td><td>DECIMAL(8,2)</td><td>Carbon avoided yielding the credit</td></tr>
+                <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>Immutable ledger timestamp</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 6: coach_messages -->
+        <div class="card reveal-item">
+          <div class="card-title">
+            <span><span class="module-code">DB-06</span> AI Coach Conversations</span>
+            <span class="badge-code">coach_messages</span>
+          </div>
+          <div class="table-wrapper" style="margin: 0.5rem 0;">
+            <table>
+              <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>UUID</td><td>Message ID</td></tr>
+                <tr><td><code>user_id</code></td><td>UUID</td><td>FK → users.id</td></tr>
+                <tr><td><code>role</code></td><td>VARCHAR(16)</td><td>'user' | 'assistant'</td></tr>
+                <tr><td><code>content</code></td><td>TEXT</td><td>Advice body with citations</td></tr>
+                <tr><td><code>prompt_used</code></td><td>TEXT</td><td>Engineered grounding context prompt</td></tr>
+                <tr><td><code>source_dataset</code></td><td>VARCHAR(128)</td><td>Referenced scientific dataset</td></tr>
+                <tr><td><code>model</code></td><td>VARCHAR(32)</td><td>'gemini-2.0-flash' or 'Scientific Engine'</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: REST APIS & CONTRACTS -->
+    <section id="apis" class="section-block reveal-item">
+      <div class="section-header">
+        <h2 class="section-title"><span class="num">4</span> REST APIs Across the Application</h2>
+        <span class="badge-code">Client & Server Endpoints with Offline Fallback</span>
+      </div>
+      <p class="section-lead">
+        Carbonexo implements resilient REST endpoints. If a local backend server is offline, client-side fallback engines automatically take over so the user experience never crashes:
+      </p>
+
+      <div class="grid-2">
+        <!-- API 1: Tracking -->
+        <div class="card reveal-item" style="border-top: 3px solid #10b981;">
+          <div class="card-title">
+            <span>POST /api/carbon/log</span>
+            <span class="tag tag-travel">Tracking API</span>
+          </div>
+          <div class="code-terminal">
+            <div class="terminal-bar">
+              <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+              <span class="terminal-title">Log Activity Payload</span>
+            </div>
+            <pre><code><span class="tok-comment">// Request</span>
+{
+  <span class="tok-key">"category"</span>: <span class="tok-str">"travel"</span>,
+  <span class="tok-key">"label"</span>: <span class="tok-str">"Metro / Train"</span>,
+  <span class="tok-key">"quantity"</span>: <span class="tok-num">15</span>,
+  <span class="tok-key">"unit"</span>: <span class="tok-str">"km"</span>,
+  <span class="tok-key">"date"</span>: <span class="tok-str">"2026-10-16"</span>
+}
+
+<span class="tok-comment">// Response (200 OK)</span>
+{
+  <span class="tok-key">"id"</span>: <span class="tok-str">"act-9481"</span>,
+  <span class="tok-key">"co2_kg"</span>: <span class="tok-num">0.60</span>,
+  <span class="tok-key">"dayTotalKg"</span>: <span class="tok-num">3.40</span>,
+  <span class="tok-key">"streakDays"</span>: <span class="tok-num">6</span>
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- API 2: Simulation -->
+        <div class="card reveal-item" style="border-top: 3px solid #06b6d4;">
+          <div class="card-title">
+            <span>POST /api/simulations/run</span>
+            <span class="tag tag-twin">Carbon Twin API</span>
+          </div>
+          <div class="code-terminal">
+            <div class="terminal-bar">
+              <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+              <span class="terminal-title">Twin Simulation Run</span>
+            </div>
+            <pre><code><span class="tok-comment">// Request</span>
+{
+  <span class="tok-key">"baselineActivityId"</span>: <span class="tok-str">"travel-car"</span>,
+  <span class="tok-key">"alternativeActivityId"</span>: <span class="tok-str">"travel-metro"</span>,
+  <span class="tok-key">"frequencyPerWeek"</span>: <span class="tok-num">3</span>,
+  <span class="tok-key">"distanceKm"</span>: <span class="tok-num">15</span>
+}
+
+<span class="tok-comment">// Response (200 OK)</span>
+{
+  <span class="tok-key">"weeklyAvoidedKg"</span>: <span class="tok-num">6.12</span>,
+  <span class="tok-key">"annualAvoidedKg"</span>: <span class="tok-num">318.24</span>,
+  <span class="tok-key">"treeYearsEquivalent"</span>: <span class="tok-num">14.6</span>,
+  <span class="tok-key">"ecoCreditsEarned"</span>: <span class="tok-num">61</span>
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- API 3: AI Coach -->
+        <div class="card reveal-item" style="border-top: 3px solid #a855f7;">
+          <div class="card-title">
+            <span>POST /api/ai/coach</span>
+            <span class="tag tag-api">AI Coach RAG API</span>
+          </div>
+          <div class="code-terminal">
+            <div class="terminal-bar">
+              <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+              <span class="terminal-title">Grounded RAG Response</span>
+            </div>
+            <pre><code><span class="tok-comment">// Request</span>
+{ <span class="tok-key">"message"</span>: <span class="tok-str">"Beef vs chicken & lentils? (Oxford)"</span> }
+
+<span class="tok-comment">// Response (200 OK)</span>
+{
+  <span class="tok-key">"result"</span>: <span class="tok-str">"Based on Oxford University's study: Beef emits 60 kg/kg vs chicken at 9.9 kg (-83%) and lentils at 0.9 kg (-98.5%)..."</span>,
+  <span class="tok-key">"source"</span>: <span class="tok-str">"Oxford University / Science (Poore & Nemecek 2018)"</span>,
+  <span class="tok-key">"citation"</span>: <span class="tok-str">"Poore & Nemecek. Science, 360(6392)"</span>,
+  <span class="tok-key">"prompt"</span>: <span class="tok-str">"Context: User Sakshi... Grounding: Oxford University LCA..."</span>
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- API 4: Bill Upload -->
+        <div class="card reveal-item" style="border-top: 3px solid #f59e0b;">
+          <div class="card-title">
+            <span>POST /api/bills/upload</span>
+            <span class="tag tag-energy">OCR Energy Audit API</span>
+          </div>
+          <div class="code-terminal">
+            <div class="terminal-bar">
+              <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+              <span class="terminal-title">OCR Utility Extraction</span>
+            </div>
+            <pre><code><span class="tok-comment">// Multipart: bill.pdf</span>
+
+<span class="tok-comment">// Response (200 OK)</span>
+{
+  <span class="tok-key">"utilityProvider"</span>: <span class="tok-str">"Metropolitan Power Utility"</span>,
+  <span class="tok-key">"billingPeriod"</span>: <span class="tok-str">"2026-09-01 to 2026-09-30"</span>,
+  <span class="tok-key">"unitsConsumedKWh"</span>: <span class="tok-num">320</span>,
+  <span class="tok-key">"calculatedKgCO2"</span>: <span class="tok-num">144.0</span>,
+  <span class="tok-key">"confidenceScore"</span>: <span class="tok-num">0.96</span>
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: END-TO-END APPLICATION WORKFLOW -->
+    <section id="workflow" class="section-block reveal-item">
+      <div class="section-header">
+        <h2 class="section-title"><span class="num">5</span> End-to-End Enterprise Workflow</h2>
+        <span class="badge-code">Complete User & System Lifecycle Pipeline</span>
+      </div>
+      <p class="section-lead">
+        Here is the complete sequence of how data moves through Carbonexo from user sign-up to daily tracking, twin simulation, and certified ESG impact:
+      </p>
+
+      <div class="workflow-container">
+        <div class="workflow-steps">
+          <div class="step-node" style="border-top: 3px solid #a3e635;">
+            <div class="step-number">1</div>
+            <div class="step-title">Onboarding & Profiling</div>
+            <div class="step-desc">
+              User establishes baseline habits (commute distance, diet preference, housing type, weekly reduction goal).
+            </div>
+          </div>
+
+          <div class="step-node" style="border-top: 3px solid #10b981;">
+            <div class="step-number">2</div>
+            <div class="step-title">Multi-modal Ingestion</div>
+            <div class="step-desc">
+              Activities logged via 1-tap quick logger, OCR utility bill scanner, or custom quantity input across 5 domains.
+            </div>
+          </div>
+
+          <div class="step-node" style="border-top: 3px solid #06b6d4;">
+            <div class="step-number">3</div>
+            <div class="step-title">Matrix Multiplication</div>
+            <div class="step-desc">
+              Core calculation engine converts activity units into kg CO₂e using verified UK DEFRA & EPA eGRID coefficients.
+            </div>
+          </div>
+
+          <div class="step-node" style="border-top: 3px solid #3b82f6;">
+            <div class="step-number">4</div>
+            <div class="step-title">Twin Simulation</div>
+            <div class="step-desc">
+              User tests counterfactual habit swaps (e.g. car to metro, beef to lentils) to forecast annual avoided CO₂e.
+            </div>
+          </div>
+
+          <div class="step-node" style="border-top: 3px solid #a855f7;">
+            <div class="step-number">5</div>
+            <div class="step-title">AI Grounding RAG</div>
+            <div class="step-desc">
+              AI Coach accesses user metrics and peer-reviewed studies to generate actionable guidance with prompt inspection.
+            </div>
+          </div>
+
+          <div class="step-node" style="border-top: 3px solid #fbbf24;">
+            <div class="step-number">6</div>
+            <div class="step-title">Eco Credits & Trees</div>
+            <div class="step-desc">
+              Avoided emissions are minted into the double-entry credit ledger, unlocking badges and real tree certificates.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REDIRECTION TO APP BANNER -->
+    <div class="redirect-banner">
+      <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #10b981;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      <h2 style="font-size: 2rem; font-weight: 900; margin-bottom: 0.75rem;">
+        Experience the Carbonexo Platform Live
+      </h2>
+      <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">
+        You have explored the mathematics, datasets, schemas, and APIs. Now test the actual live application with full offline resilience and real-time calculations.
+      </p>
+
+      <div class="btn-group">
+        <a href="/app" class="btn-launch" style="font-size: 1rem; padding: 0.85rem 2.25rem;">
+          Open Main Dashboard (/app) &rarr;
+        </a>
+        <a href="/app/coach" class="btn-secondary">
+          AI Coach (/app/coach) &rarr;
+        </a>
+        <a href="/app/simulate" class="btn-secondary">
+          Carbon Twin Sandbox (/app/simulate) &rarr;
+        </a>
+        <a href="/pitch.html" class="btn-secondary">
+          Judge Pitch Deck &rarr;
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div style="max-width: 800px; margin: 0 auto;">
+      <p style="margin-bottom: 0.5rem; font-weight: 700; color: var(--text);">
+        Carbonexo — Enterprise Carbon Accounting & Scientific AI Platform
+      </p>
+      <p>
+        Data Sources: UK DEFRA/DESNZ 2024, Oxford University (Poore & Nemecek, Science), US EPA eGRID 2024, IPCC AR6.
+      </p>
+      <p style="margin-top: 1rem; font-size: 0.75rem;">
+        Generated for internal architectural review & hackathon audit documentation. 100% Free, Public Domain & Peer-Reviewed Grounding.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Smooth scrolling active state
+    window.addEventListener('scroll', () => {
+      const sections = document.querySelectorAll('section');
+      const scrollPos = window.scrollY + 120;
+      sections.forEach(sec => {
+        const top = sec.offsetTop;
+        const height = sec.offsetHeight;
+        const id = sec.getAttribute('id');
+        const link = document.querySelector(`.nav-links a[href="#${id}"]`);
+        if (scrollPos >= top && scrollPos < top + height) {
+          document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+          if (link) link.classList.add('active');
+        }
+      });
+    });
+  </script>
+
+  <script>
+    // Intersection Observer for scroll reveal motion
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, { threshold: 0.08 });
+
+    document.querySelectorAll('.reveal-item').forEach(el => revealObserver.observe(el));
+  </script>
+
+</body>
+</html>

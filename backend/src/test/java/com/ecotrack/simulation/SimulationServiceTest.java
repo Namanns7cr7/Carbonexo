@@ -70,7 +70,7 @@ class SimulationServiceTest {
 
         var item = new SimulationRequest.SimulationItem(
                 "car_ride", "transport", new BigDecimal("20"), "per_week",
-                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null, null, null);
         var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
 
         SimulationResponse res = svc.simulate(userId, req);
@@ -93,7 +93,7 @@ class SimulationServiceTest {
 
         var item = new SimulationRequest.SimulationItem(
                 "home_electricity", "electricity", new BigDecimal("10"), "per_week",
-                SimulationRequest.DeltaType.REDUCE_BY, null, new BigDecimal("4"));
+                SimulationRequest.DeltaType.REDUCE_BY, null, new BigDecimal("4"), null, null);
         var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
 
         SimulationResponse res = svc.simulate(userId, req);
@@ -113,7 +113,7 @@ class SimulationServiceTest {
 
         var item = new SimulationRequest.SimulationItem(
                 "car_ride", "transport", new BigDecimal("10"), "per_week",
-                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null, null, null);
 
         SimulationResponse month = svc.simulate(userId, new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH));
         SimulationResponse year = svc.simulate(userId, new SimulationRequest(List.of(item), SimulationRequest.Horizon.YEAR));
@@ -133,13 +133,51 @@ class SimulationServiceTest {
 
         var item = new SimulationRequest.SimulationItem(
                 "car_ride", "transport", new BigDecimal("20"), "per_week",
-                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null, null, null);
         svc.simulate(userId, new SimulationRequest(List.of(item), SimulationRequest.Horizon.YEAR));
 
         verify(logRepo, never()).save(any());
         verify(logRepo, never()).saveAll(any());
         verify(logRepo, never()).delete(any());
         verify(logRepo, never()).deleteAll();
+    }
+
+    // ---- Custom (not-in-the-catalog) activity ----
+
+    @Test
+    void customActivityComputesFromTheGivenRateWithoutAnyCatalogLookup() {
+        SimulationService svc = build();
+        // deliberately no stubFactor() call — the catalog repo should never be consulted
+
+        var item = new SimulationRequest.SimulationItem(
+                null, "shopping", new BigDecimal("1"), "per_week",
+                SimulationRequest.DeltaType.REDUCE_BY, null, new BigDecimal("0.4"),
+                "Artisan coffee habit", new BigDecimal("2.5"));
+        var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
+
+        SimulationResponse res = svc.simulate(userId, req);
+
+        // baseline: 1 * 1(week) * 4.33 * 2.5 = 10.825; projected: (1-0.4) * 4.33 * 2.5 = 6.495
+        BigDecimal expectedBaseline = new BigDecimal("4.33").multiply(new BigDecimal("2.5")).setScale(3, RoundingMode.HALF_UP);
+        BigDecimal expectedProjected = new BigDecimal("0.6").multiply(new BigDecimal("4.33")).multiply(new BigDecimal("2.5")).setScale(3, RoundingMode.HALF_UP);
+
+        assertEquals("Artisan coffee habit", res.breakdown().get(0).factorKey());
+        assertEquals(expectedBaseline, res.breakdown().get(0).baselineKg());
+        assertEquals(expectedProjected, res.breakdown().get(0).projectedKg());
+        verifyNoInteractions(factorRepo);
+    }
+
+    @Test
+    void itemWithNeitherFactorKeyNorCustomRateIsRejected() {
+        SimulationService svc = build();
+
+        var item = new SimulationRequest.SimulationItem(
+                null, "shopping", new BigDecimal("1"), "per_week",
+                SimulationRequest.DeltaType.REDUCE_BY, null, new BigDecimal("0.4"),
+                null, null);
+        var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
+
+        assertThrows(com.ecotrack.exception.BadRequestException.class, () -> svc.simulate(userId, req));
     }
 
     // ---- AI-generated insight ----
@@ -152,7 +190,7 @@ class SimulationServiceTest {
 
         var item = new SimulationRequest.SimulationItem(
                 "car_ride", "transport", new BigDecimal("20"), "per_week",
-                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null, null, null);
         var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
 
         SimulationResponse res = svc.simulate(userId, req);
@@ -171,7 +209,7 @@ class SimulationServiceTest {
 
         var item = new SimulationRequest.SimulationItem(
                 "car_ride", "transport", new BigDecimal("20"), "per_week",
-                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null);
+                SimulationRequest.DeltaType.REPLACE_WITH, "public_transport", null, null, null);
         var req = new SimulationRequest(List.of(item), SimulationRequest.Horizon.MONTH);
 
         SimulationResponse res = svc.simulate(userId, req);

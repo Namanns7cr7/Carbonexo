@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="no-print">
             <MobileTopBar />
           </div>
-          <main id="main-content" className="mx-auto max-w-[880px] px-5 pb-28 pt-6 md:px-10 md:pb-14 md:pt-10">{children}</main>
+          <main id="main-content" className="mx-auto max-w-[1400px] px-4 pb-28 pt-5 sm:px-6 md:px-8 md:pb-14 md:pt-8">{children}</main>
         </div>
         <div className="no-print">
           <BottomNav />

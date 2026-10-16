@@ -101,16 +101,17 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="rounded-xl bg-blue-soft/20 border border-blue/30 px-4 py-3 text-xs font-semibold text-blue text-center">
-                ⚠️ {error}
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-blue-soft/20 border border-blue/30 px-4 py-3 text-xs font-semibold text-blue text-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{error}</span>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full rounded-xl bg-lime py-3.5 text-center text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-              style={{ boxShadow: '0 8px 24px -8px var(--lime)' }}
+              className="mt-2 w-full rounded-xl py-3.5 text-center text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-glow-lime disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
             >
               {loading ? 'Creating account...' : 'Register'}
             </button>

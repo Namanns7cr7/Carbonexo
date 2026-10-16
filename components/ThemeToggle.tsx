@@ -7,9 +7,10 @@ export function ThemeToggle() {
   const dark = theme === 'dark';
   return (
     <button
+      id="theme-toggle-btn"
       onClick={toggle}
       aria-label="Toggle theme"
-      className="relative h-[31px] w-[58px] flex-shrink-0 rounded-full border border-border bg-surface2"
+      className="relative h-[31px] w-[58px] flex-shrink-0 rounded-full border border-border bg-surface2 cursor-pointer transition-colors"
     >
       <span
         className="absolute top-[3px] left-[3px] flex h-[23px] w-[23px] items-center justify-center rounded-full bg-lime text-[13px] leading-none shadow transition-transform duration-[420ms]"

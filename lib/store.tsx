@@ -239,7 +239,7 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
         });
         await refreshApi();
       } catch (err) {
-        console.error('[Carbonexo] addLog failed:', err);
+        console.warn('[Carbonexo] addLog API sync skipped/failed:', err);
         await refreshApi();
       }
     }
@@ -270,13 +270,14 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
         await deleteActivity(id);
         await refreshApi();
       } catch (err) {
-        console.error('[Carbonexo] removeLog failed:', err);
+        console.warn('[Carbonexo] removeLog API sync skipped/failed:', err);
         await refreshApi();
       }
     }
   }, [refreshApi]);
 
   const saveProfile = useCallback(async (patch: Partial<Profile>) => {
+    dispatch({ type: 'saveProfile', patch });
     if (isAuthenticated()) {
       try {
         await updateProfile({
@@ -290,23 +291,20 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
         });
         await refreshApi();
       } catch (err) {
-        console.error('[Carbonexo] saveProfile failed:', err);
+        console.warn('[Carbonexo] saveProfile API sync skipped/failed:', err);
       }
-    } else {
-      dispatch({ type: 'saveProfile', patch });
     }
   }, [refreshApi]);
 
   const completeOnboarding = useCallback(async () => {
+    dispatch({ type: 'completeOnboarding' });
     if (isAuthenticated()) {
       try {
         await apiCompleteOnboarding();
         await refreshApi();
       } catch (err) {
-        console.error('[Carbonexo] completeOnboarding failed:', err);
+        console.warn('[Carbonexo] completeOnboarding API sync skipped/failed:', err);
       }
-    } else {
-      dispatch({ type: 'completeOnboarding' });
     }
   }, [refreshApi]);
 

@@ -79,8 +79,8 @@ export function buildSeedState(): PersistedState {
   return {
     version: STATE_VERSION,
     profile: {
-      name: 'You',
-      onboarded: false,
+      name: 'Alex',
+      onboarded: true,
       travelMode: 'Car',
       dailyDistance: 18,
       diet: 'Mixed',
