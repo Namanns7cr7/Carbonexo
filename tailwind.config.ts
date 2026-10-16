@@ -29,6 +29,10 @@ const config: Config = {
         'ink-text': 'var(--ink-text)',
         'ink-muted': 'var(--ink-muted)',
         'ink-border': 'var(--ink-border)',
+        violet: 'var(--accent-violet)',
+        amber: 'var(--accent-amber)',
+        teal: 'var(--accent-teal)',
+        rose: 'var(--accent-rose)',
       },
       fontFamily: {
         display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
@@ -39,6 +43,9 @@ const config: Config = {
         soft: '0 16px 44px -28px var(--shadow)',
         lift: '0 28px 56px -28px var(--shadow-strong)',
         card: '0 24px 60px -32px var(--shadow-strong)',
+        glow: '0 0 30px var(--glow)',
+        'glow-lime': '0 8px 30px -8px rgba(16, 185, 129, 0.35)',
+        'glow-violet': '0 8px 30px -8px rgba(139, 92, 246, 0.3)',
       },
       keyframes: {
         floatA: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-14px)' } },
@@ -56,6 +63,10 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(8px) scale(.98)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
       },
       animation: {
         floatA: 'floatA 6s ease-in-out infinite',
@@ -63,6 +74,7 @@ const config: Config = {
         gradientMove: 'gradientMove 10s ease infinite',
         shineSweep: 'shineSweep 4.5s ease-in-out infinite',
         popIn: 'popIn .4s cubic-bezier(.2,.7,.2,1)',
+        shimmer: 'shimmer 2s linear infinite',
       },
     },
   },

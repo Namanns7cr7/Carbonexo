@@ -109,8 +109,8 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full rounded-xl bg-lime py-3.5 text-center text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-              style={{ boxShadow: '0 8px 24px -8px var(--lime)' }}
+              className="mt-2 w-full rounded-xl py-3.5 text-center text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-glow-lime disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
             >
               {loading ? 'Creating account...' : 'Register'}
             </button>

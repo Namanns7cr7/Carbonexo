@@ -29,14 +29,25 @@ public record SimulationRequest(
      * One hypothetical change, e.g. "replace 20 km/week of car_ride with
      * public_transport" or "reduce home_electricity by 2 kWh per occurrence,
      * per_week".
+     *
+     * <p>Either {@code factorKey} (an activity from the shared {@code
+     * emission_factors} catalog) OR both {@code customLabel} and {@code
+     * customFactorKgPerUnit} must be supplied — the latter lets a user
+     * simulate an activity that isn't in the catalog, by directly stating
+     * "about how much CO2e this produces each time" rather than requiring a
+     * database entry. A custom activity is never persisted to {@code
+     * emission_factors} itself (that table stays curated, shared data) — the
+     * custom rate is used only for this one read-only computation.
      */
     public record SimulationItem(
-            @NotBlank String factorKey,
+            String factorKey,
             @NotBlank String category,
             @NotNull @Positive BigDecimal quantity,
             @NotBlank String frequency,
             @NotNull DeltaType deltaType,
             String replacementFactorKey,
-            BigDecimal amount
+            BigDecimal amount,
+            String customLabel,
+            BigDecimal customFactorKgPerUnit
     ) {}
 }

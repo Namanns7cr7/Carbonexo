@@ -10,64 +10,73 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ============================================================
-   THEME TOKENS
-   Light = :root, Dark = .dark. Consumed by tailwind.config.ts
-   via `var(--token)`. Keep names in sync with that file.
+   THEME TOKENS — Premium Enterprise Color System
+   Palette: Deep Indigo × Emerald × Violet × Amber
    ============================================================ */
 :root {
-  --bg: #f6f5ee;
+  --bg: #f8f9fc;
   --surface: #ffffff;
-  --surface2: #fbfbf7;
+  --surface2: #f1f3f9;
   --card: #ffffff;
-  --text: #0f231a;
-  --muted: #5b6b62;
-  --border: #e7e9e0;
-  --lime: #2fae67;
-  --lime-deep: #1e7a47;
-  --lime-soft: #e3f5ea;
-  --blue: #d98a2b;
-  --blue-soft: #fbeedd;
-  --danger: #d4483e;
-  --danger-soft: #fbe9e7;
-  --ink: #0c1d15;            /* solid dark card surface (on light bg) */
-  --ink-text: #ffffff;
-  --ink-muted: #9fb3a6;
-  --ink-border: rgba(255, 255, 255, 0.09);
-  --shadow: rgba(12, 29, 21, 0.10);
-  --shadow-strong: rgba(12, 29, 21, 0.16);
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --lime: #10b981;
+  --lime-deep: #059669;
+  --lime-soft: #ecfdf5;
+  --blue: #6366f1;
+  --blue-soft: #eef2ff;
+  --danger: #ef4444;
+  --danger-soft: #fef2f2;
+  --ink: #0f172a;
+  --ink-text: #f8fafc;
+  --ink-muted: #94a3b8;
+  --ink-border: rgba(255, 255, 255, 0.1);
+  --shadow: rgba(15, 23, 42, 0.08);
+  --shadow-strong: rgba(15, 23, 42, 0.15);
   --glow: rgba(0, 0, 0, 0);
-  --glow-a: rgba(47, 174, 103, 0.12);
-  --glow-b: rgba(217, 138, 43, 0.09);
-  --navbg: rgba(246, 245, 238, 0.78);
+  --glow-a: rgba(16, 185, 129, 0.1);
+  --glow-b: rgba(99, 102, 241, 0.08);
+  --navbg: rgba(248, 249, 252, 0.82);
+  --accent-violet: #8b5cf6;
+  --accent-amber: #f59e0b;
+  --accent-teal: #14b8a6;
+  --accent-rose: #f43f5e;
+  --gradient-start: #10b981;
+  --gradient-end: #6366f1;
 }
 
 .dark {
-  /* layered gradient background — apply as `background` (not bg-color) on root */
-  --bg: radial-gradient(130% 90% at 84% -14%, #143123 0%, #0a1812 40%, #060d09 100%),
-        radial-gradient(115% 75% at -6% 110%, #0e2418 0%, #060d09 56%);
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface2: rgba(255, 255, 255, 0.035);
-  --card: rgba(16, 33, 25, 0.86); /* dark glass — opaque enough that layered cards don't bleed text through */
-  --text: #eef5ef;
-  --muted: #9fb6a8;
-  --border: rgba(255, 255, 255, 0.13);
-  --lime: #4fd38a;
-  --lime-deep: #86e8b3;
-  --lime-soft: rgba(79, 211, 138, 0.16);
-  --blue: #f3b860;
-  --blue-soft: rgba(243, 184, 96, 0.16);
-  --danger: #f3786b;
-  --danger-soft: rgba(243, 120, 107, 0.16);
-  --ink: linear-gradient(158deg, #193626, #0c1d15 78%);
-  --ink-text: #eef5ef;
-  --ink-muted: #9fb6a8;
-  --ink-border: rgba(255, 255, 255, 0.11);
+  --bg: #0a0e1a;
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface2: rgba(255, 255, 255, 0.06);
+  --card: rgba(15, 23, 42, 0.7);
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.08);
+  --lime: #34d399;
+  --lime-deep: #6ee7b7;
+  --lime-soft: rgba(52, 211, 153, 0.12);
+  --blue: #818cf8;
+  --blue-soft: rgba(129, 140, 248, 0.12);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --ink: linear-gradient(158deg, #1e293b, #0f172a 78%);
+  --ink-text: #f1f5f9;
+  --ink-muted: #94a3b8;
+  --ink-border: rgba(255, 255, 255, 0.08);
   --shadow: rgba(0, 0, 0, 0.5);
-  --shadow-strong: rgba(0, 0, 0, 0.66);
-  --glow: rgba(79, 211, 138, 0.34);
-  --glow-a: rgba(79, 211, 138, 0.16);
-  --glow-b: rgba(243, 184, 96, 0.12);
-  --navbg: rgba(7, 14, 10, 0.74);
+  --shadow-strong: rgba(0, 0, 0, 0.6);
+  --glow: rgba(52, 211, 153, 0.25);
+  --glow-a: rgba(52, 211, 153, 0.15);
+  --glow-b: rgba(129, 140, 248, 0.1);
+  --navbg: rgba(10, 14, 26, 0.85);
+  --accent-violet: #a78bfa;
+  --accent-amber: #fbbf24;
+  --accent-teal: #2dd4bf;
+  --accent-rose: #fb7185;
+  --gradient-start: #34d399;
+  --gradient-end: #818cf8;
 }
 
 * { box-sizing: border-box; }
@@ -77,12 +86,8 @@ body {
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
-  /* smooth theme cross-fade */
   transition: background-color .55s ease, color .4s ease;
 }
-
-/* Note: --bg in dark is a gradient, so set it on a root wrapper with
-   `background: var(--bg)` rather than relying on bg-color transitions. */
 
 /* ---- keyframes ---- */
 @keyframes floatA   { 0%,100% { transform: translateY(0) }       50% { transform: translateY(-14px) } }
@@ -95,11 +100,60 @@ body {
 @keyframes gradientMove { 0% { background-position:0% 50% } 50% { background-position:100% 50% } 100% { background-position:0% 50% } }
 @keyframes shineSweep   { 0% { transform: translateX(-120%) skewX(-18deg) } 55%,100% { transform: translateX(320%) skewX(-18deg) } }
 @keyframes popIn { from { opacity:0; transform: translateY(8px) scale(.98) } to { opacity:1; transform: translateY(0) scale(1) } }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(52, 211, 153, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(52, 211, 153, 0.3); }
+}
+@keyframes orbit {
+  0% { transform: rotate(0deg) translateX(6px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(6px) rotate(-360deg); }
+}
 
 /* thin themed scrollbars inside scroll regions (chat etc.) */
 .cx-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .cx-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 .cx-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Premium glass card style */
+.glass-card {
+  background: var(--card);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end), var(--accent-violet));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
 
 /* ============================================================
    Reduced motion — gate decorative/looping motion (README ask).

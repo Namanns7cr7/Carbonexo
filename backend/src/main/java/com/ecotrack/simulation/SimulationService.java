@@ -110,17 +110,19 @@ public class SimulationService {
         BigDecimal projectedChangesKg = BigDecimal.ZERO;
 
         for (SimulationRequest.SimulationItem item : request.changes()) {
+            validateItemHasAFactor(item);
             BigDecimal weeklyOccurrences = weeklyOccurrences(item.frequency());
             BigDecimal horizonQuantity = item.quantity()
                     .multiply(weeklyOccurrences)
                     .multiply(horizonWeeks);
 
-            BigDecimal itemBaselineKg = carbonService.calculateCo2(item.factorKey(), horizonQuantity, region);
+            BigDecimal itemBaselineKg = resolveCo2(item.factorKey(), item.customFactorKgPerUnit(), horizonQuantity, region);
             BigDecimal itemProjectedKg = projectedKgForItem(item, weeklyOccurrences, horizonWeeks, region);
 
             baselineChangesKg = baselineChangesKg.add(itemBaselineKg);
             projectedChangesKg = projectedChangesKg.add(itemProjectedKg);
-            breakdown.add(new SimulationResponse.BreakdownItem(item.factorKey(), itemBaselineKg, itemProjectedKg));
+            String breakdownKey = item.factorKey() != null ? item.factorKey() : item.customLabel();
+            breakdown.add(new SimulationResponse.BreakdownItem(breakdownKey, itemBaselineKg, itemProjectedKg));
         }
 
         BigDecimal baselineCo2Kg = baselineChangesKg.setScale(3, RoundingMode.HALF_UP);
@@ -184,7 +186,35 @@ public class SimulationService {
         BigDecimal amount = item.amount() != null ? item.amount() : BigDecimal.ZERO;
         BigDecimal reducedQuantity = item.quantity().subtract(amount).max(BigDecimal.ZERO);
         BigDecimal reducedHorizonQuantity = reducedQuantity.multiply(weeklyOccurrences).multiply(horizonWeeks);
-        return carbonService.calculateCo2(item.factorKey(), reducedHorizonQuantity, region);
+        return resolveCo2(item.factorKey(), item.customFactorKgPerUnit(), reducedHorizonQuantity, region);
+    }
+
+    /**
+     * A custom activity must supply both a label and a rate — reject anything
+     * half-specified early rather than silently falling through to a zero
+     * result later.
+     */
+    private void validateItemHasAFactor(SimulationRequest.SimulationItem item) {
+        boolean hasCatalogFactor = item.factorKey() != null && !item.factorKey().isBlank();
+        boolean hasCustomFactor = item.customLabel() != null && !item.customLabel().isBlank()
+                && item.customFactorKgPerUnit() != null;
+        if (!hasCatalogFactor && !hasCustomFactor) {
+            throw new BadRequestException(
+                    "Each change needs either factorKey or both customLabel and customFactorKgPerUnit");
+        }
+    }
+
+    /**
+     * Resolves CO2 for one item: a catalog lookup via {@link CarbonCalculationService}
+     * when a factorKey is given, or a direct rate multiply for a custom,
+     * not-in-the-catalog activity (never persisted — read-only for this
+     * computation only, same 3dp rounding as the catalog path).
+     */
+    private BigDecimal resolveCo2(String factorKey, BigDecimal customFactorKgPerUnit, BigDecimal horizonQuantity, String region) {
+        if (factorKey != null && !factorKey.isBlank()) {
+            return carbonService.calculateCo2(factorKey, horizonQuantity, region);
+        }
+        return horizonQuantity.multiply(customFactorKgPerUnit).setScale(3, RoundingMode.HALF_UP);
     }
 
     /**

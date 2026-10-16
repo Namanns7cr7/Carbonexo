@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carbonexo — Judge Pitch & Executive Innovation Showcase | AI Builder Cup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070a0f;
+      --bg-surface: #0e141f;
+      --bg-surface-2: #141d2c;
+      --bg-surface-subtle: #192437;
+      --border: rgba(255, 255, 255, 0.1);
+      --border-bright: rgba(52, 211, 153, 0.4);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --accent-lime: #a3e635;
+      --accent-emerald: #10b981;
+      --accent-cyan: #38bdf8;
+      --accent-blue: #3b82f6;
+      --accent-purple: #c084fc;
+      --accent-amber: #fbbf24;
+      
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-2: #f1f5f9;
+      --bg-surface-subtle: #e2e8f0;
+      --border: rgba(15, 23, 42, 0.1);
+      --border-bright: rgba(16, 185, 129, 0.5);
+      --text: #0f172a;
+      --text-muted: #334155;
+      --text-dim: #64748b;
+      --accent-lime: #4d7c0f;
+      --accent-emerald: #059669;
+      --accent-cyan: #0284c7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: radial-gradient(ellipse 90% 60% at 50% -15%, rgba(16, 185, 129, 0.18), transparent 75%), var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Floating Navigation */
+    .pitch-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(14, 20, 31, 0.88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+    [data-theme="light"] .pitch-nav {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+    .brand-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #a3e635, #10b981);
+      color: #062414;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+
+    .nav-tag {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-emerald);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-demo {
+      background: linear-gradient(135deg, #a3e635 0%, #10b981 100%);
+      color: #062414;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.5rem 1.15rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-demo:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 3rem 0 4rem;
+    }
+
+    .cup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #fbbf24;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 5.5vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 25%, #34d399 65%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    [data-theme="light"] .hero h1 {
+      background: linear-gradient(135deg, #0f172a 30%, #059669 70%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-lead {
+      max-width: 820px;
+      margin: 0 auto 2.5rem;
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* 3 Pillars Grid */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin: 3.5rem 0;
+    }
+
+    .pillar-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      position: relative;
+      transition: all 0.25s ease;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.4);
+    }
+    .pillar-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-bright);
+    }
+
+    .pillar-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .pillar-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+      color: var(--text);
+    }
+
+    .pillar-desc {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .pillar-stats {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .pillar-stat-val {
+      font-family: var(--font-mono);
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent-emerald);
+    }
+    .pillar-stat-lbl {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* Section Headers */
+    .pitch-section {
+      margin-top: 5rem;
+    }
+
+    .section-eyebrow {
+      color: var(--accent-emerald);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-heading {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 1rem;
+    }
+
+    /* LIVE INTERACTIVE JUDGE SIMULATOR */
+    .simulator-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      margin: 2rem 0;
+      box-shadow: 0 15px 40px -15px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sim-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+    }
+    @media (max-width: 860px) {
+      .sim-grid { grid-template-columns: 1fr; }
+    }
+
+    .slider-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .slider-val {
+      font-family: var(--font-mono);
+      color: var(--accent-emerald);
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 7px;
+      border-radius: 5px;
+      background: var(--bg-surface-subtle);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Live Output Meter */
+    .results-panel {
+      background: #080d17;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 18px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .result-metric {
+      margin-bottom: 1.25rem;
+    }
+    .result-big-number {
+      font-family: var(--font-mono);
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #34d399;
+      line-height: 1;
+    }
+    .result-unit {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .result-chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .chip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .chip-val {
+      font-family: var(--font-mono);
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .chip-lbl {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .source-tag {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      font-style: italic;
+      margin-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 0.75rem;
+    }
+
+    /* Competitive Matrix (Old vs Carbonexo) */
+    .compare-table-wrapper {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin: 2rem 0;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-surface-subtle);
+      padding: 1.1rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    tr:last-child td { border-bottom: none; }
+    .col-carbonexo {
+      background: rgba(16, 185, 129, 0.06);
+      font-weight: 700;
+      color: #34d399;
+    }
+    .col-old {
+      color: var(--text-dim);
+    }
+
+    /* Fast Launch Bar */
+    .launch-bar {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(56, 189, 248, 0.15));
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      border-radius: 20px;
+      padding: 2rem;
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .launch-btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .btn-action {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-action:hover {
+      border-color: var(--accent-emerald);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="pitch-nav">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/app" class="brand">
+        <div class="brand-badge">✦</div>
+        <span>Carbonexo</span>
+      </a>
+      <span class="nav-tag">AI Builder Cup 2026</span>
+    </div>
+
+    <div class="nav-actions">
+      <a href="/methodology.html" style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-decoration: none; padding: 0.45rem 0.85rem;">
+        📐 Full Methodology
+      </a>
+      <a href="/app" class="btn-demo">
+        🚀 Launch Live App
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="cup-badge">🏆 Hackathon Innovation Showcase</div>
+      <h1>Autonomous Scientific Climate Accounting & AI Coach</h1>
+      <p class="hero-lead">
+        Most carbon trackers rely on vague guesses or expensive proprietary APIs. 
+        <strong>Carbonexo</strong> combines <strong>zero-hallucination peer-reviewed RAG</strong>, 
+        a <strong>digital twin simulation engine</strong>, and an <strong>auditable double-entry Eco-Credit ledger</strong> — 
+        all at <strong>$0 data overhead</strong>.
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="#simulator" class="btn-demo" style="padding: 0.8rem 1.75rem; font-size: 0.95rem;">
+          🎮 Test Live Judge Simulator ↓
+        </a>
+        <a href="/app/coach" class="btn-action">
+          💬 Try AI Coach in Live App →
+        </a>
+      </div>
+    </section>
+
+    <!-- 3 Core Pillars -->
+    <div class="pillars-grid">
+      <!-- Pillar 1 -->
+      <div class="pillar-card" style="border-top: 4px solid #10b981;">
+        <div class="pillar-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🔬</div>
+        <h3 class="pillar-title">Scientific Grounding (RAG)</h3>
+        <p class="pillar-desc">
+          Zero-hallucination climate advice. The AI Coach references verified emission factors from UK DEFRA 2024 and Oxford University food life cycle studies before answering every query.
+        </p>
+        <div class="pillar-stats">
+          <div>
+            <div class="pillar-stat-val">100% Free</div>
+            <div class="pillar-stat-lbl">Open Datasets</div>
+          </div>
+          <div>
+            <div class="pillar-stat-val">0.171 kg</div>
+            <div class="pillar-stat-lbl">DEFRA Car Metric</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pillar 2 -->
+      <div class="pillar-card" style="border-top: 4px solid #38bdf8;">
+        <div class="pillar-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🔮</div>
+        <h3 class="pillar-title">Carbon Twin Simulator</h3>
+        <p class="pillar-desc">
+          Behavioral counterfactual forecasting. Users test lifestyle swaps (e.g. car to metro, beef to lentils) to instantly see annual avoided emissions, EPA tree equivalents, and ROI before committing.
+        </p>
+        <div class="pillar-stats">
+          <div>
+            <div class="pillar-stat-val">80%</div>
+            <div class="pillar-stat-lbl">Rail vs Car Cut</div>
+          </div>
+          <div>
+            <div class="pillar-stat-val">52-Wk</div>
+            <div class="pillar-stat-lbl">Forecast Model</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pillar 3 -->
+      <div class="pillar-card" style="border-top: 4px solid #fbbf24;">
+        <div class="pillar-icon" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">🏆</div>
+        <h3 class="pillar-title">Auditable Eco-Ledger</h3>
+        <p class="pillar-desc">
+          Double-entry credit ledger that awards gamified Eco Credits for verified avoided carbon. Includes OCR bill parsing for electricity meter verification and certified tree milestones.
+        </p>
+        <div class="pillar-stats">
+          <div>
+            <div class="pillar-stat-val">21.77 kg</div>
+            <div class="pillar-stat-lbl">EPA Tree Unit</div>
+          </div>
+          <div>
+            <div class="pillar-stat-val">1.5x</div>
+            <div class="pillar-stat-lbl">Streak Multiplier</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE INTERACTIVE JUDGE SIMULATOR -->
+    <section id="simulator" class="pitch-section">
+      <div class="section-eyebrow">Interactive Demo for Judges</div>
+      <h2 class="section-heading">Try the Real-Time DEFRA & Oxford Math Engine</h2>
+      <p style="color: var(--text-muted); max-width: 700px; margin-bottom: 2rem;">
+        Adjust the sliders below to see our live calculation engine compute avoided emissions, EPA urban tree absorption years, and earned Eco Credits in real time:
+      </p>
+
+      <div class="simulator-box">
+        <div class="sim-header">
+          <div>
+            <h3 style="font-size: 1.3rem; font-weight: 800;">⚡ Live Behavioral Scenario Sandbox</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+              Running client-side formulas from UK DEFRA 2024 & Oxford University LCA
+            </p>
+          </div>
+          <span class="nav-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
+            Zero Latency Engine
+          </span>
+        </div>
+
+        <div class="sim-grid">
+          <!-- Controls -->
+          <div>
+            <!-- Slider 1 -->
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>🚆 Commute Swaps (Car ➔ Metro, 15km)</span>
+                <span class="slider-val" id="commuteVal">2 days/wk</span>
+              </div>
+              <input type="range" id="commuteSlider" min="0" max="5" value="2" oninput="updateSim()">
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem;">
+                DEFRA: 0.171 kg/km car vs 0.035 kg/km metro (-79.5% per km)
+              </p>
+            </div>
+
+            <!-- Slider 2 -->
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>🥗 Diet Swaps (Beef ➔ Plant-Based)</span>
+                <span class="slider-val" id="dietVal">2 meals/wk</span>
+              </div>
+              <input type="range" id="dietSlider" min="0" max="7" value="2" oninput="updateSim()">
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem;">
+                Oxford LCA: 60.0 kg/kg beef vs 0.9 kg/kg lentils (-98.5%)
+              </p>
+            </div>
+
+            <!-- Slider 3 -->
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>❄️ AC Thermostat Optimization</span>
+                <span class="slider-val" id="acVal">+2 °C warmer</span>
+              </div>
+              <input type="range" id="acSlider" min="0" max="4" value="2" oninput="updateSim()">
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem;">
+                DOE/EPA eGRID: ~7.5% power savings per 1°C increase
+              </p>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div class="results-panel">
+            <div class="result-metric">
+              <div class="result-unit">ANNUAL CARBON AVOIDED</div>
+              <div class="result-big-number" id="annualSaved">1,428</div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: #34d399; margin-top: 0.3rem;">
+                kg CO₂e eliminated / year
+              </div>
+            </div>
+
+            <div class="result-chips">
+              <div class="chip">
+                <div class="chip-val" id="treeYears">65.6</div>
+                <div class="chip-lbl">EPA Tree-Years</div>
+              </div>
+              <div class="chip">
+                <div class="chip-val" id="gasAvoided">160.7</div>
+                <div class="chip-lbl">Gallons Gas Avoided</div>
+              </div>
+              <div class="chip">
+                <div class="chip-val" id="weeklyAvoided">27.5 kg</div>
+                <div class="chip-lbl">Weekly Cut</div>
+              </div>
+              <div class="chip">
+                <div class="chip-val" id="creditsEarned">+275</div>
+                <div class="chip-lbl">Eco Credits/Wk</div>
+              </div>
+            </div>
+
+            <div class="source-tag">
+              📐 <strong>Formulas Verified:</strong> 
+              <code>ΔE_avoided = d × (0.171 - 0.035) + m × (60.0 - 0.9) + E_ac × (ΔT × 0.075)</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Carbonexo Wins vs Generic Trackers -->
+    <section class="pitch-section">
+      <div class="section-eyebrow">The Competitive Edge</div>
+      <h2 class="section-heading">Why Carbonexo Outperforms Traditional Trackers</h2>
+      
+      <div class="compare-table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Evaluation Criteria</th>
+              <th>Traditional Carbon Trackers</th>
+              <th style="color: #34d399; background: rgba(16, 185, 129, 0.1);">✦ Carbonexo Breakthrough</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Scientific Grounding</strong></td>
+              <td class="col-old">Generic estimates; proprietary closed formulas</td>
+              <td class="col-carbonexo">Direct RAG grounding with UK DEFRA 2024, Oxford Science, US EPA</td>
+            </tr>
+            <tr>
+              <td><strong>AI Transparency</strong></td>
+              <td class="col-old">Black-box generic chatbots prone to hallucination</td>
+              <td class="col-carbonexo">1-Click Prompt & Formula Inspector revealing exact variables & citations</td>
+            </tr>
+            <tr>
+              <td><strong>Actionability</strong></td>
+              <td class="col-old">Passive historical graphs ("Here is what you wasted")</td>
+              <td class="col-carbonexo">Forward-looking Carbon Twin Simulation before habits are chosen</td>
+            </tr>
+            <tr>
+              <td><strong>API & Operational Cost</strong></td>
+              <td class="col-old">$0.02 - $0.05 per proprietary database lookup</td>
+              <td class="col-carbonexo">100% Free public domain data structures; zero recurring database cost</td>
+            </tr>
+            <tr>
+              <td><strong>Offline Resilience</strong></td>
+              <td class="col-old">App breaks when backend API is unreachable</td>
+              <td class="col-carbonexo">Seamless offline client calculation engine with fallback simulation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Quick Pitch Script For The User -->
+    <section class="pitch-section">
+      <div class="section-eyebrow">Judge Presentation Guide</div>
+      <h2 class="section-heading">60-Second Verbal Pitch For Your Demo</h2>
+
+      <div style="background: var(--bg-surface); border: 1px solid var(--border); border-left: 4px solid #10b981; border-radius: 16px; padding: 1.75rem 2rem; margin: 1.5rem 0; line-height: 1.8;">
+        <p style="font-size: 1.05rem; color: var(--text);">
+          <em>"Judges, everyday climate action is broken because most people don't know what actually matters. 
+          Is skipping a plastic straw better than swapping two car rides for the train? 
+          <strong>Carbonexo solves this with transparent, peer-reviewed science.</strong></em>
+        </p>
+        <p style="font-size: 1.05rem; color: var(--text); margin-top: 1rem;">
+          <em>Instead of hallucinating estimates, our <strong>AI Coach</strong> is grounded in official <strong>UK DEFRA 2024 emission factors and Oxford University's landmark food study</strong>. 
+          Judges can inspect every calculation with our transparent Prompt Inspector. 
+          With our <strong>Carbon Twin Simulator</strong>, users can forecast their footprint before they act, 
+          earning real Eco-Credits and verifiable tree-planting certificates. 
+          Best of all, our entire data pipeline runs on open-access scientific datasets with <strong>zero paid API overhead</strong>, 
+          making it scalable to millions of users globally."</em>
+        </p>
+      </div>
+    </section>
+
+    <!-- Fast Launch Bar -->
+    <div class="launch-bar">
+      <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">
+        Ready to Experience Carbonexo Live?
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 600px; margin: 0 auto;">
+        Jump into any active module to see the live formulas and AI coaching in action.
+      </p>
+
+      <div class="launch-btn-group">
+        <a href="/app/coach" class="btn-demo">
+          ✦ Test AI Coach (DEFRA Grounded)
+        </a>
+        <a href="/app/simulate" class="btn-action">
+          🔮 Test Carbon Twin Simulator
+        </a>
+        <a href="/app" class="btn-action">
+          📊 Enterprise Dashboard
+        </a>
+        <a href="/methodology.html" class="btn-action">
+          📐 Technical Architecture Spec
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Live simulator calculation
+    function updateSim() {
+      const commuteDays = parseInt(document.getElementById('commuteSlider').value);
+      const dietMeals = parseInt(document.getElementById('dietSlider').value);
+      const acDelta = parseInt(document.getElementById('acSlider').value);
+
+      document.getElementById('commuteVal').textContent = commuteDays + ' days/wk';
+      document.getElementById('dietVal').textContent = dietMeals + ' meals/wk';
+      document.getElementById('acVal').textContent = '+' + acDelta + ' °C warmer';
+
+      // DEFRA Transport: 15 km round trip: 15 * (0.171 - 0.035) = 2.04 kg CO2e saved per day
+      const weeklyCommuteKg = commuteDays * 15 * (0.171 - 0.035);
+
+      // Oxford Diet: 200g beef vs lentils: 0.2kg * (60.0 - 0.9) = 11.82 kg saved per meal
+      const weeklyDietKg = dietMeals * 0.2 * (60.0 - 0.9);
+
+      // DOE/EPA AC: 1.8 kW * 6 hrs * 0.45 kg/kWh * (acDelta * 0.075)
+      const weeklyAcKg = (1.8 * 6 * 0.45 * (acDelta * 0.075)) * 7;
+
+      const totalWeekly = weeklyCommuteKg + weeklyDietKg + weeklyAcKg;
+      const totalAnnual = Math.round(totalWeekly * 52);
+      const treeYears = Math.round((totalAnnual / 21.77) * 10) / 10;
+      const gasAvoided = Math.round((totalAnnual / 8.887) * 10) / 10;
+      const creditsEarned = Math.round(totalWeekly * 10);
+
+      document.getElementById('annualSaved').textContent = totalAnnual.toLocaleString();
+      document.getElementById('treeYears').textContent = treeYears.toLocaleString();
+      document.getElementById('gasAvoided').textContent = gasAvoided.toLocaleString();
+      document.getElementById('weeklyAvoided').textContent = (Math.round(totalWeekly * 10) / 10) + ' kg';
+      document.getElementById('creditsEarned').textContent = '+' + creditsEarned;
+    }
+
+    // Initialize on load
+    updateSim();
+  </script>
+</body>
+</html>

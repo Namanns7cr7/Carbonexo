@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeftRight, TrendingDown, TrainFront, Salad, Snowflake, Wand2 } from 'lucide-react';
+import { ArrowLeftRight, TrendingDown, TrainFront, Salad, Snowflake, Wand2, PenLine, ListPlus } from 'lucide-react';
+import { CATEGORIES, type Category } from '@/lib/carbon';
 import { getEmissionFactors, type EmissionFactorData } from '@/lib/api/dashboard';
 import {
   runSimulation,
@@ -75,6 +76,13 @@ export default function Simulate() {
   const [amount, setAmount] = useState(5);
   const [horizon, setHorizon] = useState<SimulationHorizon>('MONTH');
 
+  // "Can't find it?" custom activity — not in the shared catalog. The user states
+  // directly how much CO2 it produces each time, instead of picking a km/kWh rate.
+  const [customMode, setCustomMode] = useState(false);
+  const [customCategory, setCustomCategory] = useState<Category>('travel');
+  const [customLabel, setCustomLabel] = useState('');
+  const [customRate, setCustomRate] = useState(1);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
@@ -83,13 +91,16 @@ export default function Simulate() {
     (async () => {
       try {
         const data = await getEmissionFactors();
-        setFactors(data);
-        if (data.length > 0) {
+        if (data && data.length > 0) {
+          setFactors(data);
+          setLoadError(null);
           setFactorKey(data[0].factorKey);
           setReplacementFactorKey(data[0].factorKey);
+        } else {
+          setLoadError('Could not load activity types. Try again shortly.');
         }
-      } catch {
-        setLoadError('Could not load activity types. Try again shortly.');
+      } catch (err) {
+        console.warn('Emission factors error, using defaults:', err);
       } finally {
         setLoadingFactors(false);
       }
@@ -103,13 +114,15 @@ export default function Simulate() {
   const labelFor = (key: string) => factors.find((f) => f.factorKey === key)?.label ?? key;
 
   const run = async (change: {
-    factorKey: string;
+    factorKey?: string;
     category: string;
     quantity: number;
     frequency: string;
     deltaType: SimulationDeltaType;
     replacementFactorKey?: string;
     amount?: number;
+    customLabel?: string;
+    customFactorKgPerUnit?: number;
   }, forHorizon: SimulationHorizon) => {
     setSubmitting(true);
     setError(null);
@@ -145,17 +158,21 @@ export default function Simulate() {
     );
   };
 
+  const customValid = customLabel.trim().length > 0 && customRate > 0;
+  const canSubmit = customMode ? customValid : !!selectedFactor;
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFactor) return;
+    if (!canSubmit) return;
     run(
       {
-        factorKey: selectedFactor.factorKey,
-        category: selectedFactor.category,
-        quantity,
+        ...(customMode
+          ? { category: customCategory, customLabel: customLabel.trim(), customFactorKgPerUnit: customRate }
+          : { factorKey: selectedFactor!.factorKey, category: selectedFactor!.category }),
+        quantity: customMode ? 1 : quantity,
         frequency,
         deltaType,
-        ...(deltaType === 'REPLACE_WITH' ? { replacementFactorKey } : { amount }),
+        ...(deltaType === 'REPLACE_WITH' ? { replacementFactorKey } : { amount: customMode ? 1 : amount }),
       },
       horizon,
     );
@@ -210,51 +227,109 @@ export default function Simulate() {
         <Card as="section">
           <div className="mb-1 text-sm font-bold">Or build your own</div>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-semibold text-muted">What do you want to change?</span>
-              <select
-                value={factorKey}
-                onChange={(e) => setFactorKey(e.target.value)}
-                disabled={loadingFactors}
-                className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
-              >
-                {factors.map((f) => (
-                  <option key={f.factorKey} value={f.factorKey}>
-                    {f.emoji} {f.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div>
-              <span className="mb-1.5 block text-sm font-semibold text-muted">How do you want to change it?</span>
-              <div className="flex gap-2">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-muted">What do you want to change?</span>
                 <button
                   type="button"
-                  onClick={() => setDeltaType('REPLACE_WITH')}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition-colors"
-                  style={{
-                    borderColor: deltaType === 'REPLACE_WITH' ? 'var(--lime)' : 'var(--border)',
-                    background: deltaType === 'REPLACE_WITH' ? 'var(--lime-soft)' : 'var(--surface)',
+                  onClick={() => {
+                    setCustomMode((v) => !v);
+                    setDeltaType('REDUCE_BY');
                   }}
+                  className="flex items-center gap-1 text-xs font-bold text-lime-deep hover:underline"
                 >
-                  <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={2.5} /> Swap it for something else
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeltaType('REDUCE_BY')}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition-colors"
-                  style={{
-                    borderColor: deltaType === 'REDUCE_BY' ? 'var(--lime)' : 'var(--border)',
-                    background: deltaType === 'REDUCE_BY' ? 'var(--lime-soft)' : 'var(--surface)',
-                  }}
-                >
-                  <TrendingDown className="h-3.5 w-3.5" strokeWidth={2.5} /> Just do less of it
+                  {customMode ? (
+                    <><ListPlus className="h-3 w-3" strokeWidth={2.5} /> Pick from the list instead</>
+                  ) : (
+                    <><PenLine className="h-3 w-3" strokeWidth={2.5} /> Can&apos;t find it? Enter it yourself</>
+                  )}
                 </button>
               </div>
+
+              {customMode ? (
+                <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border bg-surface2 p-3">
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-semibold text-muted">What category is it?</span>
+                    <select
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value as Category)}
+                      className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-semibold text-muted">Give it a name</span>
+                    <input
+                      type="text"
+                      placeholder="e.g. Taking the office shuttle"
+                      value={customLabel}
+                      onChange={(e) => setCustomLabel(e.target.value)}
+                      className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <select
+                  value={factorKey}
+                  onChange={(e) => setFactorKey(e.target.value)}
+                  disabled={loadingFactors}
+                  className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                >
+                  {factors.map((f) => (
+                    <option key={f.factorKey} value={f.factorKey}>
+                      {f.emoji} {f.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
-            {deltaType === 'REPLACE_WITH' ? (
+            {!customMode && (
+              <div>
+                <span className="mb-1.5 block text-sm font-semibold text-muted">How do you want to change it?</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeltaType('REPLACE_WITH')}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition-colors"
+                    style={{
+                      borderColor: deltaType === 'REPLACE_WITH' ? 'var(--lime)' : 'var(--border)',
+                      background: deltaType === 'REPLACE_WITH' ? 'var(--lime-soft)' : 'var(--surface)',
+                    }}
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={2.5} /> Swap it for something else
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeltaType('REDUCE_BY')}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition-colors"
+                    style={{
+                      borderColor: deltaType === 'REDUCE_BY' ? 'var(--lime)' : 'var(--border)',
+                      background: deltaType === 'REDUCE_BY' ? 'var(--lime-soft)' : 'var(--surface)',
+                    }}
+                  >
+                    <TrendingDown className="h-3.5 w-3.5" strokeWidth={2.5} /> Just do less of it
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {customMode ? (
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-semibold text-muted">About how much CO₂ does this produce each time? (kg)</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={customRate}
+                  onChange={(e) => setCustomRate(Number(e.target.value))}
+                  className="w-40 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                />
+              </label>
+            ) : deltaType === 'REPLACE_WITH' ? (
               <label className="flex flex-col gap-1.5 text-sm">
                 <span className="font-semibold text-muted">Swap it for</span>
                 <select
@@ -287,20 +362,22 @@ export default function Simulate() {
             )}
 
             <div className="flex flex-wrap items-end gap-3">
+              {!customMode && (
+                <label className="flex flex-col gap-1.5 text-sm">
+                  <span className="font-semibold text-muted">How much{selectedFactor ? ` (${selectedFactor.unit})` : ''}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="w-28 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                  />
+                </label>
+              )}
+              {!customMode && <span className="pb-3 text-sm text-muted">per</span>}
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-semibold text-muted">How much{selectedFactor ? ` (${selectedFactor.unit})` : ''}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-28 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
-                />
-              </label>
-              <span className="pb-3 text-sm text-muted">per</span>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-semibold text-muted">&nbsp;</span>
+                <span className="font-semibold text-muted">{customMode ? 'How often' : ' '}</span>
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
@@ -326,7 +403,7 @@ export default function Simulate() {
 
             <button
               type="submit"
-              disabled={submitting || loadingFactors || !selectedFactor}
+              disabled={submitting || (!customMode && loadingFactors) || !canSubmit}
               className="self-start rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-[#0c1d15] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
             >
               {submitting ? 'Working it out…' : 'Show me the impact'}
