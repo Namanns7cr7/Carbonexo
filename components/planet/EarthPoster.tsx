@@ -57,9 +57,14 @@ export function EarthPoster({
     <div aria-hidden="true" className="relative" style={{ width: size, aspectRatio: '1' }}>
       <div
         className="absolute -inset-[7%] rounded-full"
-        style={{ background: 'radial-gradient(circle, transparent 60%, rgba(95,170,232,0.32) 68%, transparent 76%)', filter: 'blur(10px)' }}
+        style={{
+          // Halo follows health: amber haze when degraded, emerald-blue when alive.
+          background:
+            'radial-gradient(circle, transparent 60%, color-mix(in srgb, rgba(95,170,232,0.32) calc(var(--vitality, 0.5) * 100%), rgba(180,130,70,0.34)) 68%, transparent 76%)',
+          filter: 'blur(10px)',
+        }}
       />
-      <div className="absolute inset-0 overflow-hidden rounded-full" style={{ background: '#0d3146' }}>
+      <div className={`absolute inset-0 overflow-hidden rounded-full ${styles.living}`} style={{ background: '#0d3146' }}>
         <div
           className={`absolute inset-y-0 left-0 ${spinning ? styles.posterSpin : ''}`}
           style={

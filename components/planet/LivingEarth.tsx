@@ -30,6 +30,7 @@ import { COUNTRY_CO2 } from '@/lib/experience/co2';
 import { OVERVIEW, type Region } from '@/lib/experience/regions';
 import type { GlobeAnchor, GlobeBody } from '@/lib/physics/globe';
 import { EarthPoster } from './EarthPoster';
+import styles from './planet.module.css';
 import type { EarthLayer, RouteArc } from './EarthCanvas';
 
 export type { EarthLayer, RouteArc } from './EarthCanvas';
@@ -57,6 +58,17 @@ export interface LivingEarthProps {
   /** Show the imagery credit line under the globe. */
   credit?: boolean;
   className?: string;
+  /**
+   * Living World health, 0 (degraded) … 1 (lush); 0.5 is the unaltered
+   * imagery. Pass a number when it comes from data (it springs to the new
+   * value), or `vitalityRef` when a page drives it per scroll frame.
+   */
+  vitality?: number;
+  vitalityRef?: MutableRefObject<number>;
+  /** Increment to give the planet a physical nudge — feedback for a user action. */
+  pulse?: number;
+  /** Clear colour behind the 3D planet. */
+  background?: string;
 }
 
 export function LivingEarth({
@@ -72,8 +84,15 @@ export function LivingEarth({
   label = 'A globe of Earth showing the current day and night sides.',
   credit = false,
   className = '',
+  vitality,
+  vitalityRef: externalVitality,
+  pulse = 0,
+  background,
 }: LivingEarthProps) {
   const tier = useMotionTier();
+  const ownVitality = useRef(vitality ?? 0.5);
+  if (vitality !== undefined) ownVitality.current = vitality;
+  const vitalityRef = externalVitality ?? ownVitality;
   const [coarse, setCoarse] = useState(false);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -132,6 +151,12 @@ export function LivingEarth({
   internalAnchor.current = ownAnchor;
   const anchorRef = externalAnchor ?? internalAnchor;
 
+  // A user action gives the planet a push: the GlobeBody glides off with
+  // momentum and friction brings it back to its drift — no tween, no timer.
+  useEffect(() => {
+    if (pulse > 0) bodyRef.current?.nudge(0.55, 0.06);
+  }, [pulse]);
+
   const onReady = useCallback(() => setReady(true), []);
   const onContextLost = useCallback(() => setFailed(true), []);
 
@@ -163,7 +188,11 @@ export function LivingEarth({
   const posterAnchor = externalAnchor ? externalAnchor.current : ownAnchor;
 
   return (
-    <figure className={`relative m-0 ${className}`}>
+    <figure
+      className={`relative m-0 ${className}`}
+      // The poster reads --vitality; a page that drives vitalityRef sets the variable on an ancestor.
+      style={vitality !== undefined ? ({ '--vitality': String(Math.max(0, Math.min(1, vitality))) } as React.CSSProperties) : undefined}
+    >
       <div
         ref={box}
         role="img"
@@ -181,11 +210,13 @@ export function LivingEarth({
           className="absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-out"
           style={{ opacity: live ? 0 : 1, pointerEvents: 'none' }}
         >
-          <EarthPoster
-            center={{ lat: posterAnchor.lat, lon: posterAnchor.lon }}
-            spinning={tier === 'lite'}
-            size={`min(86%, ${Math.round((100 / posterAnchor.dist) * 2.6)}%)`}
-          />
+          <div key={pulse} className={`flex h-full w-full items-center justify-center ${pulse > 0 && tier !== 'still' ? styles.pulse : ''}`}>
+            <EarthPoster
+              center={{ lat: posterAnchor.lat, lon: posterAnchor.lon }}
+              spinning={tier === 'lite'}
+              size={`min(86%, ${Math.round((100 / posterAnchor.dist) * 2.6)}%)`}
+            />
+          </div>
         </div>
 
         {mount3d && (
@@ -204,6 +235,8 @@ export function LivingEarth({
                 route={route}
                 onReady={onReady}
                 onContextLost={onContextLost}
+                vitalityRef={vitalityRef}
+                background={background}
               />
             </WebGLBoundary>
           </div>

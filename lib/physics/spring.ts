@@ -122,4 +122,6 @@ export const SPRINGS = {
   zoom: spring(14, 0.95),
   /** Settling back inside a soft limit after a drag past it. */
   limit: spring(40, 1),
+  /** Living World health. Critically damped: the planet must never read healthier than the data, even for a frame. */
+  health: spring(3.2, 1),
 } as const;

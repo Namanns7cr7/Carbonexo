@@ -60,6 +60,14 @@ export interface EarthCanvasProps {
   route?: RouteArc | null;
   onReady?: () => void;
   onContextLost?: () => void;
+  /**
+   * Living World health, 0 (degraded) … 1 (lush). Read every frame and
+   * spring-smoothed, so a page can write to it on scroll or on new data
+   * without re-rendering. See lib/living-world.
+   */
+  vitalityRef?: MutableRefObject<number>;
+  /** Clear colour behind the planet, so a compact globe sits flush on its card. */
+  background?: string;
 }
 
 const FOV = 35;
@@ -86,7 +94,7 @@ export default function EarthCanvas(props: EarthCanvasProps) {
       }}
       style={{ touchAction: props.zoomable ? 'none' : 'pan-y', cursor: props.interactive ? 'grab' : undefined }}
     >
-      <color attach="background" args={['#030709']} />
+      <color attach="background" args={[props.background ?? '#030709']} />
       {quality.stars > 0 && <Stars radius={80} depth={40} count={quality.stars} factor={3.2} saturation={0} fade speed={0} />}
       <Suspense fallback={null}>
         <World {...props} />
@@ -98,7 +106,7 @@ export default function EarthCanvas(props: EarthCanvasProps) {
 
 // ─── The globe ───────────────────────────────────────────────────────────────
 
-function World({ quality, layer, selectedIso, onSelectCountry, route, onReady }: EarthCanvasProps) {
+function World({ quality, layer, selectedIso, onSelectCountry, route, onReady, vitalityRef }: EarthCanvasProps) {
   const tex = EARTH_TEXTURES[quality.texture];
   const [day, night, water, clouds] = useTexture([tex.day, tex.night, EARTH_TEXTURES.water, EARTH_TEXTURES.clouds]);
 
@@ -115,17 +123,24 @@ function World({ quality, layer, selectedIso, onSelectCountry, route, onReady }:
     return () => window.clearInterval(id);
   }, [sunDir]);
 
+  // One shared uniform object, so the surface and the atmosphere always agree.
+  const vitality = useMemo(() => ({ value: vitalityRef?.current ?? 0.5 }), [vitalityRef]);
   const earthUniforms = useMemo(
-    () => ({ dayMap: { value: day }, nightMap: { value: night }, waterMap: { value: water }, sunDir: { value: sunDir } }),
-    [day, night, water, sunDir]
+    () => ({ dayMap: { value: day }, nightMap: { value: night }, waterMap: { value: water }, sunDir: { value: sunDir }, vitality }),
+    [day, night, water, sunDir, vitality]
   );
   const cloudUniforms = useMemo(() => ({ cloudMap: { value: clouds }, sunDir: { value: sunDir }, opacity: { value: 0.85 } }), [clouds, sunDir]);
-  const atmoUniforms = useMemo(() => ({ sunDir: { value: sunDir } }), [sunDir]);
+  const atmoUniforms = useMemo(() => ({ sunDir: { value: sunDir }, vitality }), [sunDir, vitality]);
 
   const cloudRef = useRef<THREE.Mesh>(null);
+  const vSpring = useRef({ x: vitality.value, v: 0 });
   useFrame((_, dt) => {
     // Cloud deck drifts against the surface. Decorative — the cloud map is a static composite.
     if (cloudRef.current) cloudRef.current.rotation.y += dt * 0.004;
+    // Health changes are physical too: the planet eases into its new state, it never snaps.
+    const target = vitalityRef?.current ?? 0.5;
+    stepSpring(vSpring.current, target, SPRINGS.health, dt);
+    vitality.value = Math.max(0, Math.min(1, vSpring.current.x));
   });
 
   useEffect(() => {
