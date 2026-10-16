@@ -1,13 +1,6 @@
-import type { Metadata } from 'next';
-import { ComponentGallery } from './ComponentGallery';
+import { redirect } from 'next/navigation';
 
-/** Component gallery with SAMPLE fixtures — the Storybook-style preview for
- *  components/visualizations. Not linked from the app. */
-export const metadata: Metadata = {
-  title: 'Carbonexo — Visualization components (preview)',
-  robots: { index: false, follow: false },
-};
-
-export default function ComponentsPreviewPage() {
-  return <ComponentGallery />;
+/** The component gallery preview is retired; the components are used in the product itself. */
+export default function ExperienceComponentsPage() {
+  redirect('/welcome');
 }

@@ -84,7 +84,7 @@ export default function Actions() {
             <>Targeting a <strong className="text-text">{goal.weeklyGoalPct}%</strong> cut on last week&apos;s logged {world.actual.lastWeekKg} kg.</>
           )}
         </p>
-        <p className="mt-1 text-[11px] text-muted">{goal.basis} Your logged average is what moves your planet.</p>
+        {goal.targetKg !== null && <p className="mt-1 text-[11px] text-muted">{goal.basis} Your logged average is what moves your planet.</p>}
         </div>
       </Card>
 

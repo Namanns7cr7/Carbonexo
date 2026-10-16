@@ -552,7 +552,10 @@ export default function Simulate() {
             </div>
           </div>
 
-          {result.source !== 'offline-estimate' && (
+          {result.source !== 'offline-estimate' && result.weeklyGoalImpact.projectedProgressPct === 0 && result.weeklyGoalImpact.currentProgressPct === 0 && (
+            <p className="text-xs text-muted">Weekly goal impact appears once you have a week of logs to set a target against.</p>
+          )}
+          {result.source !== 'offline-estimate' && (result.weeklyGoalImpact.projectedProgressPct > 0 || result.weeklyGoalImpact.currentProgressPct > 0) && (
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold">How close this gets you to your weekly goal</span>

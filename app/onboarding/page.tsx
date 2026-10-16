@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Logo } from '@/components/Logo';
@@ -12,6 +12,7 @@ import { CO2_SOURCE } from '@/lib/experience/co2';
 import { GRID_SOURCE } from '@/lib/experience/grid';
 import { PillGrid } from '@/components/onboarding/PillGrid';
 import { useCarbon } from '@/lib/store';
+import { isAuthenticated } from '@/lib/api/auth';
 
 const TRAVEL = [
   { v: 'Car', e: '🚗' },
@@ -60,10 +61,11 @@ interface Draft {
 
 export default function Onboarding() {
   const router = useRouter();
-  const { profile, saveProfile, completeOnboarding } = useCarbon();
+  const { profile, bootstrapped, saveProfile, completeOnboarding } = useCarbon();
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>({
-    name: profile.name || '',
+    // Never seed from the signed-out example persona; the effect below fills the real name.
+    name: '',
     travelModes: toList(profile.travelMode) ,
     dailyDistance: profile.dailyDistance,
     diets: toList(profile.diet),
@@ -72,6 +74,15 @@ export default function Onboarding() {
     weeklyGoalPct: profile.weeklyGoalPct,
   });
   const updateDraft = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
+
+  // The server profile (with the name given at sign-up) can arrive after first
+  // render; fill the name in then, without overwriting anything typed.
+  // Only the server's profile counts: before it loads, the store holds the
+  // signed-out example persona, whose name must never leak into a real account.
+  useEffect(() => {
+    if (!bootstrapped || !isAuthenticated()) return;
+    if (profile.name && profile.name !== 'User') setD((p) => (p.name ? p : { ...p, name: profile.name }));
+  }, [bootstrapped, profile.name]);
 
   // toggle a value in/out of a string-array field
   const toggleIn = (key: 'travelModes' | 'diets' | 'shopping', v: string) =>

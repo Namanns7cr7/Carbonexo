@@ -54,7 +54,7 @@ export const earthFragment = /* glsl */ `
     vec3 dust = vec3(lum * 1.12, lum * 0.96, lum * 0.74);
     vec3 parched = mix(mix(vec3(lum), rawDay, 0.25), dust, land * 0.7) * 0.82;
     // Lush: existing greenery deepens and spreads into semi-arid land; seas clear.
-    vec3 grown = rawDay * vec3(0.78, 1.16, 0.84) + vec3(0.0, 0.025, 0.006);
+    vec3 grown = rawDay * vec3(0.72, 1.24, 0.8) + vec3(0.0, 0.03, 0.008);
     vec3 lush = mix(rawDay, grown, land * (0.35 + 0.65 * veg) * (1.0 - smoothstep(0.55, 0.85, lum)));
     lush = mix(lush, rawDay * vec3(0.92, 1.02, 1.08), water * 0.6);
 
