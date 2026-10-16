@@ -23,9 +23,12 @@ goals, and rewards.
 - **API:** https://carbonexo-backend-yigbd35s3q-el.a.run.app
 - **API docs (Swagger):** https://carbonexo-backend-yigbd35s3q-el.a.run.app/swagger-ui.html
 
-## Documentation
+## Documentation & Judge Showcase
 
-Full docs live in [`docs/`](docs/README.md) — organised into **guides** (run &
+- 📐 **[Complete Architecture, Formulas, Database & End-to-End Workflow](public/methodology.html)** (Live at `/methodology.html`): Full platform technical audit covering all 6 core modules, GHG Protocol Scope 1/2/3 formulas, Oxford/DEFRA datasets, relational schemas, REST APIs, and end-to-end SVG topology with 1-click launch redirects.
+- 🏆 **[Judge Pitch & Executive Innovation Showcase](public/pitch.html)** (Live at `/pitch.html`): Hackathon executive presentation with live interactive Carbon Twin sliders, competitive matrix, and verbal pitch script.
+
+Full docs also live in [`docs/`](docs/README.md) — organised into **guides** (run &
 deploy), **reference** (architecture, API, database, security), and **project**
 (roadmap, audits). Quick links:
 [Architecture](docs/reference/ARCHITECTURE.md) ·

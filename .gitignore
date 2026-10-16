@@ -38,10 +38,22 @@ target/
 # screenshots & local dev tooling
 /.shots/
 
-# editor
+# editor & agent tooling
 *.code-workspace
 .vscode/
 .idea/
+.claude/
+
+# python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+ENV/
 
 # local storage stub (uploaded bill files)
 /backend/.local-blob/
+
