@@ -25,6 +25,9 @@ export const CO2_SOURCE = {
 
 export const CO2_DATA_YEAR = 2024;
 
+/** World average, same dataset and year (OWID `emissions_total_per_capita`, World, 2024: 4.73). */
+export const WORLD_CO2_PER_CAPITA = 4.7;
+
 export interface CountryCo2 {
   iso: string;
   country: string;

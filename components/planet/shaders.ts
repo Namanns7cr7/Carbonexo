@@ -46,7 +46,7 @@ export const earthFragment = /* glsl */ `
 
     // Sun glint on open water only.
     vec3 H = normalize(L + V);
-    float spec = pow(max(dot(N, H), 0.0), 70.0) * water * 0.55 * day;
+    float spec = pow(max(dot(N, H), 0.0), 260.0) * water * 0.26 * day;
 
     vec3 nightSide = nightCol * 1.5 + dayCol * 0.012;
 
@@ -84,26 +84,33 @@ export const cloudFragment = /* glsl */ `
 `;
 
 export const atmosphereVertex = /* glsl */ `
-  varying vec3 vNormalV;
+  varying vec3 vPosW;
   varying vec3 vNormalW;
   void main() {
-    vNormalV = normalize(normalMatrix * normal);
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vPosW = wp.xyz;
     vNormalW = normalize(mat3(modelMatrix) * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * viewMatrix * wp;
   }
 `;
 
 export const atmosphereFragment = /* glsl */ `
   uniform vec3 sunDir;
-  varying vec3 vNormalV;
+  varying vec3 vPosW;
   varying vec3 vNormalW;
   void main() {
-    // Rendered on the back face of a slightly larger shell: the glow peaks
-    // just outside the limb and fades to nothing toward the centre.
-    float intensity = pow(clamp(0.74 + dot(vNormalV, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 3.2);
+    // Exact, perspective-correct limb glow. For the sight ray through this
+    // fragment, b is its closest approach to the planet's centre (radius 1;
+    // the shell is r = 1.1). The glow is zero where the ray just grazes the
+    // shell (b = 1.1, so no hard outer ring) and peaks where it grazes the
+    // surface (b = 1.0), so it hugs the limb with no dark gap.
+    vec3 dir = normalize(vPosW - cameraPosition);
+    float b = length(cross(cameraPosition, dir));
+    float t = clamp((1.1 - b) / 0.1, 0.0, 1.0);
+    float intensity = pow(t, 1.8);
     float sunward = smoothstep(-0.35, 0.45, dot(normalize(vNormalW), normalize(sunDir)));
     vec3 col = mix(vec3(0.04, 0.09, 0.22), vec3(0.32, 0.64, 1.0), sunward);
-    gl_FragColor = vec4(col * intensity * 1.35, intensity);
+    gl_FragColor = vec4(col * intensity * 1.1, intensity);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }

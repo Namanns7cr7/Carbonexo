@@ -5,10 +5,18 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCarbon } from '@/lib/store';
 import { ACTIONS, CATEGORY_META, DIFFICULTY_COLOR, round1 } from '@/lib/carbon';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
+import { Celebrate, UI_SPRING } from '@/components/physics';
 
 export default function Actions() {
   const { plan, addPlan, removePlan, togglePlan, weekTotals, profile } = useCarbon();
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Which plan row just got completed — drives a one-shot celebration on that row's checkbox.
+  const [celebrated, setCelebrated] = useState<{ id: string; n: number } | null>(null);
+
+  const complete = (id: string, wasDone: boolean) => {
+    if (!wasDone) setCelebrated((c) => ({ id, n: (c?.n ?? 0) + 1 }));
+    togglePlan(id);
+  };
 
   const planIds = new Set(plan.map((p) => p.templateId));
   const recommended = ACTIONS.filter((a) => !planIds.has(a.id));
@@ -72,10 +80,14 @@ export default function Actions() {
           <div className="flex flex-col gap-2">
             {plan.map((p) => (
               <motion.div key={p.templateId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 rounded-[14px] border border-border bg-surface px-4 py-3">
-                <button
-                  onClick={() => togglePlan(p.templateId)}
-                  aria-label={p.done ? 'Mark not done' : 'Mark done'}
-                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors"
+                <motion.button
+                  onClick={() => complete(p.templateId, p.done)}
+                  aria-label={p.done ? `Mark "${p.template.title}" not done` : `Mark "${p.template.title}" done`}
+                  aria-pressed={p.done}
+                  whileTap={{ scale: 0.82 }}
+                  animate={{ scale: 1 }}
+                  transition={UI_SPRING}
+                  className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors"
                   style={{
                     borderColor: p.done ? 'var(--lime)' : 'var(--border)',
                     background: p.done ? 'var(--lime)' : 'transparent',
@@ -83,7 +95,8 @@ export default function Actions() {
                   }}
                 >
                   ✓
-                </button>
+                  {celebrated?.id === p.templateId && p.done && <Celebrate trigger={celebrated.n} label={`≈ −${p.template.saving} kg/wk`} />}
+                </motion.button>
                 <span className="text-xl">{p.template.emoji}</span>
                 <div className="min-w-0 flex-1">
                   <div className={`text-sm font-bold ${p.done ? 'text-muted line-through' : ''}`}>{p.template.title}</div>

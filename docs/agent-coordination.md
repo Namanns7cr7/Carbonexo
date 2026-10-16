@@ -2,7 +2,7 @@
 
 Living record of who is working where. Update it when ownership or status changes.
 
-_Last updated: 2026-10-15_
+_Last updated: 2026-10-16_
 
 ## 1. Branches and baseline
 
@@ -95,3 +95,56 @@ Integration steps and data mapping: **`docs/experience-integration.md`**.
 | ~22:50 | Agent 2 | Phase 0 audit; messaged `admin-ce`; it confirmed no involvement in this repo |
 | ~22:55 | Agent 2 | Committed `487e4ee` on `feat/carbonexo-living-world` (user-approved); created worktree + `feature/cinematic-experience` |
 | ~23:00–23:40 | Agent 2 | Implemented planet, experience, visualizations, vault, media pipeline; checks + screenshots |
+
+
+---
+
+## 8. Workstream: `feature/living-planet-physics` (2026-10-16)
+
+| Item | Value |
+|---|---|
+| Branch | `feature/living-planet-physics` |
+| Worktree | `D: year\Carbonexo-physics` |
+| Base | `fdcd79e` (`feature/cinematic-experience`) + merge of `origin/sak@1c69e0d` |
+| Old-UI reference | `D: year\Carbonexo-old` — **detached** at `origin/sak@1c69e0d`, read-only, used to run and screenshot the original UI |
+| Pushed / merged | Nothing. Not pushed, not merged into `sak` or `main`. |
+
+### Active work observed elsewhere — not touched
+
+At the start of this workstream the primary worktree (`D: year\Carbonexo`, `feat/carbonexo-living-world`) gained **uncommitted** edits to `app/app/page.tsx` and `app/globals.css` (Dashboard being restored to the "clean white card, original style"). Someone is actively working there. This branch therefore:
+
+- does **not** modify `app/app/page.tsx`, `app/globals.css`, `tailwind.config.ts`, `app/layout.tsx`, `lib/store*`, `lib/api/*` or `backend/`;
+- scopes its dark tokens in `components/journey/journey.module.css` instead of editing `globals.css`.
+
+### Owned by this workstream
+
+```
+lib/physics/                spring.ts, globe.ts (+ tests) — springs, inertia, globe camera body
+components/physics/         MagneticButton, TactileCard, InertialRail, Celebrate
+components/journey/         PlanetJourney + five scenes (the new /welcome)
+lib/experience/grid.ts      Ember/OWID grid intensity (new)
+lib/experience/trips.ts     example routes + estimates (new)
+lib/experience/journey.ts   scroll → camera path (new)
+docs/living-planet.md
+```
+
+### Shared files changed (review these)
+
+| File | Change |
+|---|---|
+| `components/planet/EarthCanvas.tsx` | OrbitControls + eased flights replaced by the GlobeBody physics rig; grid layer; route arcs; spring-grown markers; view-offset framing |
+| `components/planet/LivingEarth.tsx` | New props (`anchorRef`, `layer`, `route`, `zoomable`); keyboard control; zoom buttons. Old props (`region`, `selectedIso`, `showCo2`) still work |
+| `components/planet/shaders.ts` | Atmosphere rewritten (exact limb glow — removes the hard outer ring and the dark gap); tighter sun glint |
+| `lib/experience/co2.ts` | + `WORLD_CO2_PER_CAPITA` (OWID, 2024) |
+| `app/welcome/page.tsx` | Mounts `<PlanetJourney />` instead of the chapters. Chapter components left in the tree, unmounted |
+| `app/app/actions/page.tsx` | Spring press + one-shot `Celebrate` when a plan action is completed. Progress still goes through the existing `togglePlan` |
+
+### Handoff to the Dashboard owner
+
+The Dashboard currently uses the CSS `RotatingGlobe`. A drop-in physics globe is available — **not wired in by this branch** because `app/app/page.tsx` is being edited elsewhere:
+
+```tsx
+import { LivingEarth } from '@/components/planet/LivingEarth';
+<LivingEarth className="h-[160px] w-[160px] overflow-hidden rounded-full" interactive label="Earth, lit as it is right now." />
+```
+It falls back to the CSS poster on reduced motion / weak devices / no WebGL, and unmounts its GL context when off screen.

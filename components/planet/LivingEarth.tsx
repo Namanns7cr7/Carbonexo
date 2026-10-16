@@ -12,32 +12,46 @@
  *   - GPU drops the context                                                 → poster
  * It also stops the render loop when scrolled off screen or the tab is hidden.
  *
- * The globe is decorative-plus: everything it shows is also available as text
- * (pair it with <Co2Panel> for the data overlay), so it is aria-hidden behind
- * a descriptive label.
+ * Two ways to steer the camera:
+ *   - declaratively, with `region` / `selectedIso` (the camera springs there), or
+ *   - imperatively, by passing `anchorRef` and writing to it — the scroll
+ *     journey does this so scrolling never re-renders React.
+ *
+ * When `interactive`, the globe is a focusable control: arrow keys spin it
+ * (with momentum), +/− zoom, 0 recentres. Everything it shows is also
+ * available as text elsewhere on the page, so it is labelled as an image.
  */
 
 import dynamic from 'next/dynamic';
-import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MutableRefObject, type ReactNode } from 'react';
 import { useMotionTier } from '@/lib/useMotionTier';
 import { earthQuality, EARTH_IMAGERY_CREDIT } from '@/lib/experience/quality';
 import { COUNTRY_CO2 } from '@/lib/experience/co2';
 import { OVERVIEW, type Region } from '@/lib/experience/regions';
+import type { GlobeAnchor, GlobeBody } from '@/lib/physics/globe';
 import { EarthPoster } from './EarthPoster';
-import type { CameraTarget } from './EarthCanvas';
+import type { EarthLayer, RouteArc } from './EarthCanvas';
+
+export type { EarthLayer, RouteArc } from './EarthCanvas';
 
 const EarthCanvas = dynamic(() => import('./EarthCanvas'), { ssr: false, loading: () => null });
 
 export interface LivingEarthProps {
   /** Where the camera looks. Changing it flies the camera there. */
   region?: Region;
-  /** Allow drag-to-orbit and zoom. Leave off where the globe sits behind scrolling content. */
+  /** External camera control; overrides `region`/`selectedIso` framing. */
+  anchorRef?: MutableRefObject<GlobeAnchor>;
+  /** Drag to spin, keyboard control. Safe behind scrolling content: touch only takes horizontal drags. */
   interactive?: boolean;
-  /** Show per-person CO₂ markers (real data — see lib/experience/co2.ts). */
+  /** Wheel / pinch zoom and on-screen zoom buttons. Only where the globe owns the gesture. */
+  zoomable?: boolean;
+  /** Data layer. `showCo2` is the older spelling of `layer="co2"`. */
+  layer?: EarthLayer;
   showCo2?: boolean;
   /** ISO code of the selected country; the camera flies to it. */
   selectedIso?: string | null;
   onSelectCountry?: (iso: string) => void;
+  route?: RouteArc | null;
   /** Accessible description of what the globe is showing in this context. */
   label?: string;
   /** Show the imagery credit line under the globe. */
@@ -47,10 +61,14 @@ export interface LivingEarthProps {
 
 export function LivingEarth({
   region = OVERVIEW,
+  anchorRef: externalAnchor,
   interactive = false,
+  zoomable = false,
+  layer,
   showCo2 = false,
   selectedIso = null,
   onSelectCountry,
+  route = null,
   label = 'A globe of Earth showing the current day and night sides.',
   credit = false,
   className = '',
@@ -63,6 +81,7 @@ export function LivingEarth({
   const [near, setNear] = useState(false);
   const [tabVisible, setTabVisible] = useState(true);
   const box = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<GlobeBody | null>(null);
 
   useEffect(() => {
     setCoarse(window.matchMedia('(pointer: coarse)').matches);
@@ -72,10 +91,8 @@ export function LivingEarth({
   }, []);
 
   // Two distances: `onScreen` pauses the render loop; `near` mounts/unmounts
-  // the canvas entirely. A page can carry several globes, and a live WebGL
-  // context with 4K textures holds ~250 MB of GPU memory — so only the ones
-  // near the viewport exist at all. Textures stay in the loader cache, so a
-  // remount is quick.
+  // the canvas entirely. A live WebGL context with 4K textures holds ~250 MB
+  // of GPU memory, so only globes near the viewport exist at all.
   useEffect(() => {
     const el = box.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
@@ -99,40 +116,92 @@ export function LivingEarth({
   const use3d = quality.webgl && !failed;
   const mount3d = use3d && near;
 
-  const target: CameraTarget = useMemo(() => {
+  // Declarative framing → an anchor. Ignored when the page steers via anchorRef.
+  const ownAnchor = useMemo<GlobeAnchor>(() => {
     const country = selectedIso ? COUNTRY_CO2.find((c) => c.iso === selectedIso) : undefined;
-    return country ? { at: country.at, distance: 3.6 } : { at: region.at, distance: region.distance };
-  }, [selectedIso, region]);
+    if (country) return { key: `iso:${country.iso}`, lat: country.at.lat, lon: country.at.lon, dist: 3.4 };
+    return {
+      key: `region:${region.id}`,
+      lat: region.at.lat,
+      lon: region.at.lon,
+      dist: region.distance,
+      drift: region.id === OVERVIEW.id ? (quality.spin * 180) / Math.PI : 0,
+    };
+  }, [selectedIso, region, quality.spin]);
+  const internalAnchor = useRef<GlobeAnchor>(ownAnchor);
+  internalAnchor.current = ownAnchor;
+  const anchorRef = externalAnchor ?? internalAnchor;
 
   const onReady = useCallback(() => setReady(true), []);
   const onContextLost = useCallback(() => setFailed(true), []);
 
+  const live = mount3d && ready;
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const b = bodyRef.current;
+    if (!b) return;
+    const k = 0.9; // rad/s per press — a firm push that glides ~30°
+    const zoomKey = e.key === '+' || e.key === '=' || e.key === '-';
+    if (zoomKey && !zoomable) return;
+    const map: Record<string, () => void> = {
+      ArrowLeft: () => b.nudge(-k, 0),
+      ArrowRight: () => b.nudge(k, 0),
+      ArrowUp: () => b.nudge(0, k * 0.6),
+      ArrowDown: () => b.nudge(0, -k * 0.6),
+      '+': () => b.zoomBy(0.85),
+      '=': () => b.zoomBy(0.85),
+      '-': () => b.zoomBy(1 / 0.85),
+      '0': () => b.recenter(),
+      Home: () => b.recenter(),
+    };
+    const fn = map[e.key];
+    if (fn) {
+      e.preventDefault();
+      fn();
+    }
+  };
+
+  const posterAnchor = externalAnchor ? externalAnchor.current : ownAnchor;
+
   return (
     <figure className={`relative m-0 ${className}`}>
-      <div ref={box} role="img" aria-label={label} className="relative h-full w-full">
+      <div
+        ref={box}
+        role="img"
+        aria-label={
+          interactive && live
+            ? `${label} Interactive: drag or use the arrow keys to turn it${zoomable ? ', plus and minus to zoom' : ''}, 0 to recentre.`
+            : label
+        }
+        tabIndex={interactive && live ? 0 : undefined}
+        onKeyDown={interactive ? onKeyDown : undefined}
+        className="relative h-full w-full outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--lime)]"
+      >
         {/* Poster: the whole experience when 3D is unavailable; a placeholder while it loads. */}
         <div
-          className="absolute inset-0 flex items-center justify-center transition-opacity duration-xl ease-out"
-          style={{ opacity: mount3d && ready ? 0 : 1, pointerEvents: 'none' }}
+          className="absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-out"
+          style={{ opacity: live ? 0 : 1, pointerEvents: 'none' }}
         >
           <EarthPoster
-            center={selectedIso ? target.at : region.at}
+            center={{ lat: posterAnchor.lat, lon: posterAnchor.lon }}
             spinning={tier === 'lite'}
-            size={`min(86%, ${Math.round((100 / target.distance) * 2.6)}%)`}
+            size={`min(86%, ${Math.round((100 / posterAnchor.dist) * 2.6)}%)`}
           />
         </div>
 
         {mount3d && (
-          <div className="absolute inset-0 transition-opacity duration-xl ease-out" style={{ opacity: ready ? 1 : 0 }}>
+          <div className="absolute inset-0 transition-opacity duration-700 ease-out" style={{ opacity: ready ? 1 : 0 }}>
             <WebGLBoundary onError={onContextLost}>
               <EarthCanvas
                 quality={quality}
-                target={target}
+                anchorRef={anchorRef}
+                bodyRef={bodyRef}
                 active={onScreen && tabVisible}
                 interactive={interactive}
-                showCo2={showCo2}
+                zoomable={zoomable}
+                layer={layer ?? (showCo2 ? 'co2' : 'none')}
                 selectedIso={selectedIso}
                 onSelectCountry={onSelectCountry}
+                route={route}
                 onReady={onReady}
                 onContextLost={onContextLost}
               />
@@ -140,12 +209,40 @@ export function LivingEarth({
           </div>
         )}
       </div>
+
+      {zoomable && live && (
+        <div className="absolute bottom-4 right-4 z-[3] flex flex-col overflow-hidden rounded-[12px] border border-white/15 bg-[rgba(4,10,8,0.7)] text-white backdrop-blur-md">
+          <ZoomButton label="Zoom in" onClick={() => bodyRef.current?.zoomBy(0.8)}>
+            +
+          </ZoomButton>
+          <ZoomButton label="Zoom out" onClick={() => bodyRef.current?.zoomBy(1.25)}>
+            −
+          </ZoomButton>
+          <ZoomButton label="Recentre" onClick={() => bodyRef.current?.recenter()}>
+            ⌖
+          </ZoomButton>
+        </div>
+      )}
+
       {credit && (
-        <figcaption className="pointer-events-none absolute inset-x-0 bottom-2 px-4 text-center font-mono text-[10px] leading-[1.5] text-white/45">
+        <figcaption className="pointer-events-none absolute inset-x-0 bottom-2 px-4 text-center font-mono text-[10px] leading-[1.5] text-white/40">
           {EARTH_IMAGERY_CREDIT}
         </figcaption>
       )}
     </figure>
+  );
+}
+
+function ZoomButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="flex h-10 w-10 items-center justify-center border-white/10 text-[18px] font-bold transition-colors hover:bg-white/10 focus-visible:bg-white/15 focus-visible:outline-none [&:not(:last-child)]:border-b"
+    >
+      {children}
+    </button>
   );
 }
 
