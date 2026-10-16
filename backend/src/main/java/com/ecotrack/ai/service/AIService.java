@@ -2,16 +2,19 @@ package com.ecotrack.ai.service;
 
 import com.ecotrack.ai.AIProvider;
 import com.ecotrack.ai.PromptRenderer;
+import com.ecotrack.ai.memory.CoachMemory;
 import com.ecotrack.carbon.ActivityLogRepository;
 import com.ecotrack.config.AppProperties;
 import com.ecotrack.profile.UserProfile;
 import com.ecotrack.profile.UserProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -33,11 +36,24 @@ public class AIService {
     private final ActivityLogRepository logRepo;
     private final UserProfileRepository profileRepo;
     private final com.ecotrack.credit.CreditLedgerRepository creditLedgerRepo;
+    private final CoachMemory coachMemory;
 
+    /** Coach without long-term memory (pre-pgvector behaviour). */
     public AIService(AIProvider aiProvider, PromptRenderer renderer, AppProperties props,
                      RecommendationRepository recRepo, CoachMessageRepository coachRepo,
                      ActivityLogRepository logRepo, UserProfileRepository profileRepo,
                      com.ecotrack.credit.CreditLedgerRepository creditLedgerRepo) {
+        this(aiProvider, renderer, props, recRepo, coachRepo, logRepo, profileRepo, creditLedgerRepo,
+                CoachMemory.NONE);
+    }
+
+    @Autowired
+    public AIService(AIProvider aiProvider, PromptRenderer renderer, AppProperties props,
+                     RecommendationRepository recRepo, CoachMessageRepository coachRepo,
+                     ActivityLogRepository logRepo, UserProfileRepository profileRepo,
+                     com.ecotrack.credit.CreditLedgerRepository creditLedgerRepo,
+                     CoachMemory coachMemory) {
+        this.coachMemory = coachMemory != null ? coachMemory : CoachMemory.NONE;
         this.aiProvider = aiProvider;
         this.renderer = renderer;
         this.props = props;
@@ -170,7 +186,14 @@ public class AIService {
                 "context", contextBuilder.toString()
         ));
 
-        String fullPrompt = systemPrompt + "\n\nUser: " + userMessage;
+        // Long-term memory: only exchanges older than the recent-history window above.
+        // Empty (memory off / failing / nothing relevant) keeps the original prompt exactly.
+        Instant memoryCutoff = history.isEmpty() ? null : history.get(0).getCreatedAt();
+        String memoryBlock = recallSafely(userId, userMessage, memoryCutoff);
+
+        String fullPrompt = memoryBlock == null
+                ? systemPrompt + "\n\nUser: " + userMessage
+                : systemPrompt + "\n\n" + memoryBlock + "\n\nUser: " + userMessage;
         String response = aiProvider.generate(fullPrompt, props.ai().fastModel());
 
         // Save assistant message
@@ -182,7 +205,23 @@ public class AIService {
         assistantMsg.setModel(props.ai().fastModel());
         coachRepo.save(assistantMsg);
 
+        try {
+            coachMemory.remember(userId, userMsg.getId(), userMessage, response);
+        } catch (RuntimeException e) {
+            log.warn("Coach memory capture failed — reply unaffected: {}", e.toString());
+        }
+
         return new CoachResponse(response, fullPrompt);
+    }
+
+    /** CoachMemory implementations must not throw; guard anyway so chat never depends on it. */
+    private String recallSafely(UUID userId, String userMessage, Instant cutoff) {
+        try {
+            return coachMemory.recall(userId, userMessage, cutoff).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("Coach memory recall failed — using non-vector coach prompt: {}", e.toString());
+            return null;
+        }
     }
 
     /** Get chat history for a user. */
