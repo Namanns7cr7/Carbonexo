@@ -85,8 +85,7 @@ export default function ReportsPage() {
             {/* summary stats */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { v: data ? `${data.lifetimeCo2SavedKg}` : '…', u: 'kg CO₂ saved (lifetime)', accent: true },
-                { v: data ? `${data.currentMonthCo2Kg}` : '…', u: 'kg CO₂ this month' },
+                { v: data ? `${data.currentMonthCo2Kg}` : '…', u: 'kg CO₂e logged this month', accent: true },
                 { v: data ? `${data.creditsEarned}` : '…', u: 'credits earned' },
                 { v: data ? `${data.currentStreak}` : '…', u: 'day streak' },
                 { v: data ? `${data.totalActivitiesLogged}` : '…', u: 'activities logged' },
