@@ -14,6 +14,10 @@ import {
 import { ApiError } from '@/lib/api/client';
 import { Card, PageHead, EmptyState, SegmentedControl } from '@/components/app/ui';
 import { ImpactGauge } from '@/components/app/charts';
+import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
+import { deriveScenarioBaseVisual } from '@/lib/living-world/derive';
+import { LivingEarth } from '@/components/planet/LivingEarth';
+import { ProvenanceBadge } from '@/components/living-world/Provenance';
 
 const FREQUENCIES: { value: string; label: string }[] = [
   { value: 'per_day', label: 'day' },
@@ -91,6 +95,25 @@ export default function Simulate() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
+  const [scenarioLabel, setScenarioLabel] = useState('');
+  const { setScenario, emitPulse } = useLivingWorld();
+
+  // Publish the result to the shared Living World as a hypothetical. It never
+  // touches the logged footprint, and it is withdrawn when you leave the page.
+  useEffect(() => {
+    if (!result) return;
+    setScenario({
+      label: scenarioLabel || 'this change',
+      horizon: horizon,
+      baselineKg: result.baselineCo2Kg,
+      projectedKg: result.projectedCo2Kg,
+      deltaKg: result.deltaCo2Kg,
+      source: result.source ?? 'server',
+    });
+    emitPulse('scenario');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- publish once per result
+  }, [result]);
+  useEffect(() => () => setScenario(null), [setScenario]);
 
   useEffect(() => {
     (async () => {
@@ -133,6 +156,12 @@ export default function Simulate() {
   }, forHorizon: SimulationHorizon) => {
     setSubmitting(true);
     setError(null);
+    const from = change.customLabel ?? labelFor(change.factorKey ?? '');
+    setScenarioLabel(
+      change.deltaType === 'REPLACE_WITH'
+        ? `${from} → ${change.customReplacementLabel ?? labelFor(change.replacementFactorKey ?? '')}`
+        : `${from}, reduced by ${change.amount ?? 0}`,
+    );
     try {
       const res = await runSimulation({ horizon: forHorizon, changes: [change] });
       setResult(res);
@@ -479,7 +508,17 @@ export default function Simulate() {
         return (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Card className="flex flex-col gap-4">
-          <h2 className="text-[15px] font-bold">What this would mean for you</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-[15px] font-bold">What this would mean for you</h2>
+            <ProvenanceBadge provenance="hypothetical" />
+          </div>
+          {result.source === 'offline-estimate' && (
+            <p role="status" className="rounded-xl border border-border bg-surface2 px-3.5 py-2.5 text-xs text-muted">
+              The server couldn&apos;t be reached, so this is your browser&apos;s estimate from the standard factors. Goal impact isn&apos;t available offline.
+            </p>
+          )}
+
+          <ScenarioWorld />
 
           <div className="flex flex-col items-center gap-4 sm:flex-row">
             <ImpactGauge
@@ -513,6 +552,7 @@ export default function Simulate() {
             </div>
           </div>
 
+          {result.source !== 'offline-estimate' && (
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold">How close this gets you to your weekly goal</span>
@@ -530,11 +570,11 @@ export default function Simulate() {
               />
             </div>
           </div>
+          )}
 
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface2 px-4 py-3">
-            <span className="text-sm font-semibold text-muted">Credits you&apos;d earn for this</span>
-            <span className="font-display text-lg font-extrabold">+{result.projectedCreditsDelta}</span>
-          </div>
+          <p className="rounded-xl border border-border bg-surface2 px-4 py-3 text-xs leading-relaxed text-muted">
+            A simulation changes nothing: no activity is logged and no Green Points are awarded. Make the change for real, then log it — or add the matching action to your plan.
+          </p>
 
           {result.aiInsight && (
             <div className="rounded-xl border border-border bg-lime-soft px-4 py-3">
@@ -557,6 +597,60 @@ export default function Simulate() {
         </motion.div>
         );
       })()}
+    </div>
+  );
+}
+
+/**
+ * One planet, two states. Drag the slider (or tap a side) and the same globe
+ * eases between the world your logs describe and the hypothetical one. Using a
+ * single renderer keeps one GL context and makes the comparison physical.
+ */
+function ScenarioWorld() {
+  const { world } = useLivingWorld();
+  const [t, setT] = useState(1);
+  const now = deriveScenarioBaseVisual(world.actual);
+  const what = world.scenarioVisual;
+  if (!what) return null;
+  const vitality = now.vitality + (what.vitality - now.vitality) * t;
+  const showing = t >= 0.5 ? what : now;
+  return (
+    <div className="grid items-center gap-4 rounded-2xl border border-border p-4 sm:grid-cols-[200px_minmax(0,1fr)]" style={{ background: 'radial-gradient(120% 90% at 30% 0%, rgba(16,48,36,0.5), var(--card) 70%)' }}>
+      <div className="mx-auto h-[180px] w-[180px] overflow-hidden rounded-full">
+        <LivingEarth className="h-full w-full" vitality={vitality} interactive background="#06120e" label={`Comparison planet. ${showing.basis}`} />
+      </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <ProvenanceBadge provenance={showing.provenance} />
+          <span className="text-xs font-semibold text-text">{showing.caption}</span>
+        </div>
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+          <span className="flex justify-between">
+            <span>Now</span>
+            <span>With this change</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={t}
+            onChange={(e) => setT(Number(e.target.value))}
+            aria-label="Compare your planet now with the hypothetical planet"
+            aria-valuetext={t >= 0.5 ? 'With this change (hypothetical)' : 'Now'}
+            className="w-full accent-[var(--lime)]"
+          />
+        </label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setT(0)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold" aria-pressed={t < 0.5}>
+            Now
+          </button>
+          <button type="button" onClick={() => setT(1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold" aria-pressed={t >= 0.5}>
+            With this change
+          </button>
+        </div>
+        <p className="text-[11.5px] leading-relaxed text-muted">{showing.basis}</p>
+      </div>
     </div>
   );
 }

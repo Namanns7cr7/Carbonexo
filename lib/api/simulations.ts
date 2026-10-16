@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, ApiError } from './client';
 
 export type SimulationHorizon = 'MONTH' | 'YEAR';
 export type SimulationDeltaType = 'REPLACE_WITH' | 'REDUCE_BY';
@@ -44,6 +44,8 @@ export interface SimulationResult {
   projectedCreditsDelta: number;
   breakdown: SimulationBreakdownItem[];
   aiInsight: string | null;
+  /** Client-side tag: 'offline-estimate' when the server was unreachable and the browser computed it. */
+  source?: 'server' | 'offline-estimate';
 }
 
 import { DEFAULT_EMISSION_FACTORS } from './dashboard';
@@ -82,31 +84,34 @@ function simulateClientSide(request: SimulationRequestBody): SimulationResult {
   }
 
   const delta = Math.round((projectedTotal - baselineTotal) * 10) / 10;
-  const creditsDelta = Math.max(0, Math.round(-delta * 10));
 
   return {
     baselineCo2Kg: Math.round(baselineTotal * 10) / 10,
     projectedCo2Kg: Math.round(projectedTotal * 10) / 10,
     deltaCo2Kg: delta,
-    weeklyGoalImpact: {
-      currentProgressPct: 45,
-      projectedProgressPct: Math.min(100, Math.max(0, Math.round(45 + (delta < 0 ? Math.abs(delta) * 0.8 : 0)))),
-    },
-    projectedCreditsDelta: creditsDelta,
+    // The browser has no weekly-goal or credit-rule data, so it does not invent them.
+    weeklyGoalImpact: { currentProgressPct: 0, projectedProgressPct: 0 },
+    projectedCreditsDelta: 0,
     breakdown,
-    aiInsight:
-      delta < 0
-        ? `By making this change, you prevent ~${Math.abs(delta)} kg of CO₂ emissions and earn ${creditsDelta} Eco Credits!`
-        : 'Simulation projected successfully.',
+    aiInsight: null,
+    source: 'offline-estimate',
   };
 }
 
-/** Runs a read-only "carbon twin" what-if simulation — nothing is persisted. */
+/**
+ * Runs a read-only "carbon twin" what-if simulation — nothing is persisted.
+ *
+ * Only an unreachable server falls back to the browser's estimate (labelled
+ * 'offline-estimate'). A server *answer* — including a 400 for an invalid
+ * scenario — is returned or thrown as-is, never replaced by a local guess.
+ */
 export async function runSimulation(request: SimulationRequestBody): Promise<SimulationResult> {
   try {
-    return await api.post<SimulationResult>('/api/simulations', request);
+    const res = await api.post<SimulationResult>('/api/simulations', request);
+    return { ...res, source: 'server' };
   } catch (err) {
-    console.warn('Simulation API unavailable, falling back to local simulation engine:', err);
+    if (err instanceof ApiError) throw err;
+    console.warn('Simulation API unreachable; using the offline estimate:', err);
     return simulateClientSide(request);
   }
 }

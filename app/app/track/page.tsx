@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, X, Minus, Plus } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORIES, CATEGORY_META, TRACK_OPTIONS, round1, type Category, type TrackOption } from '@/lib/carbon';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
 import { OptionIcon } from '@/components/app/illustrations';
+import { logMetaFor } from '@/lib/catalog-keys';
+import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
+import { LivingEarth } from '@/components/planet/LivingEarth';
+import { ProvenanceBadge } from '@/components/living-world/Provenance';
 
 const UNIT_LABEL: Record<NonNullable<TrackOption['unit']>, string> = { km: 'km', kWh: 'kWh', item: '×' };
 
@@ -29,7 +33,14 @@ const itemVariants = {
 
 export default function Track() {
   const { todayKey, todayLogs, todayTotal, addLog, removeLog } = useCarbon();
+  const { world, pulse, emitPulse } = useLivingWorld();
   const [cat, setCat] = useState<Category>('travel');
+
+  // Deep links from the dashboard: /app/track?cat=food opens that category.
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get('cat');
+    if (c && CATEGORIES.some((x) => x.id === c)) setCat(c as Category);
+  }, []);
   const [picks, setPicks] = useState<Pick[]>([]);
   const [adding, setAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -66,8 +77,10 @@ export default function Track() {
           co2: round1(p.option.factor * p.qty),
           note: p.option.unit ? `${p.qty} ${UNIT_LABEL[p.option.unit]}` : undefined,
           date: todayKey,
-        });
+        }, logMetaFor(p.category, p.option, p.qty));
       }
+      // The planet takes a push. Its colour moves only if the day's average does.
+      emitPulse('log');
       setPicks([]);
       setJustAdded(true);
       setTimeout(() => setJustAdded(false), 1600);
@@ -89,8 +102,14 @@ export default function Track() {
               {todayTotal} <span className="text-base font-bold text-muted">kg CO₂</span>
             </div>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'var(--lime-soft)' }}>
-            <span className="text-xl">🌍</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right sm:block">
+              <ProvenanceBadge provenance="logged" />
+              <p className="mt-1 max-w-[190px] text-[11px] leading-snug text-muted">Your planet follows your average per logged day, not each entry.</p>
+            </div>
+            <div className="h-16 w-16 overflow-hidden rounded-full">
+              <LivingEarth className="h-full w-full" vitality={world.visual.vitality} pulse={pulse.n} background="#06120e" label={`Your planet. ${world.visual.basis}`} />
+            </div>
           </div>
         </Card>
       </motion.div>
@@ -268,7 +287,7 @@ export default function Track() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-display text-sm font-bold" style={{ color: l.co2 === 0 ? 'var(--lime-deep)' : 'var(--text)' }}>{l.co2} kg</span>
-                  <button onClick={() => removeLog(l.id)} aria-label="Remove" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-lime hover:text-text">
+                  <button onClick={() => { emitPulse('remove'); removeLog(l.id); }} aria-label={`Remove ${l.label}`} className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-lime hover:text-text">
                     <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                   </button>
                 </div>
