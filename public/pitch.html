@@ -510,6 +510,104 @@
       color: var(--text);
     }
 
+  
+    /* Motion, Shimmer & Laser Glow */
+    .ambient-glow-1 {
+      position: fixed;
+      top: 5%;
+      left: 10%;
+      width: 550px;
+      height: 550px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.09) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(80px);
+      animation: floatGlow1 18s ease-in-out infinite alternate;
+    }
+    .ambient-glow-2 {
+      position: fixed;
+      bottom: 10%;
+      right: 5%;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(90px);
+      animation: floatGlow2 22s ease-in-out infinite alternate;
+    }
+    @keyframes floatGlow1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(80px, 100px) scale(1.2); }
+    }
+    @keyframes floatGlow2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-90px, -70px) scale(1.25); }
+    }
+
+    .pillar-card, .simulator-box, .compare-table-wrapper {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+    .pillar-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 50px -12px rgba(16, 185, 129, 0.28);
+    }
+
+    .pitch-image-card {
+      position: relative;
+    }
+    .pitch-image-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #38bdf8, #34d399, transparent);
+      box-shadow: 0 0 16px 3px rgba(52, 211, 153, 0.85);
+      animation: scanBeam 5s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 5;
+    }
+    @keyframes scanBeam {
+      0% { top: 0%; opacity: 0; }
+      12% { opacity: 0.9; }
+      88% { opacity: 0.9; }
+      100% { top: 94%; opacity: 0; }
+    }
+
+    .btn-demo, .btn-action {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-demo::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 45%;
+      height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transform: rotate(25deg);
+      animation: btnShimmer 4s infinite;
+    }
+    @keyframes btnShimmer {
+      0% { left: -60%; }
+      30%, 100% { left: 140%; }
+    }
+
+    .reveal-item {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-item.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
   </style>
 </head>
 <body>
@@ -569,7 +667,7 @@
 
     <div class="pillars-grid">
       <!-- Pillar 1 -->
-      <div class="pillar-card" style="border-top: 4px solid #10b981;">
+      <div class="pillar-card reveal-item" style="border-top: 4px solid #10b981;">
         <div class="pillar-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
         <h3 class="pillar-title">Scientific Grounding (RAG)</h3>
         <p class="pillar-desc">
@@ -588,7 +686,7 @@
       </div>
 
       <!-- Pillar 2 -->
-      <div class="pillar-card" style="border-top: 4px solid #38bdf8;">
+      <div class="pillar-card reveal-item" style="border-top: 4px solid #38bdf8;">
         <div class="pillar-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 2v20M2 12h20"/></svg></div>
         <h3 class="pillar-title">Carbon Twin Simulator</h3>
         <p class="pillar-desc">
@@ -607,7 +705,7 @@
       </div>
 
       <!-- Pillar 3 -->
-      <div class="pillar-card" style="border-top: 4px solid #fbbf24;">
+      <div class="pillar-card reveal-item" style="border-top: 4px solid #fbbf24;">
         <div class="pillar-icon" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h3 class="pillar-title">Auditable Eco-Ledger</h3>
         <p class="pillar-desc">
@@ -634,7 +732,7 @@
         Adjust the sliders below to see our live calculation engine compute avoided emissions, EPA urban tree absorption years, and earned Eco Credits in real time:
       </p>
 
-      <div class="simulator-box">
+      <div class="simulator-box reveal-item">
         <div class="sim-header">
           <div>
             <h3 style="font-size: 1.3rem; font-weight: 800;">Live Behavioral Scenario Sandbox</h3>
@@ -730,7 +828,7 @@
       <div class="section-eyebrow">The Competitive Edge</div>
       <h2 class="section-heading">Why Carbonexo Outperforms Traditional Trackers</h2>
       
-      <div class="compare-table-wrapper">
+      <div class="compare-table-wrapper reveal-item">
         <table>
           <thead>
             <tr>
@@ -855,5 +953,18 @@
     // Initialize on load
     updateSim();
   </script>
+
+  <script>
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, { threshold: 0.08 });
+
+    document.querySelectorAll('.reveal-item').forEach(el => revealObserver.observe(el));
+  </script>
+
 </body>
 </html>

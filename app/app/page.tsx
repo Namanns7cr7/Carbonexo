@@ -26,6 +26,7 @@ import {
   Droplets,
   Sun,
   FileText,
+  Coins,
 } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORY_META, round1, type Category } from '@/lib/carbon';
@@ -41,45 +42,45 @@ function greeting() {
 }
 
 const FREQUENT_LOGS = [
-  { label: 'Car Commute (12 km)', category: 'travel' as Category, emoji: '🚗', co2: 2.2, note: '12 km' },
-  { label: 'Metro Ride', category: 'travel' as Category, emoji: '🚇', co2: 0.7, note: '15 km' },
-  { label: 'Plant-Based Meal', category: 'food' as Category, emoji: '🥗', co2: 0.6, note: '1 meal' },
-  { label: 'Home Energy (3h)', category: 'electricity' as Category, emoji: '⚡', co2: 1.4, note: '3 kWh' },
+  { label: 'Car Commute (12 km)', category: 'travel' as Category, emoji: '', co2: 2.2, note: '12 km' },
+  { label: 'Metro Ride', category: 'travel' as Category, emoji: '', co2: 0.7, note: '15 km' },
+  { label: 'Plant-Based Meal', category: 'food' as Category, emoji: '', co2: 0.6, note: '1 meal' },
+  { label: 'Home Energy (3h)', category: 'electricity' as Category, emoji: '', co2: 1.4, note: '3 kWh' },
 ];
 
 const SWAP_RECOMMENDATIONS = [
   {
     id: 'metro-swap',
     title: 'Switch Car → Metro',
-    from: '🚗 Car 15km',
-    to: '🚇 Metro',
+    from: 'Car Commute (15km)',
+    to: 'Metro Rail',
     saved: 1.7,
     credits: 15,
     category: 'travel' as Category,
     icon: Wind,
-    swapAction: { label: 'Metro ride', emoji: '🚇', co2: 0.7, note: 'Swapped from car · 15 km' },
+    swapAction: { label: 'Metro ride', emoji: '', co2: 0.7, note: 'Swapped from car · 15 km' },
   },
   {
     id: 'food-swap',
     title: 'Meat → Plant Bowl',
-    from: '🍗 Beef',
-    to: '🥗 Veg Bowl',
+    from: 'Beef Portion',
+    to: 'Plant-Based Bowl',
     saved: 1.1,
     credits: 10,
     category: 'food' as Category,
     icon: Leaf,
-    swapAction: { label: 'Plant-based lunch', emoji: '🥗', co2: 0.6, note: 'Green swap · 1 meal' },
+    swapAction: { label: 'Plant-based lunch', emoji: '', co2: 0.6, note: 'Green swap · 1 meal' },
   },
   {
     id: 'energy-swap',
     title: 'AC → Eco Setting',
-    from: '❄️ Heavy AC',
-    to: '🍃 Eco 22°C',
+    from: 'Continuous High AC',
+    to: 'Eco 24°C Setting',
     saved: 0.8,
     credits: 10,
     category: 'electricity' as Category,
     icon: Sun,
-    swapAction: { label: 'Eco thermostat setting', emoji: '🍃', co2: 1.0, note: 'Smart cooling · 4 kWh' },
+    swapAction: { label: 'Eco thermostat setting', emoji: '', co2: 1.0, note: 'Smart cooling · 4 kWh' },
   },
 ];
 
@@ -624,7 +625,7 @@ export default function Dashboard() {
                     className="flex items-center justify-between rounded-xl border border-border bg-surface2 px-3.5 py-3 text-left text-xs font-bold text-text transition-all hover:border-lime hover:bg-lime-soft/30 disabled:opacity-50"
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-base">{item.emoji}</span>
+                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
                       <span>{item.label}</span>
                     </div>
                     <span className="font-mono text-muted">+{item.co2}kg</span>
@@ -641,7 +642,7 @@ export default function Dashboard() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30" />
               <div className="relative z-10 flex h-full min-h-[200px] flex-col justify-end p-5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🪙</span>
+                  <Coins className="h-6 w-6 text-amber-300" />
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-wider text-white/60">Eco Rewards</div>
                     <div className="font-display text-2xl font-extrabold text-white">150 Credits</div>
