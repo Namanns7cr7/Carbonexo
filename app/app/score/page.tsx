@@ -52,7 +52,7 @@ export default function ScorePage() {
         sub="A portable, explainable score built from your balance, streak, and consistency — the kind of proof-of-impact you could show an insurer, employer, or lender."
       />
 
-      {error && <EmptyState emoji="⚠️" title="Couldn't load your score" sub={error} />}
+      {error && <EmptyState emoji="" title="Couldn't load your score" sub={error} />}
 
       {!error && (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
