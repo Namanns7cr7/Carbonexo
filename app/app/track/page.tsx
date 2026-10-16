@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, X, Minus, Plus } from 'lucide-react';
+import { Check, X, Minus, Plus, PenLine } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORIES, CATEGORY_META, TRACK_OPTIONS, round1, type Category, type TrackOption } from '@/lib/carbon';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
 import { OptionIcon } from '@/components/app/illustrations';
 import { logMetaFor } from '@/lib/catalog-keys';
+import { isCustom, loadCustomItems, saveCustomItems, toCustomItem, toTrackOption, upsert, type CustomDraft, type CustomItem } from '@/lib/custom-items';
+import { CustomItemSheet } from '@/components/app/CustomItemSheet';
 import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
 import { LivingEarth } from '@/components/planet/LivingEarth';
 import { ProvenanceBadge } from '@/components/living-world/Provenance';
@@ -20,7 +22,7 @@ interface Pick {
   qty: number;
 }
 
-const keyOf = (c: Category, o: TrackOption) => `${c}:${o.label}`;
+const keyOf = (c: Category, o: TrackOption) => (isCustom(o) ? `${c}:custom:${o.customId}` : `${c}:${o.label}`);
 
 const gridVariants = {
   hidden: {},
@@ -38,14 +40,42 @@ export default function Track() {
 
   // Deep links from the dashboard: /app/track?cat=food opens that category.
   useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get('cat');
+    const q = new URLSearchParams(window.location.search);
+    const c = q.get('cat');
     if (c && CATEGORIES.some((x) => x.id === c)) setCat(c as Category);
+    // /app/track?add=1 opens "Add your own" straight away.
+    if (q.get('add') === '1') setSheetOpen(true);
   }, []);
   const [picks, setPicks] = useState<Pick[]>([]);
   const [adding, setAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [customItems, setCustomItems] = useState<CustomItem[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const options = TRACK_OPTIONS[cat];
+  useEffect(() => setCustomItems(loadCustomItems()), []);
+
+  // The catalog first, then the user's own items for this category.
+  const options: TrackOption[] = [...TRACK_OPTIONS[cat], ...customItems.filter((c) => c.category === cat).map(toTrackOption)];
+
+  const addCustom = (draft: CustomDraft, remember: boolean) => {
+    const item = toCustomItem(draft);
+    if (remember) {
+      const next = upsert(customItems, item);
+      setCustomItems(next);
+      saveCustomItems(next);
+    }
+    const option = toTrackOption(item);
+    setCat(draft.category);
+    setPicks((prev) => [...prev.filter((p) => keyOf(p.category, p.option) !== keyOf(draft.category, option)), { category: draft.category, option, qty: draft.qty }]);
+    setSheetOpen(false);
+  };
+
+  const forgetCustom = (id: string) => {
+    const next = customItems.filter((c) => c.id !== id);
+    setCustomItems(next);
+    saveCustomItems(next);
+    setPicks((prev) => prev.filter((p) => !(isCustom(p.option) && p.option.customId === id)));
+  };
   const isPicked = (o: TrackOption) => picks.some((p) => keyOf(p.category, p.option) === keyOf(cat, o));
 
   const toggle = (o: TrackOption) => {
@@ -70,14 +100,17 @@ export default function Track() {
     setAdding(true);
     try {
       for (const p of picks) {
+        const custom = isCustom(p.option) ? p.option : null;
+        const amount = p.option.unit ? `${p.qty} ${UNIT_LABEL[p.option.unit]}` : undefined;
         await addLog({
           category: p.category,
           label: p.option.label,
           emoji: p.option.emoji,
           co2: round1(p.option.factor * p.qty),
-          note: p.option.unit ? `${p.qty} ${UNIT_LABEL[p.option.unit]}` : undefined,
+          // A custom entry says it's the user's estimate, and what it was based on.
+          note: custom ? [amount, `your estimate${custom.basedOn ? ` (like ${custom.basedOn})` : ''}`].filter(Boolean).join(' · ') : amount,
           date: todayKey,
-        }, logMetaFor(p.category, p.option, p.qty));
+        }, custom ? { quantity: p.qty, unit: p.option.unit ?? 'item' } : logMetaFor(p.category, p.option, p.qty));
       }
       // The planet takes a push. Its colour moves only if the day's average does.
       emitPulse('log');
@@ -154,9 +187,10 @@ export default function Track() {
       >
         {options.map((o) => {
           const active = isPicked(o);
+          const custom = isCustom(o) ? o : null;
           return (
             <motion.button
-              key={o.label}
+              key={custom ? custom.customId : o.label}
               variants={itemVariants}
               whileHover={{ y: -2 }}
               onClick={() => toggle(o)}
@@ -172,8 +206,30 @@ export default function Track() {
                 <span className="block truncate text-sm font-bold">{o.label}</span>
                 <span className="block text-xs text-muted">
                   {o.factor === 0 ? 'Zero emission' : `${o.factor} kg / ${o.unit ?? 'item'}`}
+                  {custom && <span className="ml-1 font-bold text-[#e0a86a]">· Yours</span>}
                 </span>
               </span>
+              {custom && !active && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Forget ${o.label} from My items`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    forgetCustom(custom.customId);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      forgetCustom(custom.customId);
+                    }
+                  }}
+                  className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-muted hover:bg-danger-soft hover:text-danger"
+                >
+                  <X className="h-3 w-3" strokeWidth={2.5} />
+                </span>
+              )}
               {active && (
                 <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full"
                   style={{ background: 'var(--lime)', color: '#0c1d15' }}>
@@ -183,7 +239,25 @@ export default function Track() {
             </motion.button>
           );
         })}
+        <motion.button
+          variants={itemVariants}
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setSheetOpen(true)}
+          className="flex items-center gap-2.5 rounded-[15px] border border-dashed p-3 text-left transition-colors hover:border-lime"
+          style={{ borderColor: 'color-mix(in srgb, var(--lime) 45%, transparent)', background: 'transparent' }}
+        >
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-lime-soft text-lime-deep">
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-lime-deep">Add your own</span>
+            <span className="block text-xs text-muted">Not in the list?</span>
+          </span>
+        </motion.button>
       </motion.div>
+
+      <CustomItemSheet open={sheetOpen} initialCategory={cat} onClose={() => setSheetOpen(false)} onAdd={addCustom} />
 
       {/* selection tray */}
       <AnimatePresence>

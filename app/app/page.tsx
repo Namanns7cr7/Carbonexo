@@ -491,6 +491,13 @@ export default function Dashboard() {
                   <span className="font-mono text-muted">+{q.co2} kg</span>
                 </motion.button>
               ))}
+              <Link
+                href="/app/track?add=1"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed px-3.5 py-3 text-xs font-bold text-lime-deep transition-colors hover:border-lime"
+                style={{ borderColor: 'color-mix(in srgb, var(--lime) 45%, transparent)' }}
+              >
+                <Plus className="h-3.5 w-3.5" strokeWidth={2.5} /> Add your own meal or item
+              </Link>
             </div>
           </Card>
 
