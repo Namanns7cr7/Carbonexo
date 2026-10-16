@@ -16,6 +16,8 @@ export interface SimulationChange {
   amount?: number;
   customLabel?: string;
   customFactorKgPerUnit?: number;
+  customReplacementLabel?: string;
+  customReplacementFactorKgPerUnit?: number;
 }
 
 export interface SimulationRequestBody {
@@ -62,7 +64,7 @@ function simulateClientSide(request: SimulationRequestBody): SimulationResult {
     let projKg = baseKg;
     if (change.deltaType === 'REPLACE_WITH') {
       const repFactor = DEFAULT_EMISSION_FACTORS.find((f) => f.factorKey === change.replacementFactorKey);
-      const repRate = repFactor?.factorKgPerUnit ?? 0.04;
+      const repRate = change.customReplacementFactorKgPerUnit ?? repFactor?.factorKgPerUnit ?? 0.04;
       projKg = Math.round(horizonQty * repRate * 10) / 10;
     } else {
       const amt = change.amount ?? 1;

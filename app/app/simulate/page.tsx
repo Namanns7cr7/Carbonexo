@@ -83,6 +83,11 @@ export default function Simulate() {
   const [customLabel, setCustomLabel] = useState('');
   const [customRate, setCustomRate] = useState(1);
 
+  // Manual entry for replacement swap
+  const [customReplacementMode, setCustomReplacementMode] = useState(false);
+  const [customReplacementLabel, setCustomReplacementLabel] = useState('');
+  const [customReplacementRate, setCustomReplacementRate] = useState(0.4);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
@@ -123,6 +128,8 @@ export default function Simulate() {
     amount?: number;
     customLabel?: string;
     customFactorKgPerUnit?: number;
+    customReplacementLabel?: string;
+    customReplacementFactorKgPerUnit?: number;
   }, forHorizon: SimulationHorizon) => {
     setSubmitting(true);
     setError(null);
@@ -158,8 +165,12 @@ export default function Simulate() {
     );
   };
 
-  const customValid = customLabel.trim().length > 0 && customRate > 0;
-  const canSubmit = customMode ? customValid : !!selectedFactor;
+  const customValid = customMode ? customLabel.trim().length > 0 && customRate > 0 : true;
+  const customReplacementValid =
+    deltaType === 'REPLACE_WITH' && customReplacementMode
+      ? customReplacementLabel.trim().length > 0 && customReplacementRate >= 0
+      : true;
+  const canSubmit = (customMode ? customValid : !!selectedFactor) && customReplacementValid;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,7 +183,11 @@ export default function Simulate() {
         quantity: customMode ? 1 : quantity,
         frequency,
         deltaType,
-        ...(deltaType === 'REPLACE_WITH' ? { replacementFactorKey } : { amount: customMode ? 1 : amount }),
+        ...(deltaType === 'REPLACE_WITH'
+          ? customReplacementMode
+            ? { customReplacementLabel: customReplacementLabel.trim(), customReplacementFactorKgPerUnit: customReplacementRate }
+            : { replacementFactorKey }
+          : { amount: customMode ? 1 : amount }),
       },
       horizon,
     );
@@ -191,7 +206,7 @@ export default function Simulate() {
       />
 
       {loadError && (
-        <EmptyState emoji="⚠️" title="Couldn't load activity types" sub={loadError} />
+        <EmptyState emoji="" title="Couldn't load activity types" sub={loadError} />
       )}
 
       {!loadError && !loadingFactors && availableScenarios.length > 0 && (
@@ -280,7 +295,7 @@ export default function Simulate() {
                 >
                   {factors.map((f) => (
                     <option key={f.factorKey} value={f.factorKey}>
-                      {f.emoji} {f.label}
+                      {f.label}
                     </option>
                   ))}
                 </select>
@@ -330,21 +345,64 @@ export default function Simulate() {
                 />
               </label>
             ) : deltaType === 'REPLACE_WITH' ? (
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-semibold text-muted">Swap it for</span>
-                <select
-                  value={replacementFactorKey}
-                  onChange={(e) => setReplacementFactorKey(e.target.value)}
-                  disabled={loadingFactors}
-                  className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
-                >
-                  {factors.map((f) => (
-                    <option key={f.factorKey} value={f.factorKey}>
-                      {f.emoji} {f.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="replacement-activity" className="text-sm font-semibold text-muted">
+                    Swap it for
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setCustomReplacementMode(!customReplacementMode)}
+                    className="flex items-center gap-1 text-xs font-bold transition-opacity hover:opacity-80"
+                    style={{ color: 'var(--lime-deep)' }}
+                  >
+                    <PenLine className="h-3 w-3" />
+                    {customReplacementMode ? 'Pick from common activities' : "Can't find it? Enter it yourself"}
+                  </button>
+                </div>
+
+                {customReplacementMode ? (
+                  <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border p-3.5" style={{ background: 'var(--surface2)' }}>
+                    <label className="flex flex-col gap-1 text-xs">
+                      <span className="font-bold uppercase tracking-wider text-muted">Replacement activity name</span>
+                      <input
+                        type="text"
+                        required
+                        value={customReplacementLabel}
+                        onChange={(e) => setCustomReplacementLabel(e.target.value)}
+                        placeholder="e.g. Carpooling, Tofu stir-fry, Electric cycle"
+                        className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1 text-xs">
+                      <span className="font-bold uppercase tracking-wider text-muted">About how much CO₂ does this replacement produce? (kg)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.05"
+                        value={customReplacementRate}
+                        onChange={(e) => setCustomReplacementRate(Number(e.target.value))}
+                        className="w-40 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <select
+                    id="replacement-activity"
+                    value={replacementFactorKey}
+                    onChange={(e) => setReplacementFactorKey(e.target.value)}
+                    disabled={loadingFactors}
+                    className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold"
+                  >
+                    {factors.map((f) => (
+                      <option key={f.factorKey} value={f.factorKey}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             ) : (
               <label className="flex flex-col gap-1.5 text-sm">
                 <span className="font-semibold text-muted">
