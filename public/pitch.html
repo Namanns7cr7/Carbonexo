@@ -478,6 +478,38 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
     }
+  
+    .pitch-image-card {
+      margin: 2.5rem auto 1.5rem;
+      max-width: 1040px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      box-shadow: 0 20px 60px -15px rgba(16, 185, 129, 0.3);
+      position: relative;
+    }
+    .pitch-image-card img {
+      width: 100%;
+      display: block;
+      max-height: 440px;
+      object-fit: cover;
+    }
+    .pitch-image-caption {
+      padding: 1rem 1.5rem;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .pitch-image-caption strong {
+      color: var(--text);
+    }
+
   </style>
 </head>
 <body>
@@ -486,7 +518,7 @@
   <header class="pitch-nav">
     <div style="display: flex; align-items: center; gap: 1rem;">
       <a href="/app" class="brand">
-        <div class="brand-badge">✦</div>
+        <div class="brand-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
         <span>Carbonexo</span>
       </a>
       <span class="nav-tag">AI Builder Cup 2026</span>
@@ -494,10 +526,10 @@
 
     <div class="nav-actions">
       <a href="/methodology.html" style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-decoration: none; padding: 0.45rem 0.85rem;">
-        📐 Full Methodology
+        Technical Architecture
       </a>
       <a href="/app" class="btn-demo">
-        🚀 Launch Live App
+        Launch Live App &rarr;
       </a>
     </div>
   </header>
@@ -506,7 +538,7 @@
 
     <!-- Hero Section -->
     <section class="hero">
-      <div class="cup-badge">🏆 Hackathon Innovation Showcase</div>
+      <div class="cup-badge">Executive Innovation Showcase &bull; AI Builder Cup 2026</div>
       <h1>Autonomous Scientific Climate Accounting & AI Coach</h1>
       <p class="hero-lead">
         Most carbon trackers rely on vague guesses or expensive proprietary APIs. 
@@ -517,19 +549,28 @@
 
       <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
         <a href="#simulator" class="btn-demo" style="padding: 0.8rem 1.75rem; font-size: 0.95rem;">
-          🎮 Test Live Judge Simulator ↓
+          Test Live Simulation Sandbox &darr;
         </a>
         <a href="/app/coach" class="btn-action">
-          💬 Try AI Coach in Live App →
+          Try AI Coach in Live App &rarr;
         </a>
       </div>
     </section>
 
     <!-- 3 Core Pillars -->
+    
+      <div class="pitch-image-card">
+        <img src="images/digital-twin-command.jpg" alt="Carbon Twin Decarbonization Simulation Command Center">
+        <div class="pitch-image-caption">
+          <span><strong>Autonomous Decarbonization Engine:</strong> Multi-vector urban energy flows, transit simulation, and real-time counterfactual forecasting.</span>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid rgba(52, 211, 153, 0.4);">Validated vs EPA & DEFRA 2024</span>
+        </div>
+      </div>
+
     <div class="pillars-grid">
       <!-- Pillar 1 -->
       <div class="pillar-card" style="border-top: 4px solid #10b981;">
-        <div class="pillar-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🔬</div>
+        <div class="pillar-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
         <h3 class="pillar-title">Scientific Grounding (RAG)</h3>
         <p class="pillar-desc">
           Zero-hallucination climate advice. The AI Coach references verified emission factors from UK DEFRA 2024 and Oxford University food life cycle studies before answering every query.
@@ -548,7 +589,7 @@
 
       <!-- Pillar 2 -->
       <div class="pillar-card" style="border-top: 4px solid #38bdf8;">
-        <div class="pillar-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🔮</div>
+        <div class="pillar-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 2v20M2 12h20"/></svg></div>
         <h3 class="pillar-title">Carbon Twin Simulator</h3>
         <p class="pillar-desc">
           Behavioral counterfactual forecasting. Users test lifestyle swaps (e.g. car to metro, beef to lentils) to instantly see annual avoided emissions, EPA tree equivalents, and ROI before committing.
@@ -567,7 +608,7 @@
 
       <!-- Pillar 3 -->
       <div class="pillar-card" style="border-top: 4px solid #fbbf24;">
-        <div class="pillar-icon" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">🏆</div>
+        <div class="pillar-icon" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h3 class="pillar-title">Auditable Eco-Ledger</h3>
         <p class="pillar-desc">
           Double-entry credit ledger that awards gamified Eco Credits for verified avoided carbon. Includes OCR bill parsing for electricity meter verification and certified tree milestones.
@@ -596,7 +637,7 @@
       <div class="simulator-box">
         <div class="sim-header">
           <div>
-            <h3 style="font-size: 1.3rem; font-weight: 800;">⚡ Live Behavioral Scenario Sandbox</h3>
+            <h3 style="font-size: 1.3rem; font-weight: 800;">Live Behavioral Scenario Sandbox</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
               Running client-side formulas from UK DEFRA 2024 & Oxford University LCA
             </p>
@@ -612,7 +653,7 @@
             <!-- Slider 1 -->
             <div class="slider-group">
               <div class="slider-label">
-                <span>🚆 Commute Swaps (Car ➔ Metro, 15km)</span>
+                <span>Commute Swaps (Car &rarr; Metro Rail, 15km)</span>
                 <span class="slider-val" id="commuteVal">2 days/wk</span>
               </div>
               <input type="range" id="commuteSlider" min="0" max="5" value="2" oninput="updateSim()">
@@ -624,7 +665,7 @@
             <!-- Slider 2 -->
             <div class="slider-group">
               <div class="slider-label">
-                <span>🥗 Diet Swaps (Beef ➔ Plant-Based)</span>
+                <span>Dietary Swaps (Beef &rarr; Plant-Based Meal)</span>
                 <span class="slider-val" id="dietVal">2 meals/wk</span>
               </div>
               <input type="range" id="dietSlider" min="0" max="7" value="2" oninput="updateSim()">
@@ -636,7 +677,7 @@
             <!-- Slider 3 -->
             <div class="slider-group">
               <div class="slider-label">
-                <span>❄️ AC Thermostat Optimization</span>
+                <span>AC Thermostat Optimization</span>
                 <span class="slider-val" id="acVal">+2 °C warmer</span>
               </div>
               <input type="range" id="acSlider" min="0" max="4" value="2" oninput="updateSim()">
@@ -676,7 +717,7 @@
             </div>
 
             <div class="source-tag">
-              📐 <strong>Formulas Verified:</strong> 
+              <strong>Mathematical Verification:</strong> 
               <code>ΔE_avoided = d × (0.171 - 0.035) + m × (60.0 - 0.9) + E_ac × (ΔT × 0.075)</code>
             </div>
           </div>
@@ -695,7 +736,7 @@
             <tr>
               <th>Evaluation Criteria</th>
               <th>Traditional Carbon Trackers</th>
-              <th style="color: #34d399; background: rgba(16, 185, 129, 0.1);">✦ Carbonexo Breakthrough</th>
+              <th style="color: #34d399; background: rgba(16, 185, 129, 0.1);">Carbonexo Platform</th>
             </tr>
           </thead>
           <tbody>
@@ -762,16 +803,16 @@
 
       <div class="launch-btn-group">
         <a href="/app/coach" class="btn-demo">
-          ✦ Test AI Coach (DEFRA Grounded)
+          Test AI Coach (DEFRA Grounded)
         </a>
         <a href="/app/simulate" class="btn-action">
-          🔮 Test Carbon Twin Simulator
+          Test Carbon Twin Simulator
         </a>
         <a href="/app" class="btn-action">
-          📊 Enterprise Dashboard
+          Enterprise Dashboard &rarr;
         </a>
         <a href="/methodology.html" class="btn-action">
-          📐 Technical Architecture Spec
+          Technical Architecture Spec
         </a>
       </div>
     </div>

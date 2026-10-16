@@ -43,7 +43,7 @@ export const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/app/rewards', label: 'Store', icon: ShoppingBag },
   { href: '/app/score', label: 'Score', icon: Award },
   { href: '/app/reports', label: 'Reports', icon: FileText },
-  { href: '/pitch.html', label: 'Judge Pitch 🏆', icon: Trophy },
+  { href: '/pitch.html', label: 'Judge Showcase', icon: Trophy },
   { href: '/methodology.html', label: 'Architecture', icon: BookOpen },
 ];
 
