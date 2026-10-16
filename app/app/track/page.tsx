@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, X, Minus, Plus, Inbox } from 'lucide-react';
+import { Check, X, Minus, Plus } from 'lucide-react';
 import { useCarbon } from '@/lib/store';
 import { CATEGORIES, CATEGORY_META, TRACK_OPTIONS, round1, type Category, type TrackOption } from '@/lib/carbon';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
-import { CategoryIcon, OptionIcon } from '@/components/app/illustrations';
-import { RotatingGlobe } from '@/components/app/RotatingGlobe';
+import { OptionIcon } from '@/components/app/illustrations';
 
 const UNIT_LABEL: Record<NonNullable<TrackOption['unit']>, string> = { km: 'km', kWh: 'kWh', item: '×' };
 
@@ -81,28 +80,22 @@ export default function Track() {
     <div className="flex flex-col gap-5">
       <PageHead eyebrow="Daily tracking" title="Log today's activity" sub="Pick a category, select everything you did, adjust amounts, then add them all." />
 
-      {/* running total — bold gradient hero, matching the Dashboard's treatment */}
+      {/* running total — clean card, not a heavy gradient */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card className="relative overflow-hidden !p-0">
-          <div
-            className="relative flex items-center justify-between px-6 py-6 sm:px-8"
-            style={{ background: 'linear-gradient(135deg, var(--lime) 0%, var(--lime-deep) 100%)' }}
-          >
-            <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10" />
-            <div className="relative">
-              <div className="text-xs font-bold uppercase tracking-wide text-white/80">Today so far</div>
-              <div className="font-display text-[32px] font-extrabold text-white">
-                {todayTotal} <span className="text-base font-bold text-white/80">kg CO₂</span>
-              </div>
+        <Card className="flex items-center justify-between">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wide text-muted">Today so far</div>
+            <div className="font-display text-[32px] font-extrabold">
+              {todayTotal} <span className="text-base font-bold text-muted">kg CO₂</span>
             </div>
-            <div className="relative hidden sm:block">
-              <RotatingGlobe size={64} />
-            </div>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'var(--lime-soft)' }}>
+            <span className="text-xl">🌍</span>
           </div>
         </Card>
       </motion.div>
 
-      {/* category tabs */}
+      {/* category tabs — keep the improved OptionIcon badges from the redesign */}
       <div role="tablist" className="flex gap-2 overflow-x-auto pb-1 cx-scroll">
         {CATEGORIES.map((c) => {
           const active = c.id === cat;
@@ -113,15 +106,14 @@ export default function Track() {
               onClick={() => setCat(c.id)}
               role="tab"
               aria-selected={active}
-              className="flex items-center gap-2 whitespace-nowrap rounded-full border py-1.5 pl-2 pr-4 text-sm font-semibold transition-all hover:-translate-y-0.5"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5"
               style={{
                 borderColor: active ? 'var(--lime)' : 'var(--border)',
                 background: active ? 'var(--lime)' : 'var(--surface)',
                 color: active ? '#0c1d15' : 'var(--muted)',
               }}
             >
-              <CategoryIcon category={c.id} color={active ? '#0c1d15' : c.color} size={24} />
-              {c.label}
+              <span role="img" aria-hidden="true">{c.emoji}</span> {c.label}
               {count > 0 && (
                 <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold"
                   style={{ background: active ? '#0c1d15' : 'var(--lime)', color: active ? 'var(--lime)' : '#0c1d15' }}>
@@ -133,7 +125,7 @@ export default function Track() {
         })}
       </div>
 
-      {/* options (multi-select) */}
+      {/* options (multi-select) — keep OptionIcon from redesign, add stagger animation */}
       <motion.div
         key={cat}
         variants={gridVariants}
@@ -257,7 +249,7 @@ export default function Track() {
       <div>
         <h2 className="mb-3 text-[15px] font-bold">Today&apos;s log</h2>
         {todayLogs.length === 0 ? (
-          <EmptyState emoji={<Inbox className="h-9 w-9" style={{ color: 'var(--muted)' }} strokeWidth={1.5} />} title="No entries yet" sub="Add an activity above to start tracking today." />
+          <EmptyState emoji="📭" title="No entries yet" sub="Add an activity above to start tracking today." />
         ) : (
           <motion.div variants={gridVariants} initial="hidden" animate="show" className="flex flex-col gap-2">
             {todayLogs.map((l) => (

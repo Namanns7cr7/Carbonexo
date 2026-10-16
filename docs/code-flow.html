@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carbonexo — End-to-End Code Flow & System Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070d0a;
+      --surface: #0e1713;
+      --surface-2: #14221c;
+      --surface-3: #1a2c24;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(74, 222, 128, 0.3);
+      --lime: #4ade80;
+      --lime-dim: #22c55e;
+      --lime-glow: rgba(74, 222, 128, 0.35);
+      --lime-soft: rgba(74, 222, 128, 0.12);
+      --blue: #38bdf8;
+      --blue-soft: rgba(56, 189, 248, 0.12);
+      --purple: #c084fc;
+      --purple-soft: rgba(192, 132, 252, 0.12);
+      --amber: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.12);
+      --rose: #fb7185;
+      --rose-soft: rgba(251, 113, 133, 0.12);
+      --text: #e6f3ec;
+      --text-muted: #8ba295;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: 100px;
+    }
+
+    /* Ambient background grid */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(74, 222, 128, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 30%, rgba(56, 189, 248, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(192, 132, 252, 0.05) 0%, transparent 50%),
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header Nav */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4ade80, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 20px var(--lime-glow);
+    }
+    .brand h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .nav-badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 10px var(--lime);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: var(--lime-soft);
+      border: 1px solid var(--border-bright);
+      color: var(--lime);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+    .hero h2 {
+      font-size: clamp(30px, 4.5vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--lime) 80%, var(--blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 840px;
+      margin: 0 auto 28px;
+    }
+    .nav-pills {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .nav-pill-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-pill-btn:hover {
+      background: var(--surface-2);
+      border-color: var(--lime);
+      color: var(--lime);
+      transform: translateY(-2px);
+    }
+    .nav-pill-btn.active {
+      background: var(--lime-soft);
+      border-color: var(--lime);
+      color: var(--lime);
+    }
+
+    /* Section Styling */
+    section {
+      margin-bottom: 70px;
+    }
+    .section-header {
+      margin-bottom: 24px;
+    }
+    .section-header h3 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* 3-Tier Macro Diagram */
+    .macro-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tiers-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 60px 1.3fr 60px 1fr;
+      align-items: center;
+      gap: 12px;
+    }
+    @media (max-width: 1080px) {
+      .tiers-wrapper {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .tier-connector {
+        transform: rotate(90deg);
+        margin: 10px auto;
+      }
+    }
+    .tier-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .tier-box:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .tier-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 16px 16px 0 0;
+    }
+    .tier-frontend::before { background: var(--lime); }
+    .tier-backend::before { background: var(--blue); }
+    .tier-db::before { background: var(--purple); }
+
+    .tier-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .tier-icon {
+      font-size: 24px;
+    }
+    .tier-port {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--surface-3);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .tier-box h4 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .tier-box p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .component-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+    }
+
+    .tier-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .conn-arrow {
+      width: 44px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--lime), var(--blue));
+      position: relative;
+    }
+    .conn-arrow::after {
+      content: '►';
+      position: absolute;
+      right: -6px;
+      top: -7px;
+      font-size: 10px;
+      color: var(--blue);
+    }
+    .conn-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    /* Flow Explorer (Tabs + Interactive Stepper) */
+    .flow-explorer {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+    .flow-tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .flow-tab-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .flow-tab-btn:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .flow-tab-btn.active {
+      background: var(--lime-soft);
+      border-color: var(--border-bright);
+      color: var(--lime);
+    }
+
+    .flow-body {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 28px;
+    }
+    @media (max-width: 960px) {
+      .flow-body { grid-template-columns: 1fr; }
+    }
+
+    /* Timeline Stepper */
+    .stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .step-card {
+      display: flex;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .step-card:hover {
+      background: var(--surface-3);
+      border-color: var(--border-bright);
+    }
+    .step-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--lime-soft);
+      color: var(--lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      flex-shrink: 0;
+      border: 1px solid var(--border-bright);
+    }
+    .step-content h5 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-layer {
+      font-size: 10px;
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .layer-fe { background: var(--lime-soft); color: var(--lime); }
+    .layer-be { background: var(--blue-soft); color: var(--blue); }
+    .layer-db { background: var(--purple-soft); color: var(--purple); }
+    .layer-ai { background: var(--amber-soft); color: var(--amber); }
+
+    .step-content p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Code Preview Terminal */
+    .code-terminal {
+      background: #040906;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 480px;
+    }
+    .terminal-header {
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .window-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .window-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #eab308; }
+    .dot-green { background: #22c55e; }
+
+    .terminal-filename {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .terminal-body {
+      padding: 18px;
+      overflow: auto;
+      line-height: 1.65;
+      color: #94d2bd;
+      flex-grow: 1;
+    }
+    .c-comment { color: #52796f; font-style: italic; }
+    .c-kw { color: #f72585; font-weight: 600; }
+    .c-func { color: #4ade80; font-weight: 600; }
+    .c-str { color: #e9d8a6; }
+    .c-num { color: #38bdf8; }
+    .c-type { color: #c084fc; font-weight: 600; }
+
+    /* Interactive Live Sandbox Simulator */
+    .sandbox {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.04), rgba(56, 189, 248, 0.04));
+      border: 1px solid var(--border-bright);
+      border-radius: 20px;
+      padding: 32px;
+    }
+    .sandbox-actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .sandbox-btn {
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sandbox-btn:hover {
+      background: var(--surface-2);
+      border-color: var(--lime);
+      color: var(--lime);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px var(--lime-glow);
+    }
+    .sandbox-log-panel {
+      background: #030805;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      min-height: 260px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .sim-line {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 6px;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .sim-tag-fe { color: var(--lime); font-weight: 700; flex-shrink: 0; width: 85px; }
+    .sim-tag-net { color: var(--blue); font-weight: 700; flex-shrink: 0; width: 85px; }
+    .sim-tag-be { color: var(--amber); font-weight: 700; flex-shrink: 0; width: 85px; }
+    .sim-tag-sql { color: var(--purple); font-weight: 700; flex-shrink: 0; width: 85px; }
+    .sim-tag-ok { color: var(--lime); font-weight: 700; flex-shrink: 0; width: 85px; }
+
+    /* Interactive Database Schema ER Visualizer */
+    .schema-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .schema-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.2s ease;
+    }
+    .schema-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-3px);
+    }
+    .table-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-title h5 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--purple);
+      font-family: var(--mono);
+    }
+    .table-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--purple-soft);
+      color: var(--purple);
+      font-family: var(--mono);
+    }
+    .column-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .col-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      color: var(--text-muted);
+    }
+    .col-name {
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .col-pk { color: var(--amber); font-weight: 700; }
+    .col-fk { color: var(--blue); font-weight: 700; }
+    .col-type { color: #64748b; }
+
+    /* Route & Flow Matrix Table */
+    .matrix-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: var(--surface-2);
+      padding: 14px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-2); }
+    .pill-method {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .m-get { background: var(--blue-soft); color: var(--blue); }
+    .m-post { background: var(--lime-soft); color: var(--lime); }
+    .m-patch { background: var(--amber-soft); color: var(--amber); }
+    .m-del { background: var(--rose-soft); color: var(--rose); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-bg"></div>
+
+  <div class="container">
+    <!-- Top Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🌱</div>
+        <div>
+          <h1>Carbonexo — Full Code Flow & Execution Engine</h1>
+          <p>Next.js 14 · Spring Boot 3 · PostgreSQL 16 · Gemini AI · Tesseract OCR</p>
+        </div>
+      </div>
+      <div class="nav-badges">
+        <div class="badge"><span class="dot-pulse"></span> Next.js UI (:3000)</div>
+        <div class="badge"><span class="dot-pulse"></span> Spring Boot REST (:8080)</div>
+        <div class="badge"><span class="dot-pulse"></span> Postgres Engine (:5432)</div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-tag">⚡ System Mechanics & Request Lifecycles</div>
+      <h2>How Everything Works Together</h2>
+      <p>
+        Follow the exact code flow from a user clicking on the React Next.js interface, 
+        through the Spring Security filter chain and domain engines, down to PostgreSQL transactions 
+        and the append-only carbon ledger.
+      </p>
+      <div class="nav-pills">
+        <a href="#macro" class="nav-pill-btn active">🏛️ 1. Macro 3-Tier Layer</a>
+        <a href="#flows" class="nav-pill-btn">🔄 2. Interactive Flow Explorer</a>
+        <a href="#sandbox" class="nav-pill-btn">🎮 3. Live Request Simulator</a>
+        <a href="#db-schema" class="nav-pill-btn">🗄️ 4. PostgreSQL Schema</a>
+        <a href="#matrix" class="nav-pill-btn">📋 5. Route-to-DB Matrix</a>
+      </div>
+    </div>
+
+    <!-- 1. Macro Architecture -->
+    <section id="macro">
+      <div class="section-header">
+        <h3>🏛️ 1. The 3-Tier Full-Stack Pipeline</h3>
+        <p>Zero coupling: Frontend communicates strictly via typed HTTP REST APIs with Bearer JWT tokens</p>
+      </div>
+
+      <div class="macro-diagram">
+        <div class="tiers-wrapper">
+          <!-- Tier 1: Frontend -->
+          <div class="tier-box tier-frontend">
+            <div class="tier-header">
+              <span class="tier-icon">💻</span>
+              <span class="tier-port">:3000</span>
+            </div>
+            <h4>1. Client & Presentation</h4>
+            <p>Next.js 14 App Router, React Context Store, and optimistic UI mutations with SWR cache.</p>
+            <div class="component-tags">
+              <span class="tag">App Router (app/)</span>
+              <span class="tag">store.tsx (Context)</span>
+              <span class="tag">api/client.ts</span>
+              <span class="tag">0ms Optimistic UI</span>
+              <span class="tag">Mutex Refresh</span>
+              <span class="tag">Framer Motion</span>
+            </div>
+          </div>
+
+          <!-- Connector 1 -->
+          <div class="tier-connector">
+            <div class="conn-arrow"></div>
+            <div class="conn-label">JSON / JWT<br/>CORS :8080</div>
+          </div>
+
+          <!-- Tier 2: Backend -->
+          <div class="tier-box tier-backend">
+            <div class="tier-header">
+              <span class="tier-icon">⚡</span>
+              <span class="tier-port">:8080</span>
+            </div>
+            <h4>2. Business & Service Layer</h4>
+            <p>Spring Boot 3 stateless REST gateway, domain engines, AI prompt rendering, and OCR.</p>
+            <div class="component-tags">
+              <span class="tag">SecurityFilterChain</span>
+              <span class="tag">JwtAuthFilter</span>
+              <span class="tag">CarbonCalcService</span>
+              <span class="tag">CreditRuleEngine</span>
+              <span class="tag">AIService (Gemini)</span>
+              <span class="tag">BillService (OCR)</span>
+            </div>
+          </div>
+
+          <!-- Connector 2 -->
+          <div class="tier-connector">
+            <div class="conn-arrow"></div>
+            <div class="conn-label">HikariCP<br/>JDBC SQL</div>
+          </div>
+
+          <!-- Tier 3: Database -->
+          <div class="tier-box tier-db">
+            <div class="tier-header">
+              <span class="tier-icon">🗄️</span>
+              <span class="tier-port">:5432</span>
+            </div>
+            <h4>3. Persistence & Ledger</h4>
+            <p>PostgreSQL 16 relational database with Flyway versioning and immutable credit ledger.</p>
+            <div class="component-tags">
+              <span class="tag">Flyway V1..V9</span>
+              <span class="tag">credit_ledger</span>
+              <span class="tag">activity_logs</span>
+              <span class="tag">emission_factors</span>
+              <span class="tag">bills & ocr_results</span>
+              <span class="tag">ACID Transactions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Interactive Flow Explorer -->
+    <section id="flows">
+      <div class="section-header">
+        <h3>🔄 2. Interactive Step-by-Step Code Flow Explorer</h3>
+        <p>Choose an end-to-end operation below to inspect the exact call hierarchy and code snippets</p>
+      </div>
+
+      <div class="flow-explorer">
+        <!-- Flow Tabs -->
+        <div class="flow-tabs">
+          <button class="flow-tab-btn active" onclick="loadFlow('activity')">🚗 1. Log Daily Activity</button>
+          <button class="flow-tab-btn" onclick="loadFlow('auth')">🔐 2. Auth & Mutex Token Refresh</button>
+          <button class="flow-tab-btn" onclick="loadFlow('bill')">⚡ 3. Utility Bill Scan & OCR</button>
+          <button class="flow-tab-btn" onclick="loadFlow('twin')">🔮 4. Carbon Twin "What-If" Habit Sim</button>
+          <button class="flow-tab-btn" onclick="loadFlow('ai')">🤖 5. Gemini AI Coach & Prompt Renderer</button>
+          <button class="flow-tab-btn" onclick="loadFlow('rewards')">💎 6. Carbon Credit Ledger & Redemption</button>
+        </div>
+
+        <div class="flow-body">
+          <!-- Stepper Column -->
+          <div class="stepper" id="flowSteps">
+            <!-- Dynamic Steps Injected by JS -->
+          </div>
+
+          <!-- Code Column -->
+          <div class="code-terminal">
+            <div class="terminal-header">
+              <div class="window-dots">
+                <div class="window-dot dot-red"></div>
+                <div class="window-dot dot-yellow"></div>
+                <div class="window-dot dot-green"></div>
+              </div>
+              <div class="terminal-filename" id="terminalFile">CarbonCalculationService.java</div>
+              <div>UTF-8</div>
+            </div>
+            <div class="terminal-body" id="terminalCode">
+              <!-- Dynamic Code Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Live Request Simulator Sandbox -->
+    <section id="sandbox">
+      <div class="section-header">
+        <h3>🎮 3. Live Interactive Request Lifecycle Simulator</h3>
+        <p>Click any trigger to simulate the exact cross-tier event timeline in real-time</p>
+      </div>
+
+      <div class="sandbox">
+        <div class="sandbox-actions">
+          <button class="sandbox-btn" onclick="runSimulation('log_car')">🚗 Track Car Commute (+20 km)</button>
+          <button class="sandbox-btn" onclick="runSimulation('token_refresh')">🔄 Trigger Silent JWT Mutex Refresh</button>
+          <button class="sandbox-btn" onclick="runSimulation('bill_ocr')">⚡ Scan Electricity Bill (195 kWh)</button>
+          <button class="sandbox-btn" onclick="runSimulation('sim_twin')">🔮 Run Habit Twin Simulation</button>
+          <button class="sandbox-btn" onclick="runSimulation('ai_coach')">🤖 Ask Gemini Coach a Question</button>
+          <button class="sandbox-btn" onclick="runSimulation('redeem_tree')">🌲 Redeem "Plant a Tree" (500 pts)</button>
+        </div>
+
+        <div class="sandbox-log-panel" id="sandboxConsole">
+          <div class="sim-line">
+            <span class="sim-tag-ok">[READY]</span>
+            <span>Simulator initialized. Click any action above to watch the client-to-database code flow unfold.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. PostgreSQL Database Schema -->
+    <section id="db-schema">
+      <div class="section-header">
+        <h3>🗄️ 4. PostgreSQL Relational Schema & Ledger Design</h3>
+        <p>PostgreSQL 16 with 14 production tables, Flyway migrations (V1–V9), and append-only ledgers</p>
+      </div>
+
+      <div class="schema-grid">
+        <!-- Table 1 -->
+        <div class="schema-card">
+          <div class="table-title">
+            <h5>activity_logs</h5>
+            <span class="table-badge">Carbon Logs</span>
+          </div>
+          <ul class="column-list">
+            <li class="col-row"><span class="col-name"><span class="col-pk">🔑</span> id</span><span class="col-type">UUID PK</span></li>
+            <li class="col-row"><span class="col-name"><span class="col-fk">🔗</span> user_id</span><span class="col-type">UUID FK (users)</span></li>
+            <li class="col-row"><span class="col-name">category</span><span class="col-type">VARCHAR(20)</span></li>
+            <li class="col-row"><span class="col-name">factor_key</span><span class="col-type">VARCHAR(60)</span></li>
+            <li class="col-row"><span class="col-name">quantity</span><span class="col-type">NUMERIC(10,2)</span></li>
+            <li class="col-row"><span class="col-name">co2_kg</span><span class="col-type">NUMERIC(10,3)</span></li>
+            <li class="col-row"><span class="col-name">activity_date</span><span class="col-type">DATE</span></li>
+            <li class="col-row"><span class="col-name">deleted_at</span><span class="col-type">TIMESTAMPTZ</span></li>
+          </ul>
+        </div>
+
+        <!-- Table 2 -->
+        <div class="schema-card">
+          <div class="table-title">
+            <h5>emission_factors</h5>
+            <span class="table-badge">Reference Math</span>
+          </div>
+          <ul class="column-list">
+            <li class="col-row"><span class="col-name"><span class="col-pk">🔑</span> id</span><span class="col-type">UUID PK</span></li>
+            <li class="col-row"><span class="col-name">category</span><span class="col-type">VARCHAR(20)</span></li>
+            <li class="col-row"><span class="col-name">factor_key</span><span class="col-type">VARCHAR(60)</span></li>
+            <li class="col-row"><span class="col-name">factor_kg_per_unit</span><span class="col-type">NUMERIC(10,4)</span></li>
+            <li class="col-row"><span class="col-name">unit</span><span class="col-type">km, kWh, item</span></li>
+            <li class="col-row"><span class="col-name">region</span><span class="col-type">GLOBAL, IN, etc.</span></li>
+            <li class="col-row"><span class="col-name">active</span><span class="col-type">BOOLEAN</span></li>
+          </ul>
+        </div>
+
+        <!-- Table 3 -->
+        <div class="schema-card">
+          <div class="table-title">
+            <h5>credit_ledger</h5>
+            <span class="table-badge">Immutable Ledger</span>
+          </div>
+          <ul class="column-list">
+            <li class="col-row"><span class="col-name"><span class="col-pk">🔑</span> id</span><span class="col-type">UUID PK</span></li>
+            <li class="col-row"><span class="col-name"><span class="col-fk">🔗</span> user_id</span><span class="col-type">UUID FK (users)</span></li>
+            <li class="col-row"><span class="col-name">delta</span><span class="col-type">INTEGER (+ / -)</span></li>
+            <li class="col-row"><span class="col-name">balance_after</span><span class="col-type">INTEGER</span></li>
+            <li class="col-row"><span class="col-name">reason</span><span class="col-type">VARCHAR(200)</span></li>
+            <li class="col-row"><span class="col-name">rule_key</span><span class="col-type">VARCHAR(60)</span></li>
+            <li class="col-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMPTZ</span></li>
+          </ul>
+        </div>
+
+        <!-- Table 4 -->
+        <div class="schema-card">
+          <div class="table-title">
+            <h5>bills & ocr_results</h5>
+            <span class="table-badge">Utility Ingestion</span>
+          </div>
+          <ul class="column-list">
+            <li class="col-row"><span class="col-name"><span class="col-pk">🔑</span> id</span><span class="col-type">UUID PK</span></li>
+            <li class="col-row"><span class="col-name"><span class="col-fk">🔗</span> user_id</span><span class="col-type">UUID FK (users)</span></li>
+            <li class="col-row"><span class="col-name">blob_url</span><span class="col-type">VARCHAR(1000)</span></li>
+            <li class="col-row"><span class="col-name">status</span><span class="col-type">UPLOADED..CONFIRMED</span></li>
+            <li class="col-row"><span class="col-name">units_consumed</span><span class="col-type">NUMERIC(12,2)</span></li>
+            <li class="col-row"><span class="col-name">bill_amount</span><span class="col-type">NUMERIC(12,2)</span></li>
+            <li class="col-row"><span class="col-name">confidence</span><span class="col-type">NUMERIC(5,4)</span></li>
+          </ul>
+        </div>
+
+        <!-- Table 5 -->
+        <div class="schema-card">
+          <div class="table-title">
+            <h5>prompt_templates</h5>
+            <span class="table-badge">Dynamic AI Prompts</span>
+          </div>
+          <ul class="column-list">
+            <li class="col-row"><span class="col-name"><span class="col-pk">🔑</span> id</span><span class="col-type">UUID PK</span></li>
+            <li class="col-row"><span class="col-name">template_key</span><span class="col-type">VARCHAR(80) UNIQUE</span></li>
+            <li class="col-row"><span class="col-name">version</span><span class="col-type">INTEGER</span></li>
+            <li class="col-row"><span class="col-name">body</span><span class="col-type">TEXT (Mustache tags)</span></li>
+            <li class="col-row"><span class="col-name">variables</span><span class="col-type">JSONB</span></li>
+            <li class="col-row"><span class="col-name">active</span><span class="col-type">BOOLEAN</span></li>
+          </ul>
+        </div>
+
+        <!-- Table 6 -->
+        <div class="schema-card">
+          <div class="table-title">
+            <h5>groups & members</h5>
+            <span class="table-badge">Social Layer</span>
+          </div>
+          <ul class="column-list">
+            <li class="col-row"><span class="col-name"><span class="col-pk">🔑</span> id</span><span class="col-type">UUID PK</span></li>
+            <li class="col-row"><span class="col-name">name</span><span class="col-type">VARCHAR(120)</span></li>
+            <li class="col-row"><span class="col-name">invite_code</span><span class="col-type">VARCHAR(8) UNIQUE</span></li>
+            <li class="col-row"><span class="col-name"><span class="col-fk">🔗</span> user_id</span><span class="col-type">UUID FK</span></li>
+            <li class="col-row"><span class="col-name">role</span><span class="col-type">OWNER, MEMBER</span></li>
+            <li class="col-row"><span class="col-name">joined_at</span><span class="col-type">TIMESTAMPTZ</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Route-to-DB Matrix -->
+    <section id="matrix">
+      <div class="section-header">
+        <h3>📋 5. Frontend Route to Database Execution Matrix</h3>
+        <p>Complete traceability mapping between user actions, backend controllers, services, and SQL tables</p>
+      </div>
+
+      <div class="matrix-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User Action / Route</th>
+              <th>HTTP Method & Path</th>
+              <th>Spring Controller & Service</th>
+              <th>Database Tables Touched</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Track Carbon Activity</strong><br/><small>/app/track</small></td>
+              <td><span class="pill-method m-post">POST</span> <code>/api/logs</code></td>
+              <td><code>ActivityLogController</code><br/>➔ <code>CarbonCalculationService</code></td>
+              <td><code>emission_factors</code> (Read)<br/>➔ <code>activity_logs</code> (Insert)</td>
+              <td>Write</td>
+            </tr>
+            <tr>
+              <td><strong>Dashboard Aggregation</strong><br/><small>/app</small></td>
+              <td><span class="pill-method m-get">GET</span> <code>/api/dashboard</code></td>
+              <td><code>DashboardController</code><br/>➔ <code>DashboardService</code></td>
+              <td><code>activity_logs</code> (Aggregate Sum)<br/>➔ <code>user_profiles</code> (Baseline)</td>
+              <td>Read</td>
+            </tr>
+            <tr>
+              <td><strong>Upload Electric Bill</strong><br/><small>/app/bills</small></td>
+              <td><span class="pill-method m-post">POST</span> <code>/api/bills/upload</code></td>
+              <td><code>BillController</code><br/>➔ <code>BillService</code> + <code>TesseractOcr</code></td>
+              <td><code>bills</code> (Insert)<br/>➔ <code>ocr_results</code> (Insert)</td>
+              <td>Write</td>
+            </tr>
+            <tr>
+              <td><strong>Confirm Bill & Earn Points</strong><br/><small>/app/bills (Modal)</small></td>
+              <td><span class="pill-method m-patch">PATCH</span> <code>/api/bills/{id}/correct</code></td>
+              <td><code>BillController</code><br/>➔ <code>CreditService.onBillUpload</code></td>
+              <td><code>bills</code> (Update CONFIRMED)<br/>➔ <code>credit_ledger</code> (Insert +pts)</td>
+              <td>Write</td>
+            </tr>
+            <tr>
+              <td><strong>Simulate Habit Change</strong><br/><small>/app/simulate</small></td>
+              <td><span class="pill-method m-post">POST</span> <code>/api/simulate</code></td>
+              <td><code>SimulationController</code><br/>➔ <code>SimulationService</code> + <code>Gemini</code></td>
+              <td><code>activity_logs</code> (Read recent)<br/>➔ <code>prompt_templates</code> (Read)</td>
+              <td>Read-Only</td>
+            </tr>
+            <tr>
+              <td><strong>AI Coach Chat</strong><br/><small>/app/coach</small></td>
+              <td><span class="pill-method m-post">POST</span> <code>/api/ai/chat</code></td>
+              <td><code>AIController</code><br/>➔ <code>AIService</code> + <code>GeminiAIProvider</code></td>
+              <td><code>coach_messages</code> (Insert user+bot)<br/>➔ <code>prompt_templates</code> (Read)</td>
+              <td>Write</td>
+            </tr>
+            <tr>
+              <td><strong>Redeem Reward</strong><br/><small>/app/rewards</small></td>
+              <td><span class="pill-method m-post">POST</span> <code>/api/rewards/{id}/redeem</code></td>
+              <td><code>RewardController</code><br/>➔ <code>RewardService.redeem</code></td>
+              <td><code>rewards</code> (Stock -1)<br/>➔ <code>credit_ledger</code> (Debit -pts)<br/>➔ <code>redemptions</code> (Insert)</td>
+              <td>ACID Trans</td>
+            </tr>
+            <tr>
+              <td><strong>Group Leaderboard</strong><br/><small>/app/groups</small></td>
+              <td><span class="pill-method m-get">GET</span> <code>/api/groups/{id}/leaderboard</code></td>
+              <td><code>GroupController</code><br/>➔ <code>GroupService.getLeaderboard</code></td>
+              <td><code>group_members</code> (Read)<br/>➔ <code>activity_logs</code> (Sum CO₂)<br/>➔ <code>credit_ledger</code> (Sum pts)</td>
+              <td>Read</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      Carbonexo / EcoTrack — Visualized Full-Stack Code Flow & Engine Pipeline
+    </footer>
+  </div>
+
+  <script>
+    // Flows Data
+    const FLOWS = {
+      activity: {
+        file: "CarbonCalculationService.java & store.tsx",
+        steps: [
+          {
+            title: "1. 0ms Optimistic UI Update",
+            layer: "Frontend (store.tsx)",
+            layerClass: "layer-fe",
+            desc: "User selects activity (e.g., Petrol Car 20km). The React context store immediately adds a temporary item to todayLogs and updates the Score Ring with zero network lag."
+          },
+          {
+            title: "2. Authenticated HTTP POST",
+            layer: "API Client (client.ts)",
+            layerClass: "layer-fe",
+            desc: "client.ts attaches Authorization: Bearer <jwt> and X-Request-Id. SWR cache marks dashboard query as invalidated for future background refresh."
+          },
+          {
+            title: "3. Spring Security Validation",
+            layer: "Security Filter (JwtAuthFilter)",
+            layerClass: "layer-be",
+            desc: "JwtAuthenticationFilter extracts and validates the HS384 signature, sets UserPrincipal in SecurityContextHolder, and passes request to ActivityLogController."
+          },
+          {
+            title: "4. Carbon Calculation Engine Math",
+            layer: "Domain Service",
+            layerClass: "layer-be",
+            desc: "CarbonCalculationService looks up emission factor for 'travel_car_petrol' (0.1920 kg/km) in the PostgreSQL emission_factors table. Computes: 20 km × 0.1920 = 3.840 kg CO2."
+          },
+          {
+            title: "5. Transactional Database Commit",
+            layer: "PostgreSQL 16",
+            layerClass: "layer-db",
+            desc: "INSERT INTO activity_logs (id, user_id, category, quantity, co2_kg, activity_date) VALUES (...). Returns persisted entity with server-generated UUID to the client."
+          }
+        ],
+        code: `// 1. Frontend: 0ms Optimistic UI (lib/store.tsx)
+const addLog = async (logInput: ActivityLogInput) => {
+  const tempId = crypto.randomUUID();
+  const optimisticLog = { ...logInput, id: tempId, co2Kg: estimateCo2(logInput) };
+  
+  // Instant React state update before network call!
+  setTodayLogs(prev => [optimisticLog, ...prev]);
+  
+  try {
+    const serverLog = await api.createLog(logInput);
+    // Replace temporary client log with confirmed server log
+    setTodayLogs(prev => prev.map(l => l.id === tempId ? serverLog : l));
+  } catch (err) {
+    // Rollback on failure!
+    setTodayLogs(prev => prev.filter(l => l.id !== tempId));
+  }
+};
+
+// 2. Backend: Emission Calculation Engine (CarbonCalculationService.java)
+@Transactional
+public BigDecimal calculateCo2(String factorKey, BigDecimal quantity, String region) {
+    EmissionFactor factor = factorRepo.findActiveByKeyAndRegion(factorKey, region)
+        .orElseGet(() -> factorRepo.findActiveByKeyAndRegion(factorKey, "GLOBAL")
+            .orElseThrow(() -> new BadRequestException("Unknown factor: " + factorKey)));
+
+    return factor.getFactorKgPerUnit()
+        .multiply(quantity)
+        .setScale(3, RoundingMode.HALF_UP);
+}`
+      },
+      auth: {
+        file: "AuthService.java & client.ts",
+        steps: [
+          {
+            title: "1. Login Credentials & BCrypt Verification",
+            layer: "Backend Auth",
+            layerClass: "layer-be",
+            desc: "User submits email + password. AuthService queries users table and calls passwordEncoder.matches(rawPassword, user.getPasswordHash())."
+          },
+          {
+            title: "2. Dual Token Generation (HS384 + Refresh)",
+            layer: "Backend JWT",
+            layerClass: "layer-be",
+            desc: "Issues short-lived 15-minute JWT signed with HS384 containing user UUID, email, and ROLE_USER, plus a secure random UUID refresh token."
+          },
+          {
+            title: "3. SHA-256 Refresh Token Storage",
+            layer: "PostgreSQL 16",
+            layerClass: "layer-db",
+            desc: "Only the SHA-256 hash of the refresh token is stored in the refresh_tokens table. Tokens are rotated and invalidated on every use."
+          },
+          {
+            title: "4. Mutex-Locked Silent Token Refresh",
+            layer: "Frontend (client.ts)",
+            layerClass: "layer-fe",
+            desc: "When access token expires (401), client.ts queues subsequent requests behind a mutex, calls /api/auth/refresh once, updates tokens, and replays queued calls."
+          }
+        ],
+        code: `// AuthService.java: Token Issuance & SHA-256 Hashing
+private AuthResponse issueTokens(User user, HttpServletRequest http) {
+    String access = jwtService.generateAccessToken(
+        user.getId(), user.getEmail(), user.getRole().name()
+    );
+
+    String rawRefresh = UUID.randomUUID() + "." + UUID.randomUUID();
+    RefreshToken rt = new RefreshToken();
+    rt.setUserId(user.getId());
+    rt.setTokenHash(sha256(rawRefresh)); // Hash only!
+    rt.setExpiresAt(Instant.now().plusSeconds(refreshTtlSeconds));
+    refreshTokens.save(rt);
+
+    return new AuthResponse(access, rawRefresh, jwtService.getAccessTtlSeconds(),
+        new AuthResponse.UserSummary(user.getId(), user.getEmail(), user.getDisplayName()));
+}
+
+// client.ts: Mutex-Locked Background 401 Interception
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+if (response.status === 401 && !originalRequest._retry) {
+    if (!isRefreshing) {
+        isRefreshing = true;
+        const newTokens = await refreshAccessToken();
+        isRefreshing = false;
+        refreshSubscribers.forEach(cb => cb(newTokens.accessToken));
+        refreshSubscribers = [];
+    }
+    return new Promise(resolve => {
+        refreshSubscribers.push(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            resolve(fetch(originalRequest));
+        });
+    });
+}`
+      },
+      bill: {
+        file: "BillService.java & TesseractOcrProvider.java",
+        steps: [
+          {
+            title: "1. Multipart File Ingestion & SHA-256 Check",
+            layer: "Backend Upload",
+            layerClass: "layer-be",
+            desc: "FileValidationService validates MIME type (PDF/PNG/JPEG) and file size (≤10MB). Computes SHA-256 checksum to prevent duplicate uploads."
+          },
+          {
+            title: "2. Cloud Storage & Bill Entity Creation",
+            layer: "Cloud & DB",
+            layerClass: "layer-db",
+            desc: "Uploads binary to Google Cloud Storage (or local stub) at bills/{userId}/{uuid}. Saves bills table record with status 'UPLOADED'."
+          },
+          {
+            title: "3. OCR Text Extraction Pipeline",
+            layer: "OCR Engine",
+            layerClass: "layer-be",
+            desc: "Invokes Tesseract or Google Vision OCR. Regex parsers extract billing month, consumed units (kWh), and total bill amount. Stored in ocr_results."
+          },
+          {
+            title: "4. Human-in-the-Loop Confirmation",
+            layer: "Frontend Modal",
+            layerClass: "layer-fe",
+            desc: "BillCorrectionModal.tsx shows extracted values with confidence score. User confirms or adjusts numbers, triggering PATCH /api/bills/{id}/correct."
+          },
+          {
+            title: "5. Credit Accrual Trigger",
+            layer: "Credit Engine",
+            layerClass: "layer-be",
+            desc: "On confirmation, CreditService.onBillUpload awards gamification credits and appends a positive delta entry to credit_ledger."
+          }
+        ],
+        code: `// BillService.java: Ingestion & OCR Execution
+@Transactional
+public BillResponse upload(UUID userId, byte[] data, String contentType, String filename) {
+    validator.validate(data, contentType, filename);
+    String blobUrl = storage.upload(data, "bills/" + userId + "/" + UUID.randomUUID(), contentType);
+
+    Bill bill = new Bill();
+    bill.setUserId(userId);
+    bill.setBlobUrl(blobUrl);
+    bill.setStatus("OCR_PENDING");
+    billRepo.save(bill);
+
+    try {
+        OcrExtraction extraction = ocrProvider.extract(data, contentType);
+        bill.setBillingMonth(extraction.billingMonth());
+        bill.setUnitsConsumed(extraction.unitsConsumed());
+        bill.setBillAmount(extraction.billAmount());
+        bill.setStatus("OCR_DONE");
+    } catch (Throwable e) {
+        // Fallback to manual entry if native Tesseract lib is absent
+        bill.setStatus("OCR_DONE");
+    }
+    return toResponse(billRepo.save(bill));
+}`
+      },
+      twin: {
+        file: "SimulationService.java & SimulationController.java",
+        steps: [
+          {
+            title: "1. Habit Change Configuration",
+            layer: "Frontend UI",
+            layerClass: "layer-fe",
+            desc: "User selects REDUCE_BY (e.g. cut beef 50%) or REPLACE_WITH (e.g. swap car for bus) and selects horizon (Month or Year)."
+          },
+          {
+            title: "2. Zero-Side-Effect Computation",
+            layer: "Simulation Engine",
+            layerClass: "layer-be",
+            desc: "Pure read-only computation: SimulationService queries recent activity logs for baseline CO2 and applies identical CarbonCalculationService math."
+          },
+          {
+            title: "3. Weekly Goal Impact & Credit Forecast",
+            layer: "Credit Rule Engine",
+            layerClass: "layer-be",
+            desc: "Translates projected CO2 reduction into percentage progress against the user's weeklyGoalPct and computes projected credit earnings."
+          },
+          {
+            title: "4. Gemini Motivational Insight Layering",
+            layer: "Gemini AI",
+            layerClass: "layer-ai",
+            desc: "Renders simulation_insight prompt template with computed deltas. Gemini returns an encouraging explanation without altering the math."
+          }
+        ],
+        code: `// SimulationService.java: Carbon Twin Projection
+@Transactional(readOnly = true)
+public SimulationResponse simulate(UUID userId, SimulationRequest request) {
+    BigDecimal horizonWeeks = horizonWeeks(request.horizon()); // Month: 4.33, Year: 52
+    BigDecimal baselineChangesKg = BigDecimal.ZERO;
+    BigDecimal projectedChangesKg = BigDecimal.ZERO;
+
+    for (SimulationItem item : request.changes()) {
+        BigDecimal occurrences = weeklyOccurrences(item.frequency());
+        BigDecimal totalQty = item.quantity().multiply(occurrences).multiply(horizonWeeks);
+        
+        BigDecimal base = carbonService.calculateCo2(item.factorKey(), totalQty, region);
+        BigDecimal projected = projectedKgForItem(item, occurrences, horizonWeeks, region);
+        
+        baselineChangesKg = baselineChangesKg.add(base);
+        projectedChangesKg = projectedChangesKg.add(projected);
+    }
+    
+    BigDecimal deltaCo2 = projectedChangesKg.subtract(baselineChangesKg);
+    int projectedCredits = creditRuleEngine.creditsForKgSaved(deltaCo2.negate().doubleValue());
+    String aiInsight = buildInsight(deltaCo2, goalImpact.projectedProgressPct(), projectedCredits, request.horizon());
+
+    return new SimulationResponse(baselineChangesKg, projectedChangesKg, deltaCo2, goalImpact, projectedCredits, breakdown, aiInsight);
+}`
+      },
+      ai: {
+        file: "AIService.java & PromptRenderer.java",
+        steps: [
+          {
+            title: "1. Multi-Turn Context Assembly",
+            layer: "Backend AI Service",
+            layerClass: "layer-be",
+            desc: "When user sends a chat message, AIService loads the top 20 recent messages from coach_messages to maintain conversational context."
+          },
+          {
+            title: "2. DB-Stored Template Rendering",
+            layer: "Prompt Renderer",
+            layerClass: "layer-be",
+            desc: "Fetches coach_system from prompt_templates table. Replaces {{context}}, {{diet}}, and {{biggest_source}} variables dynamically."
+          },
+          {
+            title: "3. Gemini API Invocation with Fallback",
+            layer: "Gemini Provider",
+            layerClass: "layer-ai",
+            desc: "Calls Google Gemini 2.5 Flash API with timeout. If network or quota fails, CannedFallbackProvider returns a pre-configured sustainability tip."
+          },
+          {
+            title: "4. Persistent Message Audit",
+            layer: "PostgreSQL 16",
+            layerClass: "layer-db",
+            desc: "Both user question and assistant response are saved to coach_messages table with token counts and model metadata."
+          }
+        ],
+        code: `// AIService.java: Context-Aware AI Coach Chat
+@Transactional
+public CoachResponse chat(UUID userId, String userMessage) {
+    // 1. Save user message to PostgreSQL
+    CoachMessage userMsg = new CoachMessage(userId, "user", userMessage);
+    coachRepo.save(userMsg);
+
+    // 2. Fetch history window (top 20)
+    List<CoachMessage> history = coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId);
+    Collections.reverse(history);
+    
+    // 3. Render prompt using DB-stored template
+    String systemPrompt = renderer.render("coach_system", Map.of("context", formatHistory(history)));
+    String fullPrompt = systemPrompt + "\\n\\nUser: " + userMessage;
+
+    // 4. Call Gemini or fallback
+    String response = aiProvider.generate(fullPrompt, props.ai().fastModel());
+
+    // 5. Persist assistant reply
+    CoachMessage assistantMsg = new CoachMessage(userId, "assistant", response);
+    coachRepo.save(assistantMsg);
+
+    return new CoachResponse(response, fullPrompt);
+}`
+      },
+      rewards: {
+        file: "RewardService.java & CreditService.java",
+        steps: [
+          {
+            title: "1. Atomic Stock & Balance Verification",
+            layer: "Reward Service",
+            layerClass: "layer-be",
+            desc: "User clicks Redeem. RewardService checks reward active flag, ensures stock > 0, and queries SUM(delta) from credit_ledger."
+          },
+          {
+            title: "2. Immutable Debit Ledger Append",
+            layer: "Credit Ledger",
+            layerClass: "layer-db",
+            desc: "Appends negative delta entry: INSERT INTO credit_ledger (delta, balance_after, reason, ref_type) VALUES (-500, 320, 'Redeemed: Tree', 'redemption')."
+          },
+          {
+            title: "3. Stock Decrement & Redemption Record",
+            layer: "PostgreSQL 16",
+            layerClass: "layer-db",
+            desc: "Decrements rewards.stock by 1 and inserts record into redemptions with status 'PENDING' in a single ACID transaction."
+          },
+          {
+            title: "4. SWR Client Cache Eviction",
+            layer: "Frontend Store",
+            layerClass: "layer-fe",
+            desc: "Frontend evicts cached credit balance and updates user badge to reflect new balance immediately."
+          }
+        ],
+        code: `// RewardService.java: Atomic Reward Redemption
+@Transactional
+public RedemptionResponse redeem(UUID userId, UUID rewardId) {
+    Reward reward = rewardRepo.findById(rewardId)
+        .orElseThrow(() -> new ResourceNotFoundException("Reward", "id", rewardId));
+
+    if (!reward.isActive() || (reward.getStock() != null && reward.getStock() <= 0)) {
+        throw new BadRequestException("This reward is out of stock or unavailable");
+    }
+
+    // Atomic debit via append-only ledger
+    boolean success = creditService.debitCredits(
+        userId, reward.getCostCredits(), "Redeemed: " + reward.getTitle(), "redemption", rewardId
+    );
+    if (!success) {
+        throw new BadRequestException("Insufficient credits balance");
+    }
+
+    if (reward.getStock() != null) {
+        reward.setStock(reward.getStock() - 1);
+        rewardRepo.save(reward);
+    }
+
+    Redemption r = new Redemption(userId, rewardId, reward.getCostCredits(), "PENDING");
+    return toRedemptionResponse(redemptionRepo.save(r), reward);
+}`
+      }
+    };
+
+    function loadFlow(key) {
+      const flow = FLOWS[key];
+      if (!flow) return;
+
+      // Update Tab Styles
+      document.querySelectorAll('.flow-tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      // Update Steps
+      const stepsContainer = document.getElementById('flowSteps');
+      stepsContainer.innerHTML = flow.steps.map((s, i) => `
+        <div class="step-card">
+          <div class="step-badge">${i + 1}</div>
+          <div class="step-content">
+            <h5>${s.title} <span class="step-layer ${s.layerClass}">${s.layer}</span></h5>
+            <p>${s.desc}</p>
+          </div>
+        </div>
+      `).join('');
+
+      // Update Code Terminal
+      document.getElementById('terminalFile').innerText = flow.file;
+      document.getElementById('terminalCode').innerHTML = formatSyntax(flow.code);
+    }
+
+    function formatSyntax(code) {
+      return code
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/(\/\/.+)/g, '<span class="c-comment">$1</span>')
+        .replace(/\b(public|private|protected|class|const|async|await|return|try|catch|new|throw|if|else|for)\b/g, '<span class="c-kw">$1</span>')
+        .replace(/\b(String|UUID|BigDecimal|BigDecimal|boolean|int|void|AuthResponse|BillResponse|CoachResponse)\b/g, '<span class="c-type">$1</span>')
+        .replace(/(\b[a-zA-Z0-9_]+(?=\()|@\w+)/g, '<span class="c-func">$1</span>')
+        .replace(/(".*?"|'.*?')/g, '<span class="c-str">$1</span>')
+        .replace(/\b(\d+)\b/g, '<span class="c-num">$1</span>');
+    }
+
+    // Interactive Simulator Script
+    function runSimulation(type) {
+      const consoleEl = document.getElementById('sandboxConsole');
+      consoleEl.innerHTML = '';
+
+      const timeline = [];
+      const now = () => new Date().toISOString().substring(11, 19);
+
+      if (type === 'log_car') {
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] User clicked: Petrol Car 20km ➔ store.addLog() called.` });
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] 0ms Optimistic UI applied: todayLogs.unshift(tempLog), Ring +3.8kg.` });
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] POST /api/logs HTTP/1.1 (Payload: {category: "travel", qty: 20})` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [SECURITY] JwtAuthenticationFilter validated Bearer token. Principal: yash@ecotrack.dev` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [SERVICE] CarbonCalculationService: Factor 'travel_car_petrol' = 0.1920 kg/km.` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO activity_logs (user_id, co2_kg) VALUES ('...', 3.840);` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] COMMIT TRANSACTION (Execution: 4.2ms).` });
+        timeline.push({ tag: 'sim-tag-ok', text: `${now()} [SUCCESS] HTTP 200 OK returned. Client confirmed temporary log UUID.` });
+      } else if (type === 'token_refresh') {
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] GET /api/dashboard ➔ 401 Unauthorized (JWT Expired).` });
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] Mutex locked. Queued 3 in-flight requests behind refresh lock.` });
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] POST /api/auth/refresh (Body: {refreshToken: "..."})` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [SERVICE] AuthService: Hashed refresh token to SHA-256 and matched active session.` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = '...';` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO refresh_tokens (token_hash, expires_at) VALUES ('...', now()+30d);` });
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] New Access JWT received. Released mutex. Replaying 3 original calls with 200 OK.` });
+      } else if (type === 'bill_ocr') {
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] User uploaded 'electric_bill_june.pdf' (1.4MB).` });
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] POST /api/bills/upload (multipart/form-data)` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [STORAGE] Uploaded binary to Cloud Storage: bills/usr-12/bill-981.pdf` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [OCR] Tesseract/Vision OCR executed. Extracted: Month=2026-06, Units=195 kWh, Amount=1840 INR.` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO bills (...) & INSERT INTO ocr_results (confidence: 0.94);` });
+        timeline.push({ tag: 'sim-tag-ok', text: `${now()} [SUCCESS] HTTP 201 Created. BillCorrectionModal displayed to user with high confidence.` });
+      } else if (type === 'sim_twin') {
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] Habit Simulation: Swap Car Commute for Metro (Horizon: 1 Year).` });
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] POST /api/simulate (Body: {horizon: "YEAR", changes: [...]})` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [SERVICE] SimulationService: Baseline = 1,420 kg CO2. Projected = 210 kg CO2.` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [SERVICE] CreditRuleEngine: Projected delta = -1,210 kg (Worth ~1,210 Credits).` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [AI] Gemini prompt 'simulation_insight' rendered. Motivation generated in 180ms.` });
+        timeline.push({ tag: 'sim-tag-ok', text: `${now()} [SUCCESS] HTTP 200 OK. Pure calculation — 0 database records mutated!` });
+      } else if (type === 'ai_coach') {
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] User asks: 'How can I reduce electricity consumption during summers?'` });
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] POST /api/ai/chat (Body: {message: "..."})` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO coach_messages (role: 'user', content: '...')` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] SELECT * FROM coach_messages ORDER BY created_at DESC LIMIT 20;` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [AI] PromptRenderer loaded template 'coach_system' from DB with user history.` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [AI] Dispatched to Gemini API. Response received (142 tokens).` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO coach_messages (role: 'assistant', content: '...')` });
+        timeline.push({ tag: 'sim-tag-ok', text: `${now()} [SUCCESS] HTTP 200 OK. AI advice streamed to React coach interface.` });
+      } else if (type === 'redeem_tree') {
+        timeline.push({ tag: 'sim-tag-fe', text: `${now()} [CLIENT] User clicks: Redeem 'Plant 1 Tree' (500 Credits).` });
+        timeline.push({ tag: 'sim-tag-net', text: `${now()} [NETWORK] POST /api/rewards/reward-tree-01/redeem` });
+        timeline.push({ tag: 'sim-tag-be', text: `${now()} [SERVICE] RewardService: Checked user ledger sum = 850 credits. (Balance >= 500).` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] BEGIN TRANSACTION;` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO credit_ledger (delta, balance_after, reason) VALUES (-500, 350, 'Redeemed: Tree');` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] UPDATE rewards SET stock = stock - 1 WHERE id = '...';` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] INSERT INTO redemptions (status: 'PENDING') VALUES (...);` });
+        timeline.push({ tag: 'sim-tag-sql', text: `${now()} [SQL] COMMIT;` });
+        timeline.push({ tag: 'sim-tag-ok', text: `${now()} [SUCCESS] HTTP 200 OK. User balance decremented to 350 credits.` });
+      }
+
+      timeline.forEach((item, index) => {
+        setTimeout(() => {
+          const row = document.createElement('div');
+          row.className = 'sim-line';
+          row.innerHTML = `<span class="${item.tag}">[${item.tag.replace('sim-tag-', '').toUpperCase()}]</span><span>${item.text}</span>`;
+          consoleEl.appendChild(row);
+          consoleEl.scrollTop = consoleEl.scrollHeight;
+        }, index * 220);
+      });
+    }
+
+    // Initialize Default View
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFlow('activity');
+    });
+  </script>
+</body>
+</html>

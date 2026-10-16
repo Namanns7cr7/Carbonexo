@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="How Carbonexo's Next.js frontend, Spring Boot API and PostgreSQL database connect, traced through one real request.">
+<style>
+  html { color-scheme: light dark; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<title>Carbonexo Internals</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F3F5F4;
+    --surface: #FFFFFF;
+    --surface-2: #EAEEEC;
+    --ink: #16201D;
+    --ink-2: #3C4945;
+    --muted: #6B7873;
+    --line: #D8DFDC;
+    --line-strong: #C0CAC6;
+    --code-bg: #F7F9F8;
+    --front: #4F46A8;
+    --api: #0F766E;
+    --db: #96572A;
+    --shadow: 0 1px 2px rgba(22,32,29,.05), 0 10px 28px -16px rgba(22,32,29,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1413;
+      --surface: #161D1B;
+      --surface-2: #1E2725;
+      --ink: #E7EDEA;
+      --ink-2: #BFCAC6;
+      --muted: #8C9A95;
+      --line: #242F2C;
+      --line-strong: #35423E;
+      --code-bg: #111817;
+      --front: #A5ABF2;
+      --api: #4ECDC0;
+      --db: #E3A772;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1413;
+    --surface: #161D1B;
+    --surface-2: #1E2725;
+    --ink: #E7EDEA;
+    --ink-2: #BFCAC6;
+    --muted: #8C9A95;
+    --line: #242F2C;
+    --line-strong: #35423E;
+    --code-bg: #111817;
+    --front: #A5ABF2;
+    --api: #4ECDC0;
+    --db: #E3A772;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  /* ---- type ---- */
+  h1, h2, h3 { font-family: Archivo, ui-sans-serif, system-ui, sans-serif; text-wrap: balance; margin: 0; }
+  h1 { font-weight: 700; font-size: clamp(2rem, 6vw, 3.1rem); letter-spacing: -.028em; line-height: 1.04; }
+  h2 { font-weight: 650; font-size: clamp(1.3rem, 3.4vw, 1.7rem); letter-spacing: -.018em; line-height: 1.15; }
+  h3 { font-weight: 600; font-size: 1.02rem; letter-spacing: -.008em; }
+  p { margin: 0; }
+  .prose { max-width: 66ch; color: var(--ink-2); }
+  .prose + .prose { margin-top: .85em; }
+  a { color: var(--api); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 600; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .68rem; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; }
+  .prose code, li code, td code, th code {
+    font-size: .855em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .08em .34em;
+    color: var(--ink);
+    word-break: break-word;
+  }
+
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 13px 15px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .8rem;
+    line-height: 1.62;
+    color: var(--ink-2);
+    tab-size: 2;
+  }
+  pre b { color: var(--ink); font-weight: 600; }
+  pre .c { color: var(--muted); }
+  pre .k { color: var(--api); font-weight: 500; }
+  pre .s { color: var(--db); }
+
+  /* ---- masthead ---- */
+  header.top {
+    padding-block: 56px 36px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 .thin { display: block; color: var(--muted); font-weight: 500; font-size: .42em; letter-spacing: -.01em; margin-top: 14px; }
+  .lede { margin-top: 20px; max-width: 62ch; font-size: 1.04rem; color: var(--ink-2); }
+
+  /* ---- process strip ---- */
+  .procs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin-top: 32px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    overflow: hidden;
+  }
+  .proc { background: var(--surface); padding: 15px 16px 16px; }
+  .proc .tag { font-family: "IBM Plex Mono", monospace; font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
+  .proc .name { font-family: Archivo, sans-serif; font-weight: 600; font-size: 1rem; margin-top: 7px; letter-spacing: -.01em; }
+  .proc .meta { font-family: "IBM Plex Mono", monospace; font-size: .74rem; color: var(--muted); margin-top: 4px; }
+  .proc .note { font-size: .79rem; color: var(--muted); margin-top: 9px; line-height: 1.45; }
+  .proc.f { border-top: 2px solid var(--front); } .proc.f .tag { color: var(--front); }
+  .proc.a { border-top: 2px solid var(--api); }   .proc.a .tag { color: var(--api); }
+  .proc.d { border-top: 2px solid var(--db); }    .proc.d .tag { color: var(--db); }
+  @media (max-width: 680px) { .procs { grid-template-columns: 1fr; } }
+
+  /* ---- sections ---- */
+  section { padding-block: 44px; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  .sechead { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; }
+
+  /* ---- numbered request trace ---- */
+  .trace { display: flex; flex-direction: column; }
+  .hop { display: grid; grid-template-columns: 46px 1fr; gap: 0 18px; }
+  .hop .rail { position: relative; display: flex; flex-direction: column; align-items: center; }
+  .hop .num {
+    font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 600;
+    width: 27px; height: 27px; border-radius: 50%;
+    display: grid; place-items: center; flex: none;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line-strong);
+    font-variant-numeric: tabular-nums;
+  }
+  .hop .wire { flex: 1; width: 1px; background: var(--line-strong); min-height: 10px; }
+  .hop:last-child .wire { background: transparent; }
+  .hop .body { padding-bottom: 26px; min-width: 0; }
+  .hop:last-child .body { padding-bottom: 0; }
+  .hop .where {
+    font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 500;
+    letter-spacing: .02em; margin-bottom: 5px; word-break: break-all;
+  }
+  .hop.f .num { border-color: var(--front); color: var(--front); } .hop.f .where { color: var(--front); }
+  .hop.a .num { border-color: var(--api); color: var(--api); }     .hop.a .where { color: var(--api); }
+  .hop.d .num { border-color: var(--db); color: var(--db); }       .hop.d .where { color: var(--db); }
+  .hop h3 { margin-bottom: 7px; }
+  .hop p { font-size: .91rem; color: var(--ink-2); max-width: 64ch; }
+  .hop pre { margin-top: 11px; }
+  @media (max-width: 560px) {
+    .hop { grid-template-columns: 30px 1fr; gap: 0 13px; }
+    .hop .num { width: 23px; height: 23px; font-size: .66rem; }
+  }
+
+  /* ---- generic panels ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 18px 19px;
+  }
+  .panel > h3 { margin-bottom: 8px; }
+  .panel > p { font-size: .9rem; color: var(--ink-2); }
+  .panel pre { margin-top: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ---- db mechanism list ---- */
+  .mech { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface); }
+  .mech > div { padding: 17px 19px; border-bottom: 1px solid var(--line); }
+  .mech > div:last-child { border-bottom: 0; }
+  .mech .lbl { font-family: "IBM Plex Mono", monospace; font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--db); font-weight: 600; margin-bottom: 7px; }
+  .mech h3 { margin-bottom: 7px; }
+  .mech p { font-size: .9rem; color: var(--ink-2); max-width: 70ch; }
+  .mech pre { margin-top: 12px; }
+
+  /* ---- mapping table ---- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: .82rem; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    font-family: "IBM Plex Mono", monospace; font-size: .64rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+    background: var(--surface-2); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.m { font-family: "IBM Plex Mono", monospace; font-size: .78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.sql { color: var(--db); }
+  td.java { color: var(--api); }
+  td.ts { color: var(--front); }
+  td.note { color: var(--muted); font-size: .8rem; }
+
+  /* ---- relationship map ---- */
+  .relmap {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 9px;
+    padding: 18px 19px; overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace; font-size: .79rem; line-height: 1.85;
+    color: var(--ink-2); white-space: pre;
+  }
+  .relmap b { color: var(--db); font-weight: 600; }
+  .relmap i { color: var(--muted); font-style: normal; }
+
+  /* ---- table inventory chips ---- */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+  .chip {
+    font-family: "IBM Plex Mono", monospace; font-size: .72rem;
+    padding: 3px 8px; border-radius: 5px;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
+  }
+  .chip.im { border-color: var(--db); color: var(--db); }
+
+  /* ---- provider swap rows ---- */
+  .swap { display: flex; flex-direction: column; gap: 10px; }
+  .swaprow { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1.25fr); align-items: center; gap: 12px; }
+  .swaprow .iface { font-family: "IBM Plex Mono", monospace; font-size: .78rem; color: var(--api); font-weight: 500; }
+  .swaprow .arrow { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: .78rem; }
+  .swaprow .impls { font-family: "IBM Plex Mono", monospace; font-size: .75rem; color: var(--ink-2); }
+  .swaprow .impls .on { color: var(--ink); font-weight: 600; }
+  @media (max-width: 620px) { .swaprow { grid-template-columns: 1fr; gap: 2px; } .swaprow .arrow { display: none; } }
+
+  /* ---- callout ---- */
+  .callout {
+    border-left: 2px solid var(--db);
+    background: var(--surface);
+    border-radius: 0 7px 7px 0;
+    padding: 14px 17px;
+  }
+  .callout .eyebrow { color: var(--db); }
+  .callout p { font-size: .9rem; color: var(--ink-2); margin-top: 6px; max-width: 70ch; }
+
+  ul.tight { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; font-size: .9rem; color: var(--ink-2); }
+
+  footer { padding-block: 32px 0; color: var(--muted); font-size: .8rem; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="kicker">
+      <span class="eyebrow">Carbonexo · EcoTrack</span>
+      <span class="eyebrow" style="opacity:.6">architecture walkthrough</span>
+    </div>
+    <h1>Carbonexo Internals
+      <span class="thin">Three processes, one request path, one database</span>
+    </h1>
+    <p class="lede">A Next.js app talks over HTTP to a Spring Boot API, which talks over JDBC to PostgreSQL. Nothing in the browser ever touches the database. This traces one activity log from a click to a row and back.</p>
+
+    <div class="procs">
+      <div class="proc f">
+        <div class="tag">Client</div>
+        <div class="name">Next.js 14</div>
+        <div class="meta">:3000 · App Router · TS strict</div>
+        <div class="note">React Server/Client components, Tailwind, Framer Motion. Holds no secrets — only a JWT in memory and a refresh token in <code>localStorage</code>.</div>
+      </div>
+      <div class="proc a">
+        <div class="tag">API</div>
+        <div class="name">Spring Boot 3.3</div>
+        <div class="meta">:8080 · Java 17 · Maven</div>
+        <div class="note">11 REST controllers under <code>/api</code>, stateless JWT security, Hibernate/JPA, Flyway, Gemini + Vision + GCS clients.</div>
+      </div>
+      <div class="proc d">
+        <div class="tag">Data</div>
+        <div class="name">PostgreSQL 16</div>
+        <div class="meta">:5432 · db/user <span class="mono">ecotrack</span></div>
+        <div class="note">21 tables, UUID primary keys, audit columns, soft delete. Schema owned by Flyway migrations, not by Hibernate.</div>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">01 — the request path</span>
+      <h2>One activity log, click to row</h2>
+      <p class="prose">This is the whole system in one trace. A user on the Track page logs a 12&nbsp;km car trip. Every hop below is a real file in this repo, in execution order.</p>
+    </div>
+
+    <div class="trace">
+
+      <div class="hop f">
+        <div class="rail"><div class="num">1</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">app/app/track/page.tsx</div>
+          <h3>A page calls the store, not the network</h3>
+          <p>UI components never call <code>fetch</code>. They pull actions off the <code>useCarbon()</code> hook, so the page has no idea whether the write will land in Postgres or in <code>localStorage</code>.</p>
+        </div>
+      </div>
+
+      <div class="hop f">
+        <div class="rail"><div class="num">2</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">lib/store.tsx</div>
+          <h3>The store picks a backing data source</h3>
+          <p>One branch decides everything downstream: signed in, so the action goes to the API and the reducer is updated from the response. Signed out, and the same reducer runs against seeded demo state persisted to the browser.</p>
+          <pre><span class="k">if</span> (isAuthenticated()) {
+  <span class="c">// → REST, Postgres is the source of truth</span>
+  <span class="k">await</span> createActivity({ category, label, co2Kg, activityDate });
+} <span class="k">else</span> {
+  <span class="c">// → reducer only, persisted under STATE_STORAGE_KEY</span>
+  dispatch({ type: <span class="s">'ADD_LOG'</span>, payload: entry });
+}</pre>
+        </div>
+      </div>
+
+      <div class="hop f">
+        <div class="rail"><div class="num">3</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">lib/api/activities.ts → lib/api/client.ts</div>
+          <h3>A typed wrapper, then the one shared client</h3>
+          <p>Each domain gets a thin typed module; all of them funnel into <code>apiFetch</code>. That single choke point attaches the bearer token, refreshes it on a 401 behind a mutex so parallel requests only refresh once, and converts any non-OK response into a typed <code>ApiError</code>.</p>
+          <pre><span class="k">export async function</span> createActivity(data: CreateActivityRequest) {
+  <span class="k">return</span> api.post&lt;ActivityLogResponse&gt;(<span class="s">'/api/activities'</span>, data);
+}
+
+<span class="c">// client.ts — every call passes through here</span>
+headers[<span class="s">'Authorization'</span>] = <span class="s">`Bearer ${accessToken}`</span>;
+<span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">`${BASE_URL}${path}`</span>, { ...options, headers });</pre>
+        </div>
+      </div>
+
+      <div class="hop a">
+        <div class="rail"><div class="num">4</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">com.ecotrack.security.SecurityConfig → JwtAuthenticationFilter</div>
+          <h3>The filter chain turns a token into a principal</h3>
+          <p>The chain is stateless — no sessions, CSRF disabled, CORS driven by <code>ecotrack.cors.allowed-origins</code>. Everything outside <code>/api/auth/**</code>, Swagger and the health actuators requires a valid bearer JWT. The filter parses it and puts a <code>UserPrincipal</code> into the <code>SecurityContext</code>.</p>
+          <pre>UserPrincipal principal = <span class="k">new</span> UserPrincipal(
+    UUID.fromString(claims.getSubject()),   <span class="c">// sub = user id</span>
+    claims.get(<span class="s">"email"</span>, String.class),
+    claims.get(<span class="s">"role"</span>, String.class));
+SecurityContextHolder.getContext().setAuthentication(auth);</pre>
+        </div>
+      </div>
+
+      <div class="hop a">
+        <div class="rail"><div class="num">5</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">com.ecotrack.carbon.ActivityLogController</div>
+          <h3>Controller validates, scopes to the user, maps to an entity</h3>
+          <p><code>@Valid @RequestBody</code> rejects bad payloads before any code runs. The user id comes from the security context, never from the request body — that is what stops one account writing rows for another. Then plain setters build the entity and <code>repo.save</code> is called.</p>
+          <pre><span class="k">@PostMapping</span>
+<span class="k">public</span> ResponseEntity&lt;ActivityLogResponse&gt; create(<span class="k">@Valid @RequestBody</span> ActivityLogRequest req) {
+    UUID userId = SecurityUtils.currentUserId();   <span class="c">// from the JWT, not the body</span>
+    ActivityLog log = <span class="k">new</span> ActivityLog();
+    log.setUserId(userId);
+    log.setCo2Kg(BigDecimal.valueOf(req.co2Kg()));
+    log.setActivityDate(LocalDate.parse(req.activityDate()));
+    repo.save(log);
+    <span class="k">return</span> ResponseEntity.status(HttpStatus.CREATED).body(toResponse(log));
+}</pre>
+        </div>
+      </div>
+
+      <div class="hop d">
+        <div class="rail"><div class="num">6</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">ActivityLogRepository extends JpaRepository&lt;ActivityLog, UUID&gt;</div>
+          <h3>The repository is an interface with no implementation</h3>
+          <p>Spring Data generates the class at startup. <code>save</code>, <code>findById</code> and friends come free; method names are parsed into queries; anything awkward gets explicit JPQL. There is no hand-written SQL and no DAO layer in this codebase.</p>
+          <pre><span class="c">// parsed from the method name — no body needed</span>
+List&lt;ActivityLog&gt; findByUserIdAndActivityDateAndDeletedAtIsNull(UUID userId, LocalDate date);
+
+<span class="c">// JPQL where a derived name would be unreadable</span>
+<span class="k">@Query</span>(<span class="s">"SELECT a.category, COALESCE(SUM(a.co2Kg), 0) FROM ActivityLog a "</span> +
+       <span class="s">"WHERE a.userId = :userId AND a.activityDate BETWEEN :from AND :to "</span> +
+       <span class="s">"AND a.deletedAt IS NULL GROUP BY a.category"</span>)
+List&lt;Object[]&gt; breakdownByCategory(UUID userId, LocalDate from, LocalDate to);</pre>
+        </div>
+      </div>
+
+      <div class="hop d">
+        <div class="rail"><div class="num">7</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">Hibernate → HikariCP → postgresql JDBC driver</div>
+          <h3>Entity becomes SQL on a pooled connection</h3>
+          <p>Hibernate translates the entity's field-to-column mapping into an <code>INSERT</code>, borrows one of at most 10 pooled connections, and sends it. JPA auditing has already filled <code>created_at</code> / <code>created_by</code>; Postgres then enforces its own rules on the way in.</p>
+          <pre><span class="k">INSERT INTO</span> activity_logs
+  (id, user_id, category, factor_key, label, emoji, quantity, unit,
+   co2_kg, note, activity_date, source, created_at, updated_at, created_by)
+<span class="k">VALUES</span> (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)</pre>
+        </div>
+      </div>
+
+      <div class="hop d">
+        <div class="rail"><div class="num">8</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">database/migrations/V1__baseline_schema.sql</div>
+          <h3>The database has the last word</h3>
+          <p>Constraints live in the schema, not only in Java. A category outside the five allowed values, or a unit that is not <code>km</code>/<code>kWh</code>/<code>item</code>, is rejected by Postgres even if application validation were bypassed. An <code>ON DELETE CASCADE</code> ties the row to its user, and a trigger maintains <code>updated_at</code>.</p>
+          <pre>category      <span class="k">VARCHAR</span>(20) <span class="k">NOT NULL</span>
+                  <span class="k">CHECK</span> (category <span class="k">IN</span> (<span class="s">'travel'</span>,<span class="s">'food'</span>,<span class="s">'electricity'</span>,<span class="s">'shopping'</span>,<span class="s">'waste'</span>)),
+co2_kg        <span class="k">NUMERIC</span>(10,3) <span class="k">NOT NULL</span>,
+user_id       <span class="k">UUID NOT NULL REFERENCES</span> users(id) <span class="k">ON DELETE CASCADE</span>,
+deleted_at    <span class="k">TIMESTAMPTZ</span>
+
+<span class="k">CREATE TRIGGER</span> trg_activity_logs_updated <span class="k">BEFORE UPDATE ON</span> activity_logs
+    <span class="k">FOR EACH ROW EXECUTE FUNCTION</span> set_updated_at();</pre>
+        </div>
+      </div>
+
+      <div class="hop a">
+        <div class="rail"><div class="num">9</div><div class="wire"></div></div>
+        <div class="body">
+          <div class="where">ActivityLogResponse (a Java record) → JSON → 201 Created</div>
+          <h3>Entities never leave the building</h3>
+          <p>The controller maps the saved entity into a DTO record before serialising, so internal columns like <code>deleted_at</code>, <code>created_by</code> and <code>bill_id</code> stay server-side, and <code>BigDecimal</code> is narrowed to a JSON number the TypeScript interface expects. The store merges the response and React re-renders.</p>
+          <pre><span class="k">return new</span> ActivityLogResponse(
+    a.getId(), a.getCategory(), a.getFactorKey(), a.getLabel(), a.getEmoji(),
+    a.getQuantity() != <span class="k">null</span> ? a.getQuantity().doubleValue() : <span class="k">null</span>,
+    a.getUnit(), a.getCo2Kg().doubleValue(), a.getNote(),
+    a.getActivityDate().toString(), a.getSource());</pre>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">02 — the database connection</span>
+      <h2>How Postgres is actually wired in</h2>
+      <p class="prose">Five separate mechanisms, often confused for one. Connection, schema ownership, object mapping, query generation, and where the connection details come from in production.</p>
+    </div>
+
+    <div class="mech">
+      <div>
+        <div class="lbl">Mechanism 1 · connection</div>
+        <h3>A JDBC URL and a Hikari pool</h3>
+        <p>Spring Boot sees <code>spring.datasource.*</code> and the <code>postgresql</code> driver on the classpath, and builds a <code>DataSource</code> at startup. Every value is an env-var override with a local-dev default, so no connection string is ever committed.</p>
+        <pre><span class="c"># backend/src/main/resources/application.yml</span>
+spring:
+  datasource:
+    url: <span class="s">${DB_URL:jdbc:postgresql://localhost:5432/ecotrack}</span>
+    username: <span class="s">${DB_USER:ecotrack}</span>
+    password: <span class="s">${DB_PASSWORD:ecotrack}</span>
+    hikari:
+      maximum-pool-size: <span class="s">${DB_POOL_MAX:10}</span></pre>
+      </div>
+
+      <div>
+        <div class="lbl">Mechanism 2 · schema ownership</div>
+        <h3>Flyway owns the schema; Hibernate is told to keep out</h3>
+        <p>On boot, Flyway reads <code>database/migrations</code>, checks its history table, and applies anything new in version order — V1 baseline through V9 prompt templates. The critical line is <code>ddl-auto: none</code>: Hibernate will neither create nor alter nor even validate types. One place defines the schema, and it is checked into git.</p>
+        <pre>  jpa:
+    hibernate:
+      ddl-auto: <span class="s">${JPA_DDL_AUTO:none}</span>   <span class="c"># schema owned by Flyway</span>
+    open-in-view: <span class="k">false</span>
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: <span class="k">true</span>
+    locations: <span class="s">${FLYWAY_LOCATIONS:filesystem:../database/migrations}</span>
+    baseline-on-migrate: <span class="k">true</span></pre>
+      </div>
+
+      <div>
+        <div class="lbl">Mechanism 3 · object mapping</div>
+        <h3>One annotated class per table, with a shared base</h3>
+        <p><code>BaseEntity</code> is a <code>@MappedSuperclass</code>, so it contributes columns without being a table of its own: the UUID primary key plus the four audit columns. <code>AuditingEntityListener</code> populates them on save — and the DB trigger from hop 8 maintains <code>updated_at</code> regardless, which means a direct <code>psql</code> update stays correct too.</p>
+        <pre><span class="k">@MappedSuperclass</span>
+<span class="k">@EntityListeners</span>(AuditingEntityListener.class)
+<span class="k">public abstract class</span> BaseEntity {
+    <span class="k">@Id @GeneratedValue</span>(strategy = GenerationType.UUID)
+    <span class="k">private</span> UUID id;
+    <span class="k">@CreatedDate @Column</span>(name = <span class="s">"created_at"</span>, updatable = <span class="k">false</span>) <span class="k">private</span> Instant createdAt;
+    <span class="k">@LastModifiedDate @Column</span>(name = <span class="s">"updated_at"</span>) <span class="k">private</span> Instant updatedAt;
+}
+
+<span class="k">@Entity @Table</span>(name = <span class="s">"activity_logs"</span>)
+<span class="k">public class</span> ActivityLog <span class="k">extends</span> BaseEntity {
+    <span class="k">@Column</span>(name = <span class="s">"co2_kg"</span>, nullable = <span class="k">false</span>) <span class="k">private</span> BigDecimal co2Kg;
+}</pre>
+      </div>
+
+      <div>
+        <div class="lbl">Mechanism 4 · queries</div>
+        <h3>Soft delete is a convention the queries carry</h3>
+        <p>There is no global filter. Every read spells out <code>AndDeletedAtIsNull</code> or <code>AND a.deletedAt IS NULL</code>, and a delete is an update that stamps <code>deletedAt</code>. It is explicit by design, but it means a new query that forgets the clause will silently return deleted rows.</p>
+        <pre><span class="c">// DELETE /api/activities/{id} — ownership check, then a soft delete</span>
+<span class="k">if</span> (!log.getUserId().equals(userId)) <span class="k">return</span> ResponseEntity.status(FORBIDDEN).build();
+log.setDeletedAt(Instant.now());
+repo.save(log);</pre>
+      </div>
+
+      <div>
+        <div class="lbl">Mechanism 5 · environments</div>
+        <h3>Docker locally, Cloud SQL in production</h3>
+        <p>Local development runs <code>postgres:16-alpine</code> from <code>database/docker-compose.yml</code>, with a named volume and a <code>pg_isready</code> healthcheck. In production the same code reaches Cloud SQL through <code>postgres-socket-factory</code>, so the only thing that changes is the value of <code>DB_URL</code> — supplied by Cloud Run from Secret Manager.</p>
+        <pre><span class="c"># one-time local setup</span>
+docker compose -f database/docker-compose.yml up -d
+<span class="c"># Flyway runs on backend boot; demo data is optional</span>
+psql -h localhost -U ecotrack -d ecotrack -f database/seed.sql</pre>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:18px">
+      <span class="eyebrow">Why this split matters</span>
+      <p>Because <code>ddl-auto</code> is <code>none</code>, adding a field to an entity does nothing to the database. A schema change is always two commits' worth of work: a new <code>V<em>n</em>__*.sql</code> migration <em>and</em> the matching entity field. Skip the migration and you get a column-not-found error at query time, not at startup.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">03 — the mapping, concretely</span>
+      <h2>One table across all three layers</h2>
+      <p class="prose">The same field under its three names: the SQL column, the Java entity field, and the TypeScript interface property. <code>activity_logs</code> is the busiest table in the app, so it makes the clearest example.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>SQL column &amp; type</th>
+            <th>Java field</th>
+            <th>TS property</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="m sql">id UUID</td><td class="m java">UUID id</td><td class="m ts">id: string</td><td class="note">From <code>BaseEntity</code>; DB default <code>gen_random_uuid()</code></td></tr>
+          <tr><td class="m sql">user_id UUID</td><td class="m java">UUID userId</td><td class="m ts">—</td><td class="note">Never sent to the client; set from the JWT</td></tr>
+          <tr><td class="m sql">category VARCHAR(20)</td><td class="m java">String category</td><td class="m ts">category: string</td><td class="note">CHECK constraint, not a Java enum</td></tr>
+          <tr><td class="m sql">factor_key VARCHAR(60)</td><td class="m java">String factorKey</td><td class="m ts">factorKey: string</td><td class="note">Nullable — links to <code>emission_factors</code></td></tr>
+          <tr><td class="m sql">quantity NUMERIC(10,2)</td><td class="m java">BigDecimal quantity</td><td class="m ts">quantity: number | null</td><td class="note">Narrowed via <code>doubleValue()</code> in the DTO</td></tr>
+          <tr><td class="m sql">co2_kg NUMERIC(10,3)</td><td class="m java">BigDecimal co2Kg</td><td class="m ts">co2Kg: number</td><td class="note">Three decimals — the computed emission</td></tr>
+          <tr><td class="m sql">unit VARCHAR(12)</td><td class="m java">String unit</td><td class="m ts">unit: string</td><td class="note">CHECK <code>km</code> · <code>kWh</code> · <code>item</code></td></tr>
+          <tr><td class="m sql">activity_date DATE</td><td class="m java">LocalDate activityDate</td><td class="m ts">activityDate: string</td><td class="note">ISO string on the wire, parsed at the controller</td></tr>
+          <tr><td class="m sql">source VARCHAR(16)</td><td class="m java">String source</td><td class="m ts">source: string</td><td class="note">Defaults to <code>manual</code>; <code>bill</code> when OCR-derived</td></tr>
+          <tr><td class="m sql">bill_id UUID</td><td class="m java">UUID billId</td><td class="m ts">—</td><td class="note">Plain UUID, not a <code>@ManyToOne</code> — no lazy loading</td></tr>
+          <tr><td class="m sql">created_at TIMESTAMPTZ</td><td class="m java">Instant createdAt</td><td class="m ts">—</td><td class="note"><code>@CreatedDate</code>, plus a DB default</td></tr>
+          <tr><td class="m sql">deleted_at TIMESTAMPTZ</td><td class="m java">Instant deletedAt</td><td class="m ts">—</td><td class="note">Soft-delete marker; every read filters on it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <h3>Relationships hang off <code>users</code></h3>
+      <p>Associations are modelled as bare UUID columns rather than JPA relationship graphs, which keeps queries flat and predictable at the cost of doing joins by hand where they are needed.</p>
+      <div class="relmap"><b>users</b> ──1:1──► <b>user_profiles</b>        <i>persona from onboarding</i>
+<b>users</b> ──1:N──► <b>activity_logs</b>        <i>the daily tracking rows</i>
+<b>users</b> ──1:N──► <b>bills</b> ──1:1──► <b>ocr_results</b>
+<b>users</b> ──1:N──► <b>credit_ledger</b>        <i>append-only; balance = SUM(delta)</i>
+<b>users</b> ──1:N──► <b>redemptions</b> ──N:1──► <b>rewards</b>
+<b>users</b> ──1:N──► <b>user_plans</b> ──N:1──► <b>action_templates</b>
+<b>users</b> ──1:N──► <b>recommendations</b>      <i>AI output, retained</i>
+<b>users</b> ──1:N──► <b>coach_messages</b>       <i>chat history</i>
+<b>users</b> ──N:M──► <b>groups</b> via <b>group_members</b>
+<b>activity_logs</b> ──N:1──► <b>bills</b>        <i>optional, when OCR-derived</i></div>
+      <div class="chips">
+        <span class="chip">users</span><span class="chip">refresh_tokens</span><span class="chip">user_profiles</span><span class="chip">emission_factors</span><span class="chip">activity_logs</span><span class="chip">bills</span><span class="chip">ocr_results</span><span class="chip">action_templates</span><span class="chip">user_plans</span><span class="chip">prompt_templates</span><span class="chip">recommendations</span><span class="chip">coach_messages</span><span class="chip">credit_rules</span><span class="chip im">credit_ledger</span><span class="chip">rewards</span><span class="chip">redemptions</span><span class="chip">app_config</span><span class="chip im">audit_log</span><span class="chip">groups</span><span class="chip">group_members</span><span class="chip">embodied_carbon_factors</span>
+      </div>
+      <p style="margin-top:11px;font-size:.82rem;color:var(--muted)">21 tables. The two in colour are immutable — append only, never updated or deleted, which is what makes the credit balance auditable.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">04 — identity</span>
+      <h2>Auth, end to end</h2>
+      <p class="prose">Stateless on the server. The only auth state in Postgres is a table of hashed refresh tokens.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Two tokens, two lifetimes</h3>
+        <p>Login returns a short-lived access token and a long-lived refresh token. The access token lives only in a module variable — a tab refresh loses it on purpose. The refresh token persists in <code>localStorage</code> under <code>cx-refresh</code>, and its hash is the row in <code>refresh_tokens</code>.</p>
+        <ul class="tight">
+          <li>Access token — <strong>900s</strong>, <code>JWT_ACCESS_TTL</code>, carries <code>sub</code> / <code>email</code> / <code>role</code></li>
+          <li>Refresh token — <strong>14 days</strong>, rotated on every use</li>
+          <li>Passwords — BCrypt via <code>PasswordEncoder</code></li>
+          <li>Google sign-in — <code>GoogleTokenVerifier</code> validates the ID token against <code>GOOGLE_CLIENT_ID</code></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>The 401 that heals itself</h3>
+        <p><code>apiFetch</code> retries exactly once. On a 401 it refreshes, replays the original request, and only redirects to <code>/login</code> if the refresh itself fails. The client module rehydrates the refresh token at import time, so a hard navigation after login does not break that recovery.</p>
+        <pre><span class="k">if</span> (res.status === <span class="s">401</span> &amp;&amp; retryCount === 0) {
+  <span class="k">const</span> refreshed = <span class="k">await</span> refreshAccessToken();  <span class="c">// mutexed</span>
+  <span class="k">if</span> (refreshed) <span class="k">return</span> apiFetch&lt;T&gt;(path, options, retryCount + 1);
+  clearTokens();
+  window.location.href = <span class="s">'/login'</span>;
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">05 — the seams</span>
+      <h2>What is swappable, and where values live</h2>
+      <p class="prose">Two deliberate constraints shape the backend: no cloud SDK is called directly from a service, and no business number is hardcoded in Java.</p>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <h3>Every external service sits behind an interface</h3>
+        <p>Services depend on the interface; the implementation is chosen by a config value at startup. This is also what lets the whole app run offline — the stub and canned paths need no Google credentials at all.</p>
+        <div class="swap" style="margin-top:14px">
+          <div class="swaprow">
+            <span class="iface">AIProvider</span><span class="arrow">──►</span>
+            <span class="impls"><span class="on">GeminiAIProvider</span> · CannedFallbackProvider &nbsp;<span style="color:var(--muted)">AI_PROVIDER</span></span>
+          </div>
+          <div class="swaprow">
+            <span class="iface">OcrProvider</span><span class="arrow">──►</span>
+            <span class="impls">GoogleVisionOcrProvider · <span class="on">Tesseract</span> &nbsp;<span style="color:var(--muted)">OCR_PROVIDER</span></span>
+          </div>
+          <div class="swaprow">
+            <span class="iface">BlobStorageService</span><span class="arrow">──►</span>
+            <span class="impls">GoogleCloudStorageService · <span class="on">local_stub</span> &nbsp;<span style="color:var(--muted)">STORAGE_PROVIDER</span></span>
+          </div>
+        </div>
+        <p style="margin-top:12px;font-size:.82rem;color:var(--muted)">Highlighted values are the defaults in <code>application.yml</code>. <code>AI_FALLBACK=true</code> means a Gemini timeout degrades to canned output rather than failing the request.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h3>Three layers of configuration</h3>
+          <p>Each layer overrides the one before it, and the last layer is editable without a redeploy.</p>
+          <pre>application.yml   <span class="c">← committed defaults</span>
+      ↓
+environment vars  <span class="c">← Cloud Run + Secret Manager</span>
+      ↓
+app_config table  <span class="c">← runtime-editable, no restart</span></pre>
+        </div>
+        <div class="panel">
+          <h3>Business values are rows, not constants</h3>
+          <p>Emission factors, credit rules, AI prompt templates, the rewards catalogue and the action catalogue are all seeded by <code>V3__reference_data.sql</code> and read from the database at request time.</p>
+          <ul class="tight">
+            <li><code>emission_factors</code> — kg CO₂ per km / kWh / item</li>
+            <li><code>credit_rules</code> — read by <code>CreditRuleEngine</code></li>
+            <li><code>prompt_templates</code> — rendered by <code>PromptRenderer</code></li>
+            <li><code>rewards</code>, <code>action_templates</code> — catalogues</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">06 — running it</span>
+      <h2>Three terminals</h2>
+    </div>
+    <div class="grid3">
+      <div class="panel">
+        <h3 style="color:var(--db)">Database</h3>
+        <pre>docker compose \
+  -f database/docker-compose.yml \
+  up -d</pre>
+        <p style="margin-top:10px;font-size:.82rem;color:var(--muted)">Postgres 16 on :5432. Migrations are applied by the backend, not here.</p>
+      </div>
+      <div class="panel">
+        <h3 style="color:var(--api)">API</h3>
+        <pre>cd backend
+./mvnw spring-boot:run</pre>
+        <p style="margin-top:10px;font-size:.82rem;color:var(--muted)">:8080. Flyway runs on boot. Swagger at <code>/swagger-ui.html</code>.</p>
+      </div>
+      <div class="panel">
+        <h3 style="color:var(--front)">Web</h3>
+        <pre>npm install
+npm run dev</pre>
+        <p style="margin-top:10px;font-size:.82rem;color:var(--muted)">:3000. Needs <code>NEXT_PUBLIC_API_BASE_URL</code>. Checks: <code>npm run typecheck</code>, <code>npm test</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Traced from the <code>sak</code> branch at <code>fb41f4f</code>. Deeper reference lives in <code>docs/reference/</code> — ARCHITECTURE, API, DATABASE, SECURITY.
+  </footer>
+
+</div>
+</body>
+</html>

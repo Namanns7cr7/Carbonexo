@@ -104,5 +104,5 @@ export function WindLeaves() {
     };
   }, []);
 
-  return <div ref={layerRef} className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden />;
+  return <div ref={layerRef} className="pointer-events-none fixed inset-0 z-[6] overflow-hidden" aria-hidden />;
 }
