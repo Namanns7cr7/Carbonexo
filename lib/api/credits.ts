@@ -13,6 +13,8 @@ export interface CreditHistoryEntry {
   ruleKey: string;
   refType: string;
   createdAt: string;
+  /** What the entry refers to (action, bill…). Absent from older backends. */
+  refId?: string | null;
 }
 
 export async function getBalance(): Promise<CreditBalance> {

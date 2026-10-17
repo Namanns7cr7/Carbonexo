@@ -75,7 +75,8 @@ public class CreditService {
         return ledgerRepo.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(e -> new CreditHistoryResponse(
                         e.getId(), e.getDelta(), e.getBalanceAfter(), e.getReason(),
-                        e.getRuleKey(), e.getRefType(), e.getCreatedAt().toString()
+                        e.getRuleKey(), e.getRefType(), e.getCreatedAt().toString(),
+                        e.getRefId()
                 )).toList();
     }
 
@@ -91,7 +92,12 @@ public class CreditService {
         awardCredits(userId, credits, kgSaved + " kg CO₂ saved", "kg_saved", "carbon_saved", null);
     }
 
+    /**
+     * Idempotent per (user, action): completing the same plan action again —
+     * e.g. un-ticking and re-ticking it — never awards a second time.
+     */
     public void onActionDone(UUID userId, UUID actionId) {
+        if (actionId != null && ledgerRepo.existsByUserIdAndRuleKeyAndRefId(userId, "action_done", actionId)) return;
         int credits = ruleEngine.creditsForActionDone();
         awardCredits(userId, credits, "Action completed", "action_done", "action", actionId);
     }

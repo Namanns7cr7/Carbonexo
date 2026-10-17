@@ -168,11 +168,12 @@ class GroupServiceTest {
         LeaderboardResponse response = service.getLeaderboard(groupId, caller, "week", "co2_saved");
         List<LeaderboardEntryResponse> board = response.entries();
 
+        // Logged CO2: lower is better, so Alice (5 kg) leads Bob (12 kg).
         assertEquals(2, board.size());
-        assertEquals(userB, board.get(0).userId());
+        assertEquals(userA, board.get(0).userId());
         assertEquals(1, board.get(0).rank());
-        assertEquals(12.0, board.get(0).value());
-        assertEquals(userA, board.get(1).userId());
+        assertEquals(5.0, board.get(0).value());
+        assertEquals(userB, board.get(1).userId());
         assertEquals(2, board.get(1).rank());
 
         // window filter was passed through (not null for "week")

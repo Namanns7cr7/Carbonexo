@@ -1,4 +1,4 @@
-import { api, setTokens, clearTokens, loadStoredRefreshToken, getAccessToken } from './client';
+import { api, ApiError, setTokens, clearTokens, loadStoredRefreshToken, getAccessToken } from './client';
 
 export interface AuthResponse {
   accessToken: string;
@@ -7,28 +7,26 @@ export interface AuthResponse {
   user: { id: string; email: string; displayName: string; role: string };
 }
 
+/**
+ * Network failures (server down, offline) surface as a plain, actionable
+ * message. Carbonexo never fabricates a session when the server cannot
+ * confirm one: a fake token only fails later, somewhere more confusing.
+ */
+function explain(err: unknown): never {
+  if (err instanceof TypeError || (err instanceof Error && /fetch|network/i.test(err.message))) {
+    throw new Error("Can't reach the Carbonexo server right now. Check your connection and try again.");
+  }
+  throw err;
+}
+
 export async function login(email: string, password: string): Promise<AuthResponse> {
   try {
     const res = await api.post<AuthResponse>('/api/auth/login', { email, password });
     setTokens(res.accessToken, res.refreshToken);
     return res;
   } catch (err) {
-    // If backend is offline or demo login, provide seamless local session
-    if (
-      email.toLowerCase().includes('demo') ||
-      email.toLowerCase().includes('alex') ||
-      (err instanceof Error && (err.message.includes('fetch') || err.message.includes('Not Found') || err.message.includes('Failed to fetch')))
-    ) {
-      const demoRes: AuthResponse = {
-        accessToken: `demo-token-${Date.now()}`,
-        refreshToken: `demo-refresh-${Date.now()}`,
-        expiresIn: 3600,
-        user: { id: 'demo-user-1', email, displayName: email.split('@')[0] || 'Demo User', role: 'USER' },
-      };
-      setTokens(demoRes.accessToken, demoRes.refreshToken);
-      return demoRes;
-    }
-    throw err;
+    if (err instanceof ApiError && err.status === 401) throw new Error('That email and password do not match an account.');
+    return explain(err);
   }
 }
 
@@ -41,35 +39,12 @@ export async function register(
     const res = await api.post<AuthResponse>('/api/auth/register', { email, password, displayName });
     setTokens(res.accessToken, res.refreshToken);
     return res;
-  } catch {
-    // If backend is offline or network fails, create local session with registered name
-    const newRes: AuthResponse = {
-      accessToken: `user-token-${Date.now()}`,
-      refreshToken: `user-refresh-${Date.now()}`,
-      expiresIn: 3600,
-      user: {
-        id: `user-${Date.now()}`,
-        email,
-        displayName: displayName || email.split('@')[0],
-        role: 'USER',
-      },
-    };
-    setTokens(newRes.accessToken, newRes.refreshToken);
-
-    // Initialize or update user profile in localStorage so their name appears everywhere
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('carbonexo:v1');
-        const state = raw ? JSON.parse(raw) : {};
-        state.profile = {
-          ...(state.profile || {}),
-          name: displayName || email.split('@')[0],
-          onboarded: false,
-        };
-        localStorage.setItem('carbonexo:v1', JSON.stringify(state));
-      } catch {}
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 409) throw new Error('An account with this email already exists. Try logging in.');
+    if (err instanceof ApiError && err.errors && Object.keys(err.errors).length > 0) {
+      throw new Error(Object.values(err.errors).join(' '));
     }
-    return newRes;
+    return explain(err);
   }
 }
 
@@ -78,15 +53,8 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
     const res = await api.post<AuthResponse>('/api/auth/google', { idToken });
     setTokens(res.accessToken, res.refreshToken);
     return res;
-  } catch {
-    const demoRes: AuthResponse = {
-      accessToken: `google-token-${Date.now()}`,
-      refreshToken: `google-refresh-${Date.now()}`,
-      expiresIn: 3600,
-      user: { id: 'google-user-1', email: 'user@gmail.com', displayName: 'Google User', role: 'USER' },
-    };
-    setTokens(demoRes.accessToken, demoRes.refreshToken);
-    return demoRes;
+  } catch (err) {
+    return explain(err);
   }
 }
 

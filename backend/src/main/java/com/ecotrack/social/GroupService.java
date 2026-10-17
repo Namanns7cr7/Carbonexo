@@ -155,7 +155,9 @@ public class GroupService {
             for (Object[] row : creditRepo.sumDeltaByUserIds(memberIds, from)) {
                 totals.put((UUID) row[0], ((Number) row[1]).doubleValue());
             }
-        } else if ("co2_saved".equalsIgnoreCase(metric)) {
+        } else if ("co2_logged".equalsIgnoreCase(metric) || "co2_saved".equalsIgnoreCase(metric)) {
+            // "co2_saved" is the historical name for this metric. It has always
+            // been the sum of *logged emissions*, so it ranks lower-first.
             LocalDate from = co2WindowStart(window);
             for (Object[] row : activityRepo.sumCo2ByUserIds(memberIds, from)) {
                 totals.put((UUID) row[0], ((Number) row[1]).doubleValue());
@@ -168,7 +170,7 @@ public class GroupService {
 
         List<Map.Entry<UUID, Double>> ranked = memberIds.stream()
                 .map(id -> Map.entry(id, totals.getOrDefault(id, 0.0)))
-                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .sorted(rankOrder(metric, totals))
                 .collect(Collectors.toList());
 
         List<LeaderboardEntryResponse> result = new ArrayList<>();
@@ -207,6 +209,19 @@ public class GroupService {
             log.warn("AI leaderboard-summary generation failed for group={}: {}", groupName, e.toString());
             return top.displayName() + " leads " + groupName + " this " + window + " with " + top.value() + " " + metric + ".";
         }
+    }
+
+    /**
+     * Credits rank highest-first. Logged CO2 ranks lowest-first, and a member
+     * with nothing logged in the window ranks last rather than "best" — an
+     * empty log is missing data, not a zero footprint.
+     */
+    static Comparator<Map.Entry<UUID, Double>> rankOrder(String metric, Map<UUID, Double> totals) {
+        if ("credits".equalsIgnoreCase(metric)) {
+            return (a, b) -> Double.compare(b.getValue(), a.getValue());
+        }
+        return Comparator.<Map.Entry<UUID, Double>, Boolean>comparing(e -> !totals.containsKey(e.getKey()))
+                .thenComparingDouble(Map.Entry::getValue);
     }
 
     /**

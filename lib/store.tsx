@@ -40,10 +40,10 @@ import {
   getWeekDays,
   SSR_DEFAULT_CTX,
 } from './store/selectors';
-import type { CarbonCtxValue, CarbonexoProviderProps, PersistedState } from './store/types';
+import type { CarbonCtxValue, CarbonexoProviderProps, LogMeta, PersistedState } from './store/types';
 
 // Re-export types that downstream consumers import from '@/lib/store'
-export type { PlanItem, PlanRow, CarbonCtxValue } from './store/types';
+export type { PlanItem, PlanRow, CarbonCtxValue, LogMeta } from './store/types';
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
@@ -236,7 +236,7 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
 
   // ── Action handlers ────────────────────────────────────────────────────────
 
-  const addLog = useCallback(async (log: Omit<LogEntry, 'id' | 'createdAt'>) => {
+  const addLog = useCallback(async (log: Omit<LogEntry, 'id' | 'createdAt'>, meta?: LogMeta) => {
     const tempId = generateLocalId();
     // Immediate optimistic local dispatch
     dispatch({ type: 'addLog', log: { ...log, id: tempId, createdAt: Date.now() } });
@@ -272,7 +272,9 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
           category: log.category,
           label: log.label,
           emoji: log.emoji,
-          quantity: log.note ? parseFloat(log.note) : undefined,
+          factorKey: meta?.factorKey,
+          unit: meta?.unit,
+          quantity: meta?.quantity ?? (log.note && Number.isFinite(parseFloat(log.note)) ? parseFloat(log.note) : undefined),
           co2Kg: log.co2,
           note: log.note,
           activityDate: log.date,

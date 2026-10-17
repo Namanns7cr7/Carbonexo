@@ -154,8 +154,9 @@ export async function apiFetch<T>(
       headers,
     });
 
-    // 401 — try refresh once
-    if (res.status === 401 && retryCount === 0) {
+    // 401 — try refresh once. Not for the auth endpoints themselves: a wrong
+    // password is a 401 that must reach the form, not reload the page.
+    if (res.status === 401 && retryCount === 0 && !path.startsWith('/api/auth/')) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         return apiFetch<T>(path, options, retryCount + 1);

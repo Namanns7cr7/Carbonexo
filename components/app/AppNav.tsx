@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Home,
   Plus,
@@ -20,6 +21,8 @@ import {
   BookOpen,
   Trophy,
   LogOut,
+  LayoutGrid,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
@@ -51,8 +54,7 @@ export const MOBILE_NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/app', label: 'Home', icon: Home },
   { href: '/app/track', label: 'Track', icon: Plus },
   { href: '/app/coach', label: 'Coach', icon: Sparkles },
-  { href: '/app/bills', label: 'Bills', icon: Zap },
-  { href: '/app/rewards', label: 'Store', icon: ShoppingBag },
+  { href: '/app/actions', label: 'Actions', icon: CheckCircle },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -114,7 +116,7 @@ export function Sidebar() {
         <Link href="/app/profile" className="flex flex-1 items-center gap-2.5 overflow-hidden px-1">
           <span
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #10b981, #6366f1)' }}
+            style={{ background: 'linear-gradient(135deg, #10b981, #2f7f9f)' }}
           >
             {profile.name.charAt(0).toUpperCase()}
           </span>
@@ -162,7 +164,7 @@ export function MobileTopBar() {
         <Link
           href="/app/profile"
           className="flex h-9 w-9 items-center justify-center rounded-full text-base font-bold text-white"
-          style={{ background: 'linear-gradient(135deg, #10b981, #6366f1)' }}
+          style={{ background: 'linear-gradient(135deg, #10b981, #2f7f9f)' }}
         >
           {profile.name.charAt(0).toUpperCase()}
         </Link>
@@ -171,33 +173,122 @@ export function MobileTopBar() {
   );
 }
 
-/** Mobile bottom nav. */
+/** Mobile bottom nav: four destinations plus a sheet with every screen, so nothing is unreachable on a phone. */
 export function BottomNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const sheet = useRef<HTMLDivElement>(null);
+  const inPrimary = MOBILE_NAV.some((n) => isActive(pathname, n.href));
+
+  // Close on navigation and on Escape; move focus into the sheet when it opens.
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    sheet.current?.querySelector<HTMLElement>('a,button')?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t px-1.5 pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 md:hidden"
-      style={{
-        borderColor: 'var(--border)',
-        background: 'var(--navbg)',
-        backdropFilter: 'blur(16px) saturate(180%)',
-      }}
-    >
-      {MOBILE_NAV.map((n) => {
-        const active = isActive(pathname, n.href);
-        const Icon = n.icon;
-        return (
-          <Link
-            key={n.href}
-            href={n.href}
-            className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-semibold transition-colors"
-            style={{ color: active ? 'var(--lime)' : 'var(--muted)' }}
-          >
-            <Icon className="h-[19px] w-[19px]" strokeWidth={active ? 2.5 : 2} style={{ opacity: active ? 1 : 0.7 }} />
-            {n.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              key="scrim"
+              className="fixed inset-0 z-40 bg-black/50 md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOpen(false)}
+              aria-hidden
+            />
+            <motion.div
+              key="sheet"
+              ref={sheet}
+              id="more-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label="All screens"
+              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[26px] border-t px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 md:hidden"
+              style={{ borderColor: 'var(--border)', background: 'var(--navbg)', backdropFilter: 'blur(20px) saturate(180%)' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 360, damping: 34 }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 90 || info.velocity.y > 500) setOpen(false);
+              }}
+            >
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" aria-hidden />
+              <div className="mb-2 flex items-center justify-between px-1">
+                <span className="text-[13px] font-bold">All screens</span>
+                <button onClick={() => setOpen(false)} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:text-text">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {NAV.map((n) => {
+                  const active = isActive(pathname, n.href);
+                  const Icon = n.icon;
+                  return (
+                    <Link
+                      key={n.href}
+                      href={n.href}
+                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center text-[11px] font-semibold leading-tight"
+                      style={{ background: active ? 'var(--lime-soft)' : 'var(--surface)', color: active ? 'var(--lime-deep)' : 'var(--text)' }}
+                    >
+                      <Icon className="h-[19px] w-[19px]" strokeWidth={active ? 2.5 : 2} />
+                      {n.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t px-1.5 pb-[max(8px,env(safe-area-inset-bottom))] pt-1.5 md:hidden"
+        style={{
+          borderColor: 'var(--border)',
+          background: 'var(--navbg)',
+          backdropFilter: 'blur(16px) saturate(180%)',
+        }}
+      >
+        {MOBILE_NAV.map((n) => {
+          const active = isActive(pathname, n.href);
+          const Icon = n.icon;
+          return (
+            <Link
+              key={n.href}
+              href={n.href}
+              aria-current={active ? 'page' : undefined}
+              className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-semibold transition-colors"
+              style={{ color: active ? 'var(--lime)' : 'var(--muted)' }}
+            >
+              <Icon className="h-[19px] w-[19px]" strokeWidth={active ? 2.5 : 2} style={{ opacity: active ? 1 : 0.7 }} />
+              {n.label}
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={open}
+          aria-controls="more-sheet"
+          className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-semibold transition-colors"
+          style={{ color: !inPrimary ? 'var(--lime)' : 'var(--muted)' }}
+        >
+          <LayoutGrid className="h-[19px] w-[19px]" strokeWidth={!inPrimary ? 2.5 : 2} style={{ opacity: !inPrimary ? 1 : 0.7 }} />
+          More
+        </button>
+      </nav>
+    </>
   );
 }
