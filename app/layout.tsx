@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Bricolage_Grotesque, Manrope, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/lib/theme-provider';
 import { CarbonexoProvider } from '@/lib/store';
@@ -11,6 +12,12 @@ import { ServiceWorker } from '@/components/ServiceWorker';
 // A Cloud Build (Linux) build mis-compiles the layout and ignores this, which
 // ships a broken client bundle. Always (re)deploy via deploy-frontend-local.ps1.
 export const dynamic = 'force-dynamic';
+
+// Self-hosted at build time and preloaded with the page — no render-blocking
+// round trip to fonts.googleapis.com. Exposed as CSS variables for Tailwind.
+const display = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz'], display: 'swap', variable: '--font-display' });
+const sans = Manrope({ subsets: ['latin'], display: 'swap', variable: '--font-sans' });
+const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500'], display: 'swap', variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: 'Carbonexo — Track your footprint. Reduce your impact.',
@@ -48,7 +55,7 @@ const themeScript = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

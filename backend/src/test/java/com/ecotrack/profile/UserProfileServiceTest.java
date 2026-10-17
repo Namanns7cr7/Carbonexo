@@ -1,5 +1,6 @@
 package com.ecotrack.profile;
 
+import com.ecotrack.profile.dto.ProfileRequest;
 import com.ecotrack.profile.dto.ProfileResponse;
 import com.ecotrack.user.User;
 import com.ecotrack.user.UserRepository;

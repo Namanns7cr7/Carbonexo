@@ -76,6 +76,19 @@ ecotrack:
     gemini:
       project-id: ${GCP_PROJECT_ID:}
       location: ${GCP_LOCATION:us-central1}
+    # pgvector long-term memory for the coach (see AiMemoryProperties). Off by default;
+    # needs pgvector on the server (V10). Any failure falls back to the non-vector coach.
+    # Runtime kill switch: app_config row ai.memory.enabled=false.
+    memory:
+      enabled: ${AI_MEMORY_ENABLED:false}
+      retrieval-enabled: ${AI_MEMORY_RETRIEVAL_ENABLED:true}
+      capture-enabled: ${AI_MEMORY_CAPTURE_ENABLED:true}
+      embedding-model: ${AI_MEMORY_EMBEDDING_MODEL:text-embedding-005}
+      dimensions: ${AI_MEMORY_DIMENSIONS:768}        # must match ai_memory.embedding vector(N)
+      top-k: ${AI_MEMORY_TOP_K:5}
+      min-similarity: ${AI_MEMORY_MIN_SIMILARITY:0.55}
+      embedding-timeout-ms: ${AI_MEMORY_EMBEDDING_TIMEOUT_MS:2000}
+      max-content-chars: ${AI_MEMORY_MAX_CONTENT_CHARS:2000}
 
 # ---- observability (Phase 12) ----
 management:

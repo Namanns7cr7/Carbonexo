@@ -17,6 +17,9 @@ export const STATE_STORAGE_KEY = 'cx-state';
 /** Persisted theme preference ('light' | 'dark'). */
 export const THEME_STORAGE_KEY = 'cx-theme';
 
+/** Last server snapshot (profile + dashboard) — painted instantly on reload. Cleared with tokens. */
+export const SNAPSHOT_STORAGE_KEY = 'cx-snapshot';
+
 // ─── Local state version ─────────────────────────────────────────────────────
 
 /**
