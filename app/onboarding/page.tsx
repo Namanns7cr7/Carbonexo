@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { AmbientBackground } from '@/components/AmbientBackground';
+import { WorldBackdrop } from '@/components/living-world/WorldBackdrop';
+import { LivingEarth, type EarthLayer } from '@/components/planet/LivingEarth';
+import { ProvenanceBadge } from '@/components/living-world/Provenance';
+import { CO2_SOURCE } from '@/lib/experience/co2';
+import { GRID_SOURCE } from '@/lib/experience/grid';
 import { PillGrid } from '@/components/onboarding/PillGrid';
 import { useCarbon } from '@/lib/store';
+import { isAuthenticated } from '@/lib/api/auth';
 
 const TRAVEL = [
   { v: 'Car', e: '🚗' },
@@ -56,10 +61,11 @@ interface Draft {
 
 export default function Onboarding() {
   const router = useRouter();
-  const { profile, saveProfile, completeOnboarding } = useCarbon();
+  const { profile, bootstrapped, saveProfile, completeOnboarding } = useCarbon();
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>({
-    name: profile.name || '',
+    // Never seed from the signed-out example persona; the effect below fills the real name.
+    name: '',
     travelModes: toList(profile.travelMode) ,
     dailyDistance: profile.dailyDistance,
     diets: toList(profile.diet),
@@ -68,6 +74,15 @@ export default function Onboarding() {
     weeklyGoalPct: profile.weeklyGoalPct,
   });
   const updateDraft = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
+
+  // The server profile (with the name given at sign-up) can arrive after first
+  // render; fill the name in then, without overwriting anything typed.
+  // Only the server's profile counts: before it loads, the store holds the
+  // signed-out example persona, whose name must never leak into a real account.
+  useEffect(() => {
+    if (!bootstrapped || !isAuthenticated()) return;
+    if (profile.name && profile.name !== 'User') setD((p) => (p.name ? p : { ...p, name: profile.name }));
+  }, [bootstrapped, profile.name]);
 
   // toggle a value in/out of a string-array field
   const toggleIn = (key: 'travelModes' | 'diets' | 'shopping', v: string) =>
@@ -188,8 +203,9 @@ export default function Onboarding() {
 
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-      <AmbientBackground />
-      <div className="relative z-[1] mx-auto flex min-h-screen max-w-[520px] flex-col px-5 py-6">
+      <WorldBackdrop />
+      <OnboardingWorld step={step} />
+      <div className="relative z-[1] mx-auto flex min-h-screen max-w-[520px] flex-col px-5 py-6 lg:ml-[max(40px,calc(50vw-560px))]">
         <div className="mb-6 flex items-center justify-between">
           <Logo />
           <ThemeToggle />
@@ -242,5 +258,45 @@ export default function Onboarding() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The world beside the questions (large screens only — never a 3D scene behind
+ * a form on a phone). Each answer area shows the real, sourced layer it relates
+ * to. The planet's health stays neutral throughout: answering questions is not
+ * an environmental improvement, and the copy says so.
+ */
+const PREVIEW: { layer: EarthLayer; title: string; body: string; sourced: boolean }[] = [
+  { layer: 'none', title: 'Your world, lit as it is right now', body: 'The day and night sides are computed for this minute.', sourced: false },
+  { layer: 'none', title: 'Getting around', body: 'Each trip you log becomes kilograms on your dashboard, using the same per-km factors you see in Track.', sourced: false },
+  { layer: 'none', title: 'Distance matters', body: 'Kilometres multiply the factor, so the distance you enter shapes the estimate.', sourced: false },
+  { layer: 'co2', title: 'CO₂ per person, by country', body: `National averages from ${CO2_SOURCE.label} (2024). Your own number will come from what you log.`, sourced: true },
+  { layer: 'grid', title: 'The grid behind your electricity', body: 'Lifecycle grams of CO₂e per kWh by country (Ember via OWID). It is why the same kWh weighs differently in different places.', sourced: true },
+  { layer: 'none', title: 'What you buy', body: 'Goods carry embodied carbon. The Scan screen estimates it from a barcode.', sourced: false },
+  { layer: 'none', title: 'Your goal', body: 'Once you have a week of logs, your goal becomes a weekly kilogram target.', sourced: false },
+];
+
+function OnboardingWorld({ step }: { step: number }) {
+  const v = PREVIEW[Math.min(step, PREVIEW.length - 1)];
+  return (
+    <aside aria-label="World preview" className="pointer-events-none fixed inset-y-0 right-0 z-0 hidden w-[46vw] max-w-[640px] flex-col items-center justify-center gap-5 px-8 lg:flex">
+      <div className="pointer-events-auto aspect-square w-full max-w-[460px] overflow-hidden rounded-full">
+        <LivingEarth className="h-full w-full" vitality={0.5} layer={v.layer} interactive label={`${v.title}. ${v.body}`} background="#050c0a" />
+      </div>
+      <div className="max-w-[420px] text-center">
+        <div className="mb-1.5 flex items-center justify-center gap-2">
+          <span className="text-sm font-bold text-text">{v.title}</span>
+          {v.sourced && <ProvenanceBadge provenance="sourced" />}
+        </div>
+        <p className="text-[13px] leading-relaxed text-muted">{v.body}</p>
+        <p className="mt-3 text-[11px] text-muted">Your answers personalise Carbonexo. They don&apos;t change your planet&apos;s health — your logged days will.</p>
+        {v.layer === 'grid' && (
+          <a className="pointer-events-auto mt-1 inline-block text-[11px] text-muted underline" href={GRID_SOURCE.url} target="_blank" rel="noreferrer">
+            Source
+          </a>
+        )}
+      </div>
+    </aside>
   );
 }

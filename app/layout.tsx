@@ -48,7 +48,7 @@ export const viewport: Viewport = {
 const themeScript = `
 (function(){try{
   var s=localStorage.getItem('cx-theme');
-  var d=s ? s==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  var d=s ? s==='dark' : true;
   if(d) document.documentElement.classList.add('dark');
 }catch(e){}})();
 `;

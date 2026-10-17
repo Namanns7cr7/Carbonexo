@@ -49,5 +49,23 @@ describe('simulations API helpers', () => {
     const body = JSON.parse(call[1].body);
     expect(body.horizon).toBe('MONTH');
     expect(body.changes[0].factorKey).toBe('car_ride');
+    expect(res.source).toBe('server');
+  });
+
+  const change = { factorKey: 'car_ride', category: 'travel', quantity: 10, frequency: 'per_week', deltaType: 'REPLACE_WITH' as const, replacementFactorKey: 'metro_train' };
+
+  it('a server rejection is surfaced, not replaced by a local guess', async () => {
+    stubFetch({ detail: 'replacementFactorKey is required' }, 400);
+    await expect(runSimulation({ changes: [change], horizon: 'MONTH' })).rejects.toThrow(/replacementFactorKey/);
+  });
+
+  it('an unreachable server falls back to a labelled offline estimate with no invented goal or credits', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    const res = await runSimulation({ changes: [change], horizon: 'MONTH' });
+    expect(res.source).toBe('offline-estimate');
+    expect(res.deltaCo2Kg).toBeLessThan(0);
+    expect(res.weeklyGoalImpact).toEqual({ currentProgressPct: 0, projectedProgressPct: 0 });
+    expect(res.projectedCreditsDelta).toBe(0);
+    expect(res.aiInsight).toBeNull();
   });
 });

@@ -45,6 +45,31 @@ class CreditServiceTest {
     }
 
     @Test
+    void actionDoneAwardsOncePerAction() {
+        UUID action = UUID.randomUUID();
+        when(cfg.getBool("credits.enabled", true)).thenReturn(true);
+        when(rules.creditsForActionDone()).thenReturn(25);
+        when(ledger.existsByUserIdAndRuleKeyAndRefId(user, "action_done", action)).thenReturn(false, true);
+
+        svc.onActionDone(user, action);
+        svc.onActionDone(user, action); // re-ticked in the UI
+
+        verify(ledger, times(1)).save(any());
+    }
+
+    @Test
+    void distinctActionsEachAward() {
+        when(cfg.getBool("credits.enabled", true)).thenReturn(true);
+        when(rules.creditsForActionDone()).thenReturn(25);
+        when(ledger.existsByUserIdAndRuleKeyAndRefId(eq(user), eq("action_done"), any())).thenReturn(false);
+
+        svc.onActionDone(user, UUID.randomUUID());
+        svc.onActionDone(user, UUID.randomUUID());
+
+        verify(ledger, times(2)).save(any());
+    }
+
+    @Test
     void debitFailsOnInsufficientBalance() {
         when(ledger.sumDeltaByUserId(user)).thenReturn(10);
         assertFalse(svc.debitCredits(user, 50, "r", "t", null));

@@ -2,7 +2,7 @@
 
 /**
  * Group detail page — member list, a ranked leaderboard (toggle window /
- * metric), and the group's combined weekly goal progress.
+ * metric), and what the group logged together this week.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
@@ -10,14 +10,14 @@ import { motion } from 'framer-motion';
 import {
   getGroupDetail,
   getLeaderboard,
-  getGoalProgress,
   type Group,
   type LeaderboardEntry,
-  type GoalProgress,
   type LeaderboardWindow,
   type LeaderboardMetric,
 } from '@/lib/api/groups';
 import { PageHead, Card, Loading, SegmentedControl } from '@/components/app/ui';
+import { Growth } from '@/components/living-world/Growth';
+import { ProvenanceBadge } from '@/components/living-world/Provenance';
 
 const WINDOWS: { id: LeaderboardWindow; label: string }[] = [
   { id: 'week', label: 'This week' },
@@ -25,9 +25,10 @@ const WINDOWS: { id: LeaderboardWindow; label: string }[] = [
   { id: 'all', label: 'All time' },
 ];
 
+// 'co2_saved' is the API's historical key; the value is logged CO2, ranked lowest first.
 const METRICS: { id: LeaderboardMetric; label: string }[] = [
-  { id: 'co2_saved', label: 'CO₂ saved' },
-  { id: 'credits', label: 'Credits' },
+  { id: 'co2_saved', label: 'CO₂ logged' },
+  { id: 'credits', label: 'Green Points' },
 ];
 
 export default function GroupDetailPage() {
@@ -37,7 +38,7 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<Group | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardAiSummary, setLeaderboardAiSummary] = useState<string | null>(null);
-  const [progress, setProgress] = useState<GoalProgress | null>(null);
+  const [thisWeek, setThisWeek] = useState<LeaderboardEntry[] | null>(null);
   const [window_, setWindow] = useState<LeaderboardWindow>('week');
   const [metric, setMetric] = useState<LeaderboardMetric>('co2_saved');
   const [loading, setLoading] = useState(true);
@@ -45,10 +46,12 @@ export default function GroupDetailPage() {
 
   useEffect(() => {
     if (!groupId) return;
-    Promise.all([getGroupDetail(groupId), getGoalProgress(groupId)])
-      .then(([g, p]) => {
+    // "This week together" uses the week's logged-CO2 board — real logs only. The old
+    // goal-progress endpoint measured against a fixed 8 kg/day baseline, so it is not shown.
+    Promise.all([getGroupDetail(groupId), getLeaderboard(groupId, 'week', 'co2_saved').catch(() => null)])
+      .then(([g, w]) => {
         setGroup(g);
-        setProgress(p);
+        setThisWeek(w ? w.entries : null);
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load group'))
       .finally(() => setLoading(false));
@@ -89,31 +92,43 @@ export default function GroupDetailPage() {
         sub={`Invite code: ${group.inviteCode} · ${group.members.length} member${group.members.length === 1 ? '' : 's'}`}
       />
 
-      {progress && (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <Card>
-            <h2 className="mb-3 text-lg font-bold">Combined weekly goal</h2>
-            <div className="mb-2 flex items-baseline justify-between text-sm">
-              <span className="text-muted">
-                {progress.combinedCurrentKg} / {progress.combinedGoalKg} kg CO₂ saved
-              </span>
-              <span className="font-bold text-lime-deep">{progress.progressPct}%</span>
-            </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-surface2">
-              <div
-                className="h-full rounded-full bg-lime transition-[width]"
-                style={{ width: `${Math.min(100, progress.progressPct)}%` }}
-              />
-            </div>
-          </Card>
-        </motion.div>
-      )}
+      {thisWeek && (() => {
+        const logging = thisWeek.filter((e) => e.value > 0);
+        const total = Math.round(logging.reduce((s, e) => s + e.value, 0) * 10) / 10;
+        const share = group.members.length ? logging.length / group.members.length : 0;
+        return (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 120, damping: 20 }}>
+            <Card className="flex items-center gap-4">
+              <Growth progress={share} label={`${logging.length} of ${group.members.length} members logged this week`} />
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-bold">This week together</h2>
+                  <ProvenanceBadge provenance="logged" />
+                </div>
+                <p className="text-sm text-muted">
+                  <strong className="text-text">{logging.length}</strong> of {group.members.length} members logged this week
+                  {logging.length > 0 && (
+                    <>
+                      {' '}· <strong className="text-text">{total} kg</strong> CO₂e logged together
+                    </>
+                  )}
+                  .
+                </p>
+                <p className="mt-1 text-[11px] text-muted">Shared progress is about logging and acting together. Carbonexo doesn&apos;t estimate a group &ldquo;saving&rdquo; it can&apos;t measure.</p>
+              </div>
+            </Card>
+          </motion.div>
+        );
+      })()}
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="flex flex-col gap-5 md:col-span-2">
           <Card>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-bold">Leaderboard</h2>
+              <div>
+                <h2 className="text-lg font-bold">Leaderboard</h2>
+                <p className="text-[11px] text-muted">{metric === 'co2_saved' ? 'Lowest logged CO₂ ranks first; members with no logs rank last.' : 'Green Points earned in this window.'}</p>
+              </div>
               <div className="flex gap-2">
                 <SegmentedControl options={WINDOWS} value={window_} onChange={setWindow} />
                 <SegmentedControl options={METRICS} value={metric} onChange={setMetric} />
@@ -143,7 +158,7 @@ export default function GroupDetailPage() {
                       <span className="text-sm font-bold text-text">{entry.displayName}</span>
                     </div>
                     <span className="text-sm font-extrabold text-lime-deep">
-                      {metric === 'co2_saved' ? `${entry.value} kg` : `🪙 ${entry.value}`}
+                      {metric === 'co2_saved' ? `${entry.value} kg` : `${entry.value} pts`}
                     </span>
                   </div>
                 ))

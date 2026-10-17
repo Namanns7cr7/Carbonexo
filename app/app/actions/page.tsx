@@ -5,10 +5,28 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCarbon } from '@/lib/store';
 import { ACTIONS, CATEGORY_META, DIFFICULTY_COLOR, round1 } from '@/lib/carbon';
 import { Card, PageHead, EmptyState } from '@/components/app/ui';
+import { Celebrate, UI_SPRING } from '@/components/physics';
+import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
+import { Growth } from '@/components/living-world/Growth';
+import { ProvenanceBadge } from '@/components/living-world/Provenance';
 
 export default function Actions() {
-  const { plan, addPlan, removePlan, togglePlan, weekTotals, profile } = useCarbon();
+  const { plan, addPlan, removePlan, togglePlan } = useCarbon();
+  const { world, emitPulse, refreshLedger } = useLivingWorld();
+  const { goal } = world;
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Which plan row just got completed — drives a one-shot celebration on that row's checkbox.
+  const [celebrated, setCelebrated] = useState<{ id: string; n: number } | null>(null);
+
+  const complete = async (id: string, wasDone: boolean) => {
+    if (!wasDone) {
+      setCelebrated((c) => ({ id, n: (c?.n ?? 0) + 1 }));
+      emitPulse('action');
+    }
+    // togglePlan records a first completion on the ledger (once per action, server-side).
+    await togglePlan(id);
+    if (!wasDone) refreshLedger();
+  };
 
   const planIds = new Set(plan.map((p) => p.templateId));
   const recommended = ACTIONS.filter((a) => !planIds.has(a.id));
@@ -29,21 +47,24 @@ export default function Actions() {
     ACTIONS.filter((a) => picked.has(a.id)).reduce((s, a) => s + a.saving, 0),
   );
 
-  const weekTotal = round1(weekTotals.reduce((s, d) => s + d.total, 0));
-  const goalKg = Math.max(1, round1((weekTotal * profile.weeklyGoalPct) / 100));
-  const completedSaving = round1(plan.filter((p) => p.done).reduce((s, p) => s + p.template.saving, 0));
-  const goalPct = Math.min(100, Math.round((completedSaving / goalKg) * 100));
-  const goalMet = completedSaving >= goalKg;
+  const goalPct = goal.progress === null ? 0 : Math.round(goal.progress * 100);
+  const goalMet = goal.progress !== null && goal.progress >= 1;
 
   return (
     <div className="flex flex-col gap-5 pb-24">
       <PageHead eyebrow="Action plan" title="Turn insight into action" sub="Select the recommendations you want, add them to your plan, then check them off." />
 
       {/* weekly goal */}
-      <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-[15px] font-bold">Weekly goal</h2>
-          <span className="text-xs font-semibold text-muted">{completedSaving} / {goalKg} kg saved</span>
+      <Card className="flex items-center gap-4">
+        <Growth progress={goal.progress ?? 0} label={`Weekly goal ${goalPct}% covered by completed actions (estimate)`} />
+        <div className="min-w-0 flex-1">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-[15px] font-bold">
+            Weekly goal <ProvenanceBadge provenance="estimate" />
+          </h2>
+          <span className="text-xs font-semibold text-muted">
+            {goal.targetKg === null ? 'No target yet' : `~${goal.completedSavingEstimateKg} / ${goal.targetKg} kg`}
+          </span>
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-surface2">
           <motion.div
@@ -51,16 +72,20 @@ export default function Actions() {
             style={{ background: 'linear-gradient(90deg,var(--lime),var(--blue))' }}
             initial={{ width: 0 }}
             animate={{ width: `${goalPct}%` }}
-            transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
           />
         </div>
         <p className="mt-2.5 text-sm text-muted">
-          {goalMet ? (
-            <span className="font-bold text-lime-deep">🎉 Goal reached — you&apos;re cutting more than your weekly target!</span>
+          {goal.targetKg === null ? (
+            <>Your target appears once last week has logged days: a <strong className="text-text">{goal.weeklyGoalPct}%</strong> cut on what you logged.</>
+          ) : goalMet ? (
+            <span className="font-bold text-lime-deep">Your completed actions are estimated to cover this week&apos;s target.</span>
           ) : (
-            <>Targeting a <strong className="text-text">{profile.weeklyGoalPct}%</strong> cut. Complete actions to fill the bar.</>
+            <>Targeting a <strong className="text-text">{goal.weeklyGoalPct}%</strong> cut on last week&apos;s logged {world.actual.lastWeekKg} kg.</>
           )}
         </p>
+        {goal.targetKg !== null && <p className="mt-1 text-[11px] text-muted">{goal.basis} Your logged average is what moves your planet.</p>}
+        </div>
       </Card>
 
       {/* my plan */}
@@ -72,10 +97,14 @@ export default function Actions() {
           <div className="flex flex-col gap-2">
             {plan.map((p) => (
               <motion.div key={p.templateId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 rounded-[14px] border border-border bg-surface px-4 py-3">
-                <button
-                  onClick={() => togglePlan(p.templateId)}
-                  aria-label={p.done ? 'Mark not done' : 'Mark done'}
-                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors"
+                <motion.button
+                  onClick={() => complete(p.templateId, p.done)}
+                  aria-label={p.done ? `Mark "${p.template.title}" not done` : `Mark "${p.template.title}" done`}
+                  aria-pressed={p.done}
+                  whileTap={{ scale: 0.82 }}
+                  animate={{ scale: 1 }}
+                  transition={UI_SPRING}
+                  className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors"
                   style={{
                     borderColor: p.done ? 'var(--lime)' : 'var(--border)',
                     background: p.done ? 'var(--lime)' : 'transparent',
@@ -83,11 +112,12 @@ export default function Actions() {
                   }}
                 >
                   ✓
-                </button>
+                  {celebrated?.id === p.templateId && p.done && <Celebrate trigger={celebrated.n} label="Action done" />}
+                </motion.button>
                 <span className="text-xl">{p.template.emoji}</span>
                 <div className="min-w-0 flex-1">
                   <div className={`text-sm font-bold ${p.done ? 'text-muted line-through' : ''}`}>{p.template.title}</div>
-                  <div className="text-xs text-muted">Saves ~{p.template.saving} kg / week</div>
+                  <div className="text-xs text-muted">Typically ~{p.template.saving} kg / week (estimate)</div>
                 </div>
                 <button onClick={() => removePlan(p.templateId)} aria-label="Remove" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-lime hover:text-text">✕</button>
               </motion.div>

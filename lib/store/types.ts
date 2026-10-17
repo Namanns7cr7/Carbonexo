@@ -41,6 +41,13 @@ export type StoreAction =
   | { type: 'completeOnboarding' }
   | { type: 'reset' };
 
+/** Catalog details for a logged activity. */
+export interface LogMeta {
+  factorKey?: string;
+  quantity?: number;
+  unit?: string;
+}
+
 // ─── Context shape ────────────────────────────────────────────────────────────
 
 /** A plan row enriched with its ActionTemplate for rendering. */
@@ -72,7 +79,8 @@ export interface CarbonCtxValue {
   biggestSource: { category: Category; value: number } | null;
 
   // actions
-  addLog: (log: Omit<LogEntry, 'id' | 'createdAt'>) => Promise<void>;
+  /** `meta` sends the catalog factor with the entry, so the server row records what was logged, not only the kg. */
+  addLog: (log: Omit<LogEntry, 'id' | 'createdAt'>, meta?: LogMeta) => Promise<void>;
   removeLog: (id: string) => Promise<void>;
   addPlan: (templateId: string) => void;
   removePlan: (templateId: string) => void;

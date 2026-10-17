@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { register } from '@/lib/api/auth';
 import { Logo } from '@/components/Logo';
-import { AmbientBackground } from '@/components/AmbientBackground';
+import { WorldBackdrop } from '@/components/living-world/WorldBackdrop';
 import { Card } from '@/components/app/ui';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
@@ -36,7 +36,7 @@ export default function RegisterPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-      <AmbientBackground />
+      <WorldBackdrop />
       <div className="relative z-10 w-full max-w-[440px] py-10">
         <div className="mb-8 flex flex-col items-center text-center">
           <Link href="/" aria-label="Carbonexo home">
@@ -101,7 +101,7 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-blue-soft/20 border border-blue/30 px-4 py-3 text-xs font-semibold text-blue text-center">
+              <div role="alert" className="flex items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-center text-xs font-semibold text-danger">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span>{error}</span>
               </div>

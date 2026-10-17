@@ -1,0 +1,35 @@
+/* Poster spin: slide the map strip by exactly one copy, so the loop is seamless.
+   The surface moves left-to-right — Earth turns eastward. The global
+   prefers-reduced-motion rule in app/globals.css neutralises this too. */
+@keyframes posterSpin {
+  from { transform: translateX(var(--poster-from)); }
+  to   { transform: translateX(var(--poster-to)); }
+}
+.posterSpin {
+  animation: posterSpin 120s linear infinite;
+}
+
+/* Poster feedback for a user action: one damped bounce, the CSS twin of the
+   GlobeBody nudge the 3D planet gets. */
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.045); }
+  48%  { transform: scale(0.985); }
+  72%  { transform: scale(1.008); }
+  100% { transform: scale(1); }
+}
+.pulse {
+  animation: pulse 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Living World colour for the poster. --vitality: 0 degraded … 1 lush, 0.5 = the imagery as-is. */
+.living {
+  filter:
+    saturate(calc(0.45 + 0.95 * var(--vitality, 0.5)))
+    hue-rotate(calc(max(0, var(--vitality, 0.5) - 0.5) * 16deg))
+    brightness(calc(0.78 + 0.34 * var(--vitality, 0.5)));
+  transition: filter 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .living { transition: none; }
+}

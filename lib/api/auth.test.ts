@@ -61,6 +61,32 @@ describe('auth API helpers', () => {
     expect(localStorage.getItem('cx-refresh')).toBe('ref_token_reg');
   });
 
+  it('a wrong password surfaces an error and creates no session (no refresh, no redirect)', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({ detail: 'Bad credentials' }) }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(login('demo@b.com', 'wrong')).rejects.toThrow(/do not match/);
+    expect(getAccessToken()).toBeNull();
+    expect(isAuthenticated()).toBe(false);
+    // Only the login call: the auth endpoint must not trigger the refresh flow.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('an unreachable server is reported, never papered over with a fake token', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+
+    await expect(login('alex@b.com', 'pass')).rejects.toThrow(/reach the Carbonexo server/);
+    await expect(register('new@b.com', 'pass', 'New')).rejects.toThrow(/reach the Carbonexo server/);
+    expect(isAuthenticated()).toBe(false);
+  });
+
+  it('a duplicate registration says so instead of signing in locally', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: 'exists' }) })));
+
+    await expect(register('taken@b.com', 'pass', 'T')).rejects.toThrow(/already exists/);
+    expect(isAuthenticated()).toBe(false);
+  });
+
   it('isAuthenticated checks in-memory token and storage', () => {
     expect(isAuthenticated()).toBe(false);
 
