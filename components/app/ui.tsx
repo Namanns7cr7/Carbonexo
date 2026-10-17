@@ -116,3 +116,5 @@ export function EmptyState({ emoji, title, sub, action }: { emoji: ReactNode; ti
     </div>
   );
 }
+
+export { GlassCard, type GlassCardProps } from '@/components/ui/GlassCard';

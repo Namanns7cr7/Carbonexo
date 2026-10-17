@@ -1,9 +1,11 @@
 package com.ecotrack.ai.service;
 
+import com.ecotrack.ai.service.dto.CursorPage;
 import com.ecotrack.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -63,5 +65,17 @@ public class AIController {
     public ResponseEntity<List<CoachMessage>> coachHistory() {
         UUID userId = SecurityUtils.currentUserId();
         return ResponseEntity.ok(service.getChatHistory(userId));
+    }
+
+    /**
+     * Sub-50ms cursor-based pagination endpoint for infinite scrolling in the coach chat interface.
+     */
+    @GetMapping("/coach/history/paged")
+    public ResponseEntity<CursorPage<CoachMessage>> coachHistoryPaged(
+            @RequestParam(required = false) Instant cursorCreatedAt,
+            @RequestParam(required = false) UUID cursorId,
+            @RequestParam(defaultValue = "20") int limit) {
+        UUID userId = SecurityUtils.currentUserId();
+        return ResponseEntity.ok(service.getChatHistoryPaged(userId, cursorCreatedAt, cursorId, limit));
     }
 }

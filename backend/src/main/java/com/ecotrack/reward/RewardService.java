@@ -5,6 +5,8 @@ import com.ecotrack.exception.BadRequestException;
 import com.ecotrack.exception.ResourceNotFoundException;
 import com.ecotrack.reward.dto.RedemptionResponse;
 import com.ecotrack.reward.dto.RewardResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,8 @@ import java.util.UUID;
 
 @Service
 public class RewardService {
+
+    private static final Logger log = LoggerFactory.getLogger(RewardService.class);
 
     private final RewardRepository rewardRepo;
     private final RedemptionRepository redemptionRepo;
@@ -68,7 +72,30 @@ public class RewardService {
         return toRedemptionResponse(r, reward);
     }
 
+    /**
+     * Fetch redemption history in a single JOIN query, avoiding N+1 roundtrips.
+     * Falls back to legacy loop if projection fails.
+     */
     public List<RedemptionResponse> getRedemptions(UUID userId) {
+        try {
+            return getRedemptionsProjection(userId);
+        } catch (Exception ex) {
+            log.warn("Single-query projection failed for redemptions, falling back to legacy mapper: {}", ex.getMessage());
+            return getRedemptionsLegacy(userId);
+        }
+    }
+
+    /**
+     * Optimized single-query projection with JPQL DTO mapping.
+     */
+    public List<RedemptionResponse> getRedemptionsProjection(UUID userId) {
+        return redemptionRepo.findRedemptionResponsesByUserId(userId);
+    }
+
+    /**
+     * Existing legacy mapper preserved as fallback.
+     */
+    public List<RedemptionResponse> getRedemptionsLegacy(UUID userId) {
         return redemptionRepo.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(r -> {
                     Reward reward = rewardRepo.findById(r.getRewardId()).orElse(null);

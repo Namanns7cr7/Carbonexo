@@ -43,3 +43,9 @@ CREATE INDEX IF NOT EXISTS ix_rewards_active            ON rewards (active) WHER
 CREATE INDEX IF NOT EXISTS ix_app_config_key            ON app_config (config_key);
 CREATE INDEX IF NOT EXISTS ix_audit_log_user            ON audit_log (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_audit_log_entity          ON audit_log (entity, entity_id);
+
+-- Latency optimizations: composite indexes for date-ordered activity queries and cursor pagination
+CREATE INDEX IF NOT EXISTS ix_activity_logs_user_date_created
+    ON activity_logs (user_id, activity_date DESC, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_coach_messages_user_created_id
+    ON coach_messages (user_id, created_at DESC, id DESC);

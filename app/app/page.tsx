@@ -26,6 +26,7 @@ import { getRewards, type RewardData } from '@/lib/api/rewards';
 import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
 import { LIFESTYLE_BUDGET_KG_PER_DAY, LIFESTYLE_BUDGET_SOURCE } from '@/lib/living-world/derive';
 import { Card } from '@/components/app/ui';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { ScoreRing, WeeklyChart, CategoryBars } from '@/components/app/charts';
 import { SproutIllustration, CategoryIcon } from '@/components/app/illustrations';
 import { PlanetPanel } from '@/components/living-world/PlanetPanel';
@@ -226,22 +227,28 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* ── Left: analytics ─────────────────── */}
         <div className="flex flex-col gap-6 lg:col-span-8">
-          {/* Emissions core */}
-          <Card className="relative overflow-hidden !rounded-[22px] !p-0">
-            <div className="relative px-6 py-7 sm:px-8" style={{ background: 'linear-gradient(135deg, #0f5c3f 0%, #0b4433 45%, #0b2f3a 100%)' }}>
-              <div className="relative flex flex-col items-center gap-7 sm:flex-row">
-                <div className="flex flex-col items-center gap-3">
-                  <ScoreRing value={round1(todayTotal)} fraction={Math.min(1, todayTotal / BUDGET_DAY)} size={160} color="#ffffff" track="rgba(255,255,255,0.2)" textColor="#ffffff" />
-                  <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white">
-                    {todayTotal <= BUDGET_DAY ? `${round1(BUDGET_DAY - todayTotal)} kg left in today's budget` : `${round1(todayTotal - BUDGET_DAY)} kg over today's budget`}
-                  </span>
-                </div>
-                <div className="w-full flex-1">
-                  {todayLogs.length > 0 ? (
-                    <div className="rounded-2xl bg-white/95 p-5 shadow-lg" style={{ '--text': '#0f172a', '--muted': '#64748b', '--surface2': '#f1f5f9', color: '#0f172a' } as React.CSSProperties}>
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Today by source</span>
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{todayLogs.length} logged</span>
+          {/* Emissions Core — Score Ring + Category Breakdown */}
+          <GlassCard delay={0.1} className="!rounded-[22px] !p-0 border border-emerald-500/25 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
+            <div className="gradient-border rounded-[22px]">
+              <Card className="relative overflow-hidden !rounded-[22px] !p-0 bg-transparent">
+                {/* Gradient header strip */}
+                <div
+                  className="relative px-6 py-7 sm:px-8 sm:py-8"
+                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #0d9488 40%, #6366f1 100%)' }}
+                >
+                  <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
+                  <div className="pointer-events-none absolute -bottom-16 -left-8 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+
+                  <div className="relative flex flex-col items-center gap-7 sm:flex-row sm:items-center">
+                    {/* Score ring */}
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="rounded-full p-1" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                        <ScoreRing value={todayTotal} fraction={fraction} size={160} color="#ffffff" track="rgba(255,255,255,0.2)" textColor="#ffffff" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                          {improving ? '↓' : '↑'} {Math.abs(deltaPct)}% vs yesterday
+                        </span>
                       </div>
                       <CategoryBars data={todayBreakdown} />
                     </div>
@@ -266,37 +273,57 @@ export default function Dashboard() {
                 </Link>
               </div>
             </div>
-          </Card>
+          </GlassCard>
 
-          {/* Weekly trajectory */}
-          <Card className="!rounded-[22px] p-5 sm:p-6">
+          {/* Weekly Emissions Trajectory */}
+          <GlassCard delay={0.15} className="!rounded-[22px] p-5 sm:p-6 border border-emerald-500/20 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-lime-soft">
-                    <BarChart3 className="h-4 w-4 text-lime-deep" strokeWidth={2.5} />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--lime-soft), var(--blue-soft))' }}>
+                    <BarChart3 className="h-4 w-4" style={{ color: 'var(--blue)' }} strokeWidth={2.5} />
                   </span>
-                  <h2 className="text-base font-extrabold tracking-tight">Last 7 days</h2>
-                  <ProvenanceBadge provenance="logged" />
+                  <h2 className="text-base font-extrabold tracking-tight">Emissions Trajectory</h2>
                 </div>
-                <p className="mt-0.5 text-xs text-muted">Dashed line: {BUDGET_DAY} kg/day 1.5 °C budget (sourced)</p>
+                <p className="mt-0.5 text-xs text-muted">Daily trend vs. Science-Based Target (8.5 kg threshold)</p>
               </div>
-              <Link href="/app/insights" className="text-xs font-bold text-lime-deep hover:underline">
-                Full insights →
-              </Link>
+              <Link href="/app/insights" className="text-xs font-bold text-blue hover:underline">Full Analytics →</Link>
             </div>
+
             {weekHasData ? (
-              <WeeklyChart data={weekTotals} height={150} targetBudget={BUDGET_DAY} />
+              <WeeklyChart data={weekTotals} height={150} targetBudget={8.5} />
             ) : (
               <div className="flex h-[150px] flex-col items-center justify-center gap-2 text-center">
                 <BarChart3 className="h-8 w-8 text-muted/30" strokeWidth={1.5} />
-                <p className="text-sm text-muted">No logs in the last 7 days</p>
+                <p className="text-sm text-muted">No data yet this week</p>
               </div>
             )}
+
+            {/* Summary row */}
             <div className="mt-5 grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-surface2 py-3.5 text-center">
-              <Stat label="7-day total" value={`${weekTotal}`} unit="kg" />
-              <Stat label="Avg / logged day" value={loggedWeekDays.length ? `${round1(weekTotal / loggedWeekDays.length)}` : '—'} unit={loggedWeekDays.length ? 'kg' : ''} />
-              <Stat label="Lightest day" value={loggedWeekDays.length ? `${round1(Math.min(...loggedWeekDays.map((d) => d.total)))}` : '—'} unit={loggedWeekDays.length ? 'kg' : ''} accent />
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted">7-Day Total</div>
+                <div className="mt-0.5 font-mono text-lg font-extrabold">{weekTotal} <span className="text-xs text-muted font-normal">kg</span></div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Daily Avg</div>
+                <div className="mt-0.5 font-mono text-lg font-extrabold">
+                  {round1(weekTotal / Math.max(1, weekTotals.filter((d) => d.total > 0).length))} <span className="text-xs text-muted font-normal">kg</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Best Day</div>
+                <div className="mt-0.5 font-mono text-lg font-extrabold" style={{ color: 'var(--lime)' }}>
+                  {round1(Math.min(...weekTotals.filter((d) => d.total > 0).map((d) => d.total) || [0]))} <span className="text-xs text-muted font-normal">kg</span>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Hotspot Category Matrix */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-muted">Emission Hotspots</h3>
             </div>
           </Card>
 
@@ -404,67 +431,89 @@ export default function Dashboard() {
 
         {/* ── Right: guidance, plan, logging, rewards ──── */}
         <div className="flex flex-col gap-6 lg:col-span-4">
-          {/* Advisor: grounded in this week's biggest source */}
-          <Card className="!rounded-[22px] p-5">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime text-[#0c1d15]">
-                <Sparkles className="h-4 w-4" strokeWidth={2.5} />
-              </div>
-              <div>
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-lime-deep">This week</div>
-                <div className="text-sm font-extrabold text-text">Where your kilograms come from</div>
-              </div>
-            </div>
-            <p className="mt-3.5 text-[13px] leading-relaxed text-muted">
-              {biggestSource ? (
-                <>
-                  <strong className="text-text">{CATEGORY_META[biggestSource.category].label}</strong> is your biggest logged source this week ({biggestSource.value} kg). The coach can suggest changes that fit how you travel, eat and live.
-                </>
-              ) : (
-                'Log a few activities and the coach will know where to start.'
-              )}
-            </p>
-            <Link href="/app/coach" className="mt-4 flex items-center justify-between rounded-xl bg-surface2 px-4 py-3 text-xs font-bold text-text transition-all hover:bg-lime hover:text-[#0c1d15]">
-              <span>Ask the coach</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Card>
+          {/* AI Climate Advisor — Premium Glassmorphic card */}
+          <GlassCard delay={0.12} className="!rounded-[22px] border border-emerald-500/30 bg-slate-900/60 shadow-lg shadow-emerald-500/10 p-[1px]">
+            <div className="relative overflow-hidden rounded-[21px] p-[1px]" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))' }}>
+              <div className="rounded-[20px] bg-slate-950/80 p-5 backdrop-blur-md">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #10b981, #6366f1)' }}>
+                      <Sparkles className="h-4 w-4" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div className="gradient-text text-[10px] font-extrabold uppercase tracking-wider">AI Climate Advisor</div>
+                      <div className="text-sm font-extrabold text-white">Hotspot Analysis</div>
+                    </div>
+                  </div>
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  </span>
+                </div>
 
-          {/* Swaps → the action plan */}
-          <Card className="!rounded-[22px] p-5">
-            <div className="mb-3.5 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold">Swaps for you</h3>
-              <ProvenanceBadge provenance="estimate" />
+                <p className="mt-3.5 text-[13px] leading-relaxed text-slate-300">
+                  {biggestSource ? (
+                    <>
+                      <strong className="text-white">{CATEGORY_META[biggestSource.category].label}</strong> is your biggest source ({biggestSource.value} kg). Switching 2 commutes could save <strong className="gradient-text">~8.4 kg CO₂</strong> and earn 40 credits.
+                    </>
+                  ) : (
+                    'Log activities to get AI-powered reduction recommendations.'
+                  )}
+                </p>
+
+                <Link
+                  href="/app/coach"
+                  className="mt-4 flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold text-white transition-all hover:shadow-glow-lime"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #6366f1)' }}
+                >
+                  <span>Chat with Climate Coach</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </div>
+          </GlassCard>
+
+          {/* Carbon Swaps */}
+          <GlassCard delay={0.17} className="!rounded-[22px] p-5 border border-emerald-500/20 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
+            <div className="mb-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--accent-amber), var(--accent-teal))' }}>
+                  <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
+                </span>
+                <h3 className="text-sm font-extrabold">Carbon Swaps</h3>
+              </div>
+              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">1-Click</span>
+            </div>
+
             <div className="flex flex-col gap-2.5">
-              {swaps.map((a) => {
-                const inPlan = planIds.has(a.id);
+              {SWAP_RECOMMENDATIONS.map((swap) => {
+                const SwapIcon = swap.icon;
                 return (
-                  <div key={a.id} className="rounded-2xl border border-border bg-surface2 p-3.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-text">{a.title}</span>
-                      <span className="whitespace-nowrap font-mono text-xs font-bold text-lime-deep">~{a.saving} kg/wk</span>
+                  <div key={swap.id} className="rounded-2xl border border-border bg-surface2/60 backdrop-blur-sm p-3.5 transition-all hover:border-emerald-500/40 hover:shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <SwapIcon className="h-4 w-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-text">{swap.title}</span>
+                      </div>
+                      <span className="font-mono text-xs font-bold text-emerald-400">-{swap.saved} kg</span>
                     </div>
-                    <p className="mt-1 text-[11px] text-muted">{a.desc}</p>
-                    <div className="mt-2.5 flex gap-2">
-                      <button
-                        onClick={() => plan1(a.id, a.title)}
-                        disabled={inPlan}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface py-2 text-xs font-bold text-text transition-all hover:border-lime hover:bg-lime hover:text-[#0c1d15] disabled:cursor-default disabled:opacity-60 disabled:hover:bg-surface disabled:hover:text-text"
-                      >
-                        {inPlan ? <Check className="h-3.5 w-3.5" /> : <ListPlus className="h-3.5 w-3.5" />}
-                        {inPlan ? 'In your plan' : 'Add to plan'}
-                      </button>
-                      <Link href="/app/simulate" className="flex items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold text-muted hover:text-text" aria-label={`Try ${a.title} in Carbon Twin`}>
-                        <FlaskConical className="h-3.5 w-3.5" />
-                      </Link>
+                    <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted">
+                      <span className="line-through opacity-60">{swap.from}</span>
+                      <span className="gradient-text font-bold">→</span>
+                      <span className="font-semibold text-text">{swap.to}</span>
                     </div>
+                    <button
+                      onClick={() => handleApplySwap(swap)}
+                      disabled={loggingId === swap.id}
+                      className="mt-2.5 w-full rounded-xl border border-border bg-surface py-2 text-center text-xs font-bold text-text transition-all hover:bg-emerald-600 hover:text-white hover:border-emerald-500 hover:shadow-glow-lime disabled:opacity-50"
+                    >
+                      {loggingId === swap.id ? 'Applying...' : `Apply Swap (+${swap.credits} Credits)`}
+                    </button>
                   </div>
                 );
               })}
             </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted">Typical weekly savings from the action catalog — estimates, not measurements. Completing a plan action earns Green Points once.</p>
-          </Card>
+          </GlassCard>
 
           {/* Quick logger — same catalog and factors as Track */}
           <Card className="!rounded-[22px] p-5">

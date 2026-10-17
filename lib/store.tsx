@@ -30,7 +30,7 @@ import { getProfile, updateProfile, completeOnboarding as apiCompleteOnboarding 
 import { getDashboard } from './api/dashboard';
 import { createActivity, deleteActivity } from './api/activities';
 import { completeAction } from './api/credits';
-import { STATE_STORAGE_KEY, STATE_VERSION } from './constants';
+import { SNAPSHOT_STORAGE_KEY, STATE_STORAGE_KEY, STATE_VERSION } from './constants';
 import { buildSeedState, generateLocalId } from './store/seed';
 import { reducer } from './store/reducer';
 import {
@@ -143,6 +143,37 @@ async function fetchApiSnapshot(): Promise<ApiSnapshot | null> {
   void emptyBreakdown; // referenced by type only above
 }
 
+// ─── Snapshot cache (stale-while-revalidate) ─────────────────────────────────
+
+/**
+ * The last good snapshot is cached so a reload paints real data immediately
+ * instead of a spinner while /api/profiles/me + /api/dashboard round-trip
+ * (seconds on a cold Cloud Run instance). Only today's cache is reused, since
+ * "today" figures from an earlier day would be wrong. clearTokens() drops it.
+ */
+function readCachedSnapshot(): ApiSnapshot | null {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as { day: string; snapshot: ApiSnapshot };
+    return cached.day === getWeekDays()[6] ? cached.snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSnapshot(snapshot: ApiSnapshot | null) {
+  try {
+    if (snapshot) {
+      localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify({ day: getWeekDays()[6], snapshot }));
+    } else {
+      localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+    }
+  } catch {
+    // Storage full or unavailable — non-fatal, we just lose the fast path.
+  }
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
@@ -156,6 +187,7 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
     try {
       const snapshot = await fetchApiSnapshot();
       setApiSnapshot(snapshot);
+      writeCachedSnapshot(snapshot);
     } catch (err) {
       console.error('[Carbonexo] Failed to load server data:', err);
     } finally {
@@ -175,6 +207,14 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
       }
     } catch {
       // Ignore corrupt or missing storage — keep the seed state.
+    }
+    if (isAuthenticated()) {
+      const cached = readCachedSnapshot();
+      if (cached) {
+        // Render from cache now; the fetch below revalidates in the background.
+        setApiSnapshot(cached);
+        setBootstrapped(true);
+      }
     }
     setHydrated(true);
   }, []);

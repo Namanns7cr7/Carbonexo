@@ -54,7 +54,7 @@ export default function ReportsPage() {
 
       {error && (
         <div className="no-print">
-          <EmptyState emoji="⚠️" title="Couldn't load report" sub={error} />
+          <EmptyState emoji="" title="Couldn't load report" sub={error} />
         </div>
       )}
 
