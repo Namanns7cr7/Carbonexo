@@ -1,0 +1,10 @@
+{
+  "benchmark": "fast_routing_greetings",
+  "iterations": 30000,
+  "target_ms": 300.0,
+  "p50_ms": 0.0007,
+  "p95_ms": 0.0015,
+  "p99_ms": 0.0017,
+  "max_ms": 0.0173,
+  "verdict": "PASS"
+}

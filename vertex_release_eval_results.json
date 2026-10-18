@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-10-18T20:52:50Z",
+  "total_cases": 51,
+  "pass_rate_pct": 96.07843137254902,
+  "deterministic_count": 44,
+  "vertex_genai_eval_count": 5,
+  "vertex_metrics": {
+    "row_count": 5.0,
+    "rouge_1/mean": 1.0,
+    "rouge_1/std": 0.0,
+    "rouge_l_sum/mean": 1.0,
+    "rouge_l_sum/std": 0.0
+  },
+  "cost_usd": 0.001,
+  "region_used": "us-central1 (Vertex Eval Service GA region; asia-south1 unsupported for evaluation)"
+}

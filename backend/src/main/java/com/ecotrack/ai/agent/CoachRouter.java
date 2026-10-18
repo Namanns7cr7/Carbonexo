@@ -21,8 +21,10 @@ public final class CoachRouter {
     static final int MAX_FORCED = 2;
 
     public enum Intent {
-        OTHER_PEOPLE, CREDIT_SCORE, GREEN_CREDITS, CREDIT_RULES, CARBON_CREDIT_CONCEPT, SAVINGS_CLAIM, DOUBLE_COUNTING, SCENARIO, COMPARISON, QUANTITY_ESTIMATE, UNIT_CONVERSION,
-        TARGET, FACTOR, PERSONAL_TREND, PERSONAL, RECOMMENDATION, EXPLANATION, GENERAL
+        OTHER_PEOPLE, CREDIT_SCORE, GREEN_CREDITS, CREDIT_RULES, REWARDS_CATALOG, CARBON_CREDIT_CONCEPT,
+        SAVINGS_CLAIM, DOUBLE_COUNTING, SCENARIO, COMPARISON, QUANTITY_ESTIMATE, UNIT_CONVERSION,
+        TARGET, FACTOR, PERSONAL_TREND, PERSONAL, CATEGORY_BREAKDOWN, REPORT_EXPLANATION, COMMUNITY,
+        BILLS_OCR, RECOMMENDATION, EXPLANATION, GENERAL
     }
 
     public record Route(List<Intent> intents, List<String> requiredTools, String contract) {
@@ -45,7 +47,8 @@ public final class CoachRouter {
             + "my (green |carbonexo |reward )?(credits?|points)(?! score)|(credit|points) balance|"
             + "(green|carbonexo|reward) (credits?|points) (do|have) i)");
     private static final Pattern CREDIT_RULES = p("\\b((earn|get|gain|collect|win)( more)? (green |carbonexo |reward )?(credits?|points|rewards?)|"
-            + "(redeem|spend|use|sell|trade|cash ?out|transfer)\\b.{0,30}\\b(credits?|points|them)|tradable|tradeable|rewards?)\\b");
+            + "(redeem|spend|use|sell|trade|cash ?out|transfer)\\b.{0,30}\\b(credits?|points|them)|tradable|tradeable)\\b");
+    private static final Pattern REWARDS_CAT = p("\\b((what|available|view|list|show|browse) (can i )?(redeem|rewards?)|rewards? (catalogue|catalog|items?|options?)|what (can i get|rewards can i redeem) with my credits|what rewards)\\b");
     private static final Pattern CREDIT_CONCEPT = p("\\b(carbon credits?|carbon offsets?|offsets?|offsetting|additionality|additional|"
             + "retire(d|ment)?|allowances?|cap.and.trade|carbon markets?|emissions? trading)\\b");
     private static final Pattern CARBONEXO_CREDITS = p("\\b(green|carbonexo|reward) (credits?|points)\\b");
@@ -66,6 +69,10 @@ public final class CoachRouter {
             + "travel|food|shopping|score|streak|biggest)|this week|last week|this month|last month|i logged|i've logged|i have logged)\\b");
     private static final Pattern TREND = p("\\b(go (up|down)|went (up|down)|up or down|trend|increas|decreas|compared to last|vs last|"
             + "better than last|worse than last)\\b");
+    private static final Pattern CATEGORY_BREAKDOWN = p("\\b((biggest|largest) (source|impact|category|emission)|breakdown (of|by)? (my )?(category|emissions|footprint)|(food|shopping|waste|electricity|travel) (footprint|emissions|percentage|share))\\b");
+    private static final Pattern REPORT = p("\\b(reports?|esg|sustainability report|csrd|brsr|export summary|download report)\\b");
+    private static final Pattern COMMUNITY = p("\\b((my |joined )?(groups?|communit(y|ies)|household)|what groups am i in|who is in my group)\\b");
+    private static final Pattern BILLS = p("\\b((my |uploaded )?bills?|electricity bills?|ocr( status)?|bill upload|units consumed|meter units)\\b");
     private static final Pattern RECOMMEND = p("\\b(how (can|do|should) i (reduce|cut|lower)|tips?|suggest|recommend|what should i (do|change)|"
             + "easiest action|biggest (win|lever)|where should i start)\\b");
     private static final Pattern EXPLAIN = p("\\b(why|explain|difference between|what is|what's|what are|same as|boundary|t&d|transmission|"
@@ -104,7 +111,13 @@ public final class CoachRouter {
                     + "N Carbonexo green credits.' Green credits are Carbonexo in-app reward points, not certified carbon credits. "
                     + "Do not call factor or emissions tools.");
         }
-        if (CREDIT_RULES.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
+        if (REWARDS_CAT.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
+            intents.add(Intent.REWARDS_CATALOG);
+            tools.add(GetRewardsCatalogTool.NAME);
+            tools.add(GetGreenCreditBalanceTool.NAME);
+            rules.add("Rewards catalogue. Use getRewardsCatalog and getGreenCreditBalance to describe the available rewards in the catalogue, "
+                    + "their cost in credits, and whether the user currently has enough balance to redeem them.");
+        } else if (CREDIT_RULES.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
             intents.add(Intent.CREDIT_RULES);
             tools.add(GetGreenCreditRulesTool.NAME);
             rules.add("Earning or redeeming Carbonexo green credits. Use getGreenCreditRules. Mention only earning rules with "
@@ -179,6 +192,26 @@ public final class CoachRouter {
                 intents.add(Intent.PERSONAL);
                 tools.add(GetUserActivityHistoryTool.NAME);
             }
+        }
+        if (CATEGORY_BREAKDOWN.matcher(q).find() && (firstPerson || PERSONAL_DATA.matcher(q).find())) {
+            intents.add(Intent.CATEGORY_BREAKDOWN);
+            tools.add(GetActivityCategoryBreakdownTool.NAME);
+            rules.add("Footprint category breakdown. Use getActivityCategoryBreakdown: explain the emissions per category (travel, electricity, food, shopping, waste) using the exact numbers from the tool.");
+        }
+        if (REPORT.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
+            intents.add(Intent.REPORT_EXPLANATION);
+            tools.add(GetEsgReportSummaryTool.NAME);
+            rules.add("ESG and sustainability reports. Use getEsgReportSummary: provide the user's official metrics (lifetime saved kg, current month kg, category breakdown, credits earned, and logging streak). Do not invent ESG figures.");
+        }
+        if (COMMUNITY.matcher(q).find()) {
+            intents.add(Intent.COMMUNITY);
+            tools.add(GetUserGroupsTool.NAME);
+            rules.add("Community and household groups. Use getUserGroups to list the signed-in user's joined groups, member counts, and roles. Say you cannot access private activity of individual other members.");
+        }
+        if (BILLS.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
+            intents.add(Intent.BILLS_OCR);
+            tools.add(GetUserBillsTool.NAME);
+            rules.add("Electricity bills and OCR uploads. Use getUserBills to report the user's uploaded bills, OCR status, units consumed (kWh), and billed amount.");
         }
         if (RECOMMEND.matcher(q).find()) {
             intents.add(Intent.RECOMMENDATION);

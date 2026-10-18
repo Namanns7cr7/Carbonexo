@@ -1,0 +1,261 @@
+{
+  "timestamp": "2026-10-18T20:02:59Z",
+  "total": 837,
+  "passed": 837,
+  "failed": 0,
+  "pass_rate_pct": 100.0,
+  "deterministic_latency_p50_ms": 0.00010011717677116394,
+  "deterministic_latency_p95_ms": 0.000200001522898674,
+  "categories": {
+    "transport_comparison": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "indian_grid_electricity": {
+      "total": 15,
+      "pass": 15,
+      "fail": 0
+    },
+    "dietary_emissions": {
+      "total": 13,
+      "pass": 13,
+      "fail": 0
+    },
+    "shopping_embodied": {
+      "total": 9,
+      "pass": 9,
+      "fail": 0
+    },
+    "waste": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "footprint_interpretation": {
+      "total": 10,
+      "pass": 10,
+      "fail": 0
+    },
+    "carbon_twin": {
+      "total": 26,
+      "pass": 26,
+      "fail": 0
+    },
+    "dashboard": {
+      "total": 12,
+      "pass": 12,
+      "fail": 0
+    },
+    "multi_step_tools": {
+      "total": 10,
+      "pass": 10,
+      "fail": 0
+    },
+    "missing_information": {
+      "total": 8,
+      "pass": 8,
+      "fail": 0
+    },
+    "contradictory_sources": {
+      "total": 8,
+      "pass": 8,
+      "fail": 0
+    },
+    "outdated_factors": {
+      "total": 8,
+      "pass": 8,
+      "fail": 0
+    },
+    "unit_conversion": {
+      "total": 10,
+      "pass": 10,
+      "fail": 0
+    },
+    "double_counting": {
+      "total": 22,
+      "pass": 22,
+      "fail": 0
+    },
+    "unsupported_saving_claims": {
+      "total": 10,
+      "pass": 10,
+      "fail": 0
+    },
+    "prompt_injection": {
+      "total": 31,
+      "pass": 31,
+      "fail": 0
+    },
+    "cross_user_leakage": {
+      "total": 8,
+      "pass": 8,
+      "fail": 0
+    },
+    "greetings": {
+      "total": 56,
+      "pass": 56,
+      "fail": 0
+    },
+    "small_talk": {
+      "total": 56,
+      "pass": 56,
+      "fail": 0
+    },
+    "carbon_credits": {
+      "total": 35,
+      "pass": 35,
+      "fail": 0
+    },
+    "green_credit_balance": {
+      "total": 35,
+      "pass": 35,
+      "fail": 0
+    },
+    "carbon_credit_score": {
+      "total": 28,
+      "pass": 28,
+      "fail": 0
+    },
+    "reward_rules": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "rewards_catalog": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "activity_history": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "dashboard_metrics": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "reports": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "bills_ocr": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "groups_community": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "recommendations": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "cross_user_security": {
+      "total": 35,
+      "pass": 35,
+      "fail": 0
+    },
+    "hindi_hinglish": {
+      "total": 28,
+      "pass": 28,
+      "fail": 0
+    },
+    "missing_factors": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "unit_conversions": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "scientific_citations": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "page_awareness": {
+      "total": 21,
+      "pass": 21,
+      "fail": 0
+    },
+    "multi_turn": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "food_emissions": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "shopping_emissions": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "waste_emissions": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "product_scanning": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "model_resilience": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "chat_persistence": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "streaming_sse": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "feedback_consent": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "lifestyle_targets": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "electricity_analysis": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "savings_verification": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "tool_bounds": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    },
+    "privacy_minimization": {
+      "total": 7,
+      "pass": 7,
+      "fail": 0
+    }
+  }
+}
