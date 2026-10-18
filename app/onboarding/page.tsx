@@ -175,30 +175,38 @@ export default function Onboarding() {
 
   const [saving, setSaving] = useState(false);
 
+  // save answers first, then mark onboarded (sequential — avoids a race
+  // where "complete onboarding" runs before the profile row exists)
+  const finish = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveProfile({
+        name: d.name,
+        travelMode: d.travelModes.join(', '),
+        dailyDistance: d.dailyDistance,
+        diet: d.diets.join(', '),
+        electricity: d.electricity,
+        shopping: d.shopping.join(', '),
+        weeklyGoalPct: d.weeklyGoalPct,
+      });
+      await completeOnboarding();
+      router.replace('/app');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const next = async () => {
     if (!current.valid || saving) return;
-    if (last) {
-      setSaving(true);
-      try {
-        // save answers first, then mark onboarded (sequential — avoids a race
-        // where "complete onboarding" runs before the profile row exists)
-        await saveProfile({
-          name: d.name,
-          travelMode: d.travelModes.join(', '),
-          dailyDistance: d.dailyDistance,
-          diet: d.diets.join(', '),
-          electricity: d.electricity,
-          shopping: d.shopping.join(', '),
-          weeklyGoalPct: d.weeklyGoalPct,
-        });
-        await completeOnboarding();
-        router.replace('/app');
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
+    if (last) return finish();
     setStep((s) => s + 1);
+  };
+
+  // Skip keeps only the name and finishes with the default answers for every other step.
+  const skip = () => {
+    if (!d.name.trim() || saving) return;
+    return finish();
   };
 
   return (
@@ -252,7 +260,7 @@ export default function Onboarding() {
           </button>
         </div>
         {step === 0 && (
-          <button onClick={next} className="mt-3 text-center text-sm font-semibold text-muted transition-colors hover:text-lime" disabled={!current.valid}>
+          <button onClick={skip} className="mt-3 text-center text-sm font-semibold text-muted transition-colors hover:text-lime disabled:cursor-not-allowed disabled:opacity-50" disabled={!d.name.trim() || saving}>
             Skip the intro
           </button>
         )}
