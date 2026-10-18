@@ -43,7 +43,7 @@ public class BillController {
 
     @PutMapping("/{id}/correct")
     public ResponseEntity<BillResponse> correct(@PathVariable UUID id,
-                                                 @RequestBody BillCorrectionRequest req) {
+                                                 @jakarta.validation.Valid @RequestBody BillCorrectionRequest req) {
         return ResponseEntity.ok(service.correct(id, SecurityUtils.currentUserId(), req));
     }
 }
