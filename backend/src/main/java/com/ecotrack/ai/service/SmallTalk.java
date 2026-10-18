@@ -21,7 +21,9 @@ final class SmallTalk {
             new Rule(p("^((hi|hey|hello)[\\s,!]+)?(how\\s*(are|r)\\s*(you|u)(\\s*doing)?(\\s*today)?|how'?s\\s*it\\s*going"
                     + "|how\\s*do\\s*you\\s*do|hru|wassup|what'?s\\s*up)" + TRAIL + "$"), "I'm doing well, thanks! How are you?"),
             new Rule(p("^(thanks?|thank\\s*(you|u)|thx|ty|tysm)(\\s*(so\\s*much|a\\s*lot|very\\s*much))?" + TRAIL + "$"),
-                    "You're welcome!"));
+                    "You're welcome!"),
+            new Rule(p("^(bye+|good\\s*bye|goodbye|see\\s*(you|ya)(\\s*later)?|cya|take\\s*care|good\\s*night)" + TRAIL + "$"),
+                    "Bye! 🌱 Come back anytime."));
 
     private SmallTalk() {}
 

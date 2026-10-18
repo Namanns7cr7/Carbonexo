@@ -45,6 +45,64 @@ class CoachRouterTest {
         }
     }
 
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "How many green credits do I have?|GREEN_CREDITS|getGreenCreditBalance",
+            "Hey, how many green credits do I have?|GREEN_CREDITS|getGreenCreditBalance",
+            "how many Carbonexo green credits do I have?|GREEN_CREDITS|getGreenCreditBalance",
+            "What about my Carbonexo credits?|GREEN_CREDITS|getGreenCreditBalance",
+            "What is my Carbon Credit Score?|CREDIT_SCORE|getCarbonCreditScore",
+            "what is my credit score?|CREDIT_SCORE|getCarbonCreditScore",
+            "How can I improve my score?|CREDIT_SCORE|getCarbonCreditScore",
+            "Why did my score change?|CREDIT_SCORE|getCarbonCreditScore",
+            "Hello, can you explain my score?|CREDIT_SCORE|getCarbonCreditScore",
+            "How can I earn more credits?|CREDIT_RULES|getGreenCreditRules",
+            "how can I earn rewards?|CREDIT_RULES|getGreenCreditRules",
+            "Can I redeem my credits?|CREDIT_RULES|getGreenCreditRules",
+            "Can I redeem them?|CREDIT_RULES|getGreenCreditRules",
+            "can I sell my Carbonexo credits?|CREDIT_RULES|getGreenCreditRules",
+            "Are Carbonexo green credits tradable?|CREDIT_RULES|getGreenCreditRules",
+            "What are carbon credits?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+            "Hi, what are carbon credits?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+            "How do carbon credits work?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+            "What are carbon offsets?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+            "What is additionality?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+            "What is credit retirement?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+            "What is the difference between a carbon allowance and a carbon credit?|CARBON_CREDIT_CONCEPT|retrieveScientificKnowledge",
+    })
+    void carbonexoCreditQuestionsForceTheMatchingTool(String q, Intent intent, String tool) {
+        CoachRouter.Route r = CoachRouter.route(q, true);
+        assertTrue(r.intents().contains(intent), q + " -> " + r.intents());
+        assertTrue(r.requiredTools().contains(tool), q + " -> " + r.requiredTools());
+        for (String t : List.of(GetEmissionFactorsTool.NAME, EstimateEmissionsTool.NAME, CalculateEmissionComparisonTool.NAME)) {
+            assertFalse(r.requiredTools().contains(t), q + " forced " + t);
+        }
+    }
+
+    @Test
+    void scoreAndBalanceAreDifferentRoutes() {
+        CoachRouter.Route s = CoachRouter.route("What is my Carbon Credit Score?", true);
+        assertFalse(s.requiredTools().contains(GetGreenCreditBalanceTool.NAME));
+        assertFalse(s.requiredTools().contains(GetUserActivityHistoryTool.NAME));
+        CoachRouter.Route b = CoachRouter.route("How many green credits do I have?", true);
+        assertFalse(b.requiredTools().contains(GetCarbonCreditScoreTool.NAME));
+        assertTrue(b.contract().contains("not certified carbon credits"));
+    }
+
+    @Test
+    void scoreVersusCarbonCreditsGetsBothContracts() {
+        CoachRouter.Route r = CoachRouter.route("How do carbon credits differ from my Carbon Credit Score?", true);
+        assertTrue(r.requiredTools().contains(GetCarbonCreditScoreTool.NAME), r.requiredTools().toString());
+        assertTrue(r.contract().contains("not a rating of carbon credits"));
+    }
+
+    @Test
+    void otherPeoplesCreditsAreNotRoutedToTheBalanceTool() {
+        CoachRouter.Route r = CoachRouter.route("How many credits does my friend's account have?", true);
+        assertTrue(r.intents().contains(Intent.OTHER_PEOPLE));
+        assertFalse(r.requiredTools().contains(GetGreenCreditBalanceTool.NAME));
+    }
+
     @Test
     void savingsContractForbidsConfirmingMeasuredReductionsOrOffsets() {
         CoachRouter.Route r = CoachRouter.route("Tell me my credits mean I've offset my emissions.", true);

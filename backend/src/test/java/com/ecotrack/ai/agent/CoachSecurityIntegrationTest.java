@@ -68,6 +68,7 @@ class CoachSecurityIntegrationTest {
     @Autowired AppConfigService appConfig;
     @Autowired JwtService jwt;
     @Autowired AgenticCoachServiceIntegrationTest.ScriptedModel model;
+    @Autowired com.ecotrack.score.CreditScoreService scoreService;
 
     record Account(UUID id, String token) {}
 
@@ -165,6 +166,90 @@ class CoachSecurityIntegrationTest {
         String export = mvc.perform(get("/api/admin/ai/preference-export").header("Authorization", "Bearer " + admin))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertFalse(export.contains("grid factor?"));
+    }
+
+    @Test
+    void greenCreditBalanceToolReadsOnlyTheSignedInUsersLedger() throws Exception {
+        Account a = register(), b = register();
+        jdbc.update("INSERT INTO credit_ledger (user_id, delta, balance_after, reason, rule_key) VALUES (?, 500, 600, 'Bill uploaded & confirmed', 'bill_upload')", b.id());
+        int balanceA = JSON.readTree(mvc.perform(get("/api/credits/balance").header("Authorization", "Bearer " + a.token()))
+                .andReturn().getResponse().getContentAsString()).get("balance").asInt();
+        String[] seen = new String[2];
+        model.then(AgenticCoachServiceIntegrationTest.call(GetGreenCreditBalanceTool.NAME, Map.of("user_id", b.id().toString())))   // forged: must be rejected
+             .then(AgenticCoachServiceIntegrationTest.call(GetGreenCreditBalanceTool.NAME, Map.of()))
+             .then(r -> {
+                 try { seen[0] = AgenticCoachServiceIntegrationTest.toolResults(r); } catch (Exception e) { throw new RuntimeException(e); }
+                 return new AgentModelClient.Response("You currently have " + balanceA + " Carbonexo green credits.", List.of(), 5, 5, "STOP");
+             });
+        JsonNode res = coach(a, "How many green credits do I have?");
+        assertTrue(seen[0].contains("invalid arguments"), seen[0]);
+        assertTrue(seen[0].contains("\"balance\":" + balanceA), seen[0]);
+        assertFalse(seen[0].contains("600") || seen[0].contains("\"balance\":500"), seen[0]);
+        assertTrue(seen[0].contains("not tradable"), seen[0]);
+        assertEquals("You currently have " + balanceA + " Carbonexo green credits.", res.get("result").asText());
+        assertTrue(res.get("toolsUsed").toString().contains(GetGreenCreditBalanceTool.NAME));
+    }
+
+    @Test
+    void carbonCreditScoreToolMatchesTheScoreServiceForTheSignedInUser() throws Exception {
+        Account a = register();
+        JsonNode api = JSON.readTree(mvc.perform(get("/api/credits/score").header("Authorization", "Bearer " + a.token()))
+                .andReturn().getResponse().getContentAsString());
+        String[] seen = new String[1];
+        model.then(AgenticCoachServiceIntegrationTest.call(GetCarbonCreditScoreTool.NAME, Map.of()))
+             .then(r -> {
+                 try { seen[0] = AgenticCoachServiceIntegrationTest.toolResults(r); } catch (Exception e) { throw new RuntimeException(e); }
+                 return new AgentModelClient.Response("Your Carbon Credit Score is " + api.get("score").asInt() + ".", List.of(), 5, 5, "STOP");
+             });
+        JsonNode res = coach(a, "What is my Carbon Credit Score?");
+        JsonNode tool = JSON.readTree(seen[0]).get(0).get("response");
+        assertEquals(api.get("score").asInt(), tool.get("score").asInt());
+        assertEquals(api.get("tier").asText(), tool.get("tier").asText());
+        assertEquals("300-850", tool.get("scale").asText());
+        assertEquals(api.get("balancePoints").asInt(), tool.get("components").get(0).get("points").asInt());
+        assertEquals(api.get("streakPoints").asInt(), tool.get("components").get(1).get("points").asInt());
+        assertEquals(api.get("consistencyPoints").asInt(), tool.get("components").get(2).get("points").asInt());
+        assertTrue(res.get("toolsUsed").toString().contains(GetCarbonCreditScoreTool.NAME));
+    }
+
+    @Test
+    void creditScoreCapsMatchTheScoreService() {
+        // A user far above every cap must score exactly base + caps, i.e. the tool's caps are the service's caps.
+        UUID id = UUID.randomUUID();
+        jdbc.update("INSERT INTO users (id, email, password_hash, role, status, email_verified) VALUES (?, ?, 'x', 'USER', 'ACTIVE', true)", id, id + "@example.com");
+        jdbc.update("INSERT INTO credit_ledger (user_id, delta, balance_after, reason) VALUES (?, 100000, 100000, 'test')", id);
+        for (int d = 0; d < 40; d++) {
+            jdbc.update("INSERT INTO activity_logs (user_id, category, label, co2_kg, activity_date, source) VALUES (?, 'travel', 'x', 1, ?, 'manual')",
+                    id, LocalDate.now(ZoneId.systemDefault()).minusDays(d));
+        }
+        var s = scoreService.getScore(id);
+        assertEquals(GetCarbonCreditScoreTool.BALANCE_CAP, s.balancePoints());
+        assertEquals(GetCarbonCreditScoreTool.STREAK_CAP, s.streakPoints());
+        // the service clamps consistency at 100, but a 30-day window at 3 points/day tops out at 90
+        assertEquals(GetCarbonCreditScoreTool.CONSISTENCY_REACHABLE, s.consistencyPoints());
+        assertEquals(GetCarbonCreditScoreTool.BASE + GetCarbonCreditScoreTool.BALANCE_CAP + GetCarbonCreditScoreTool.STREAK_CAP
+                + GetCarbonCreditScoreTool.CONSISTENCY_REACHABLE, s.score());
+    }
+
+    @Test
+    void creditRulesToolListsOnlyActiveRulesAndFlagsTheOnesTheAppAwards() throws Exception {
+        Account a = register();
+        String[] seen = new String[1];
+        model.then(AgenticCoachServiceIntegrationTest.call(GetGreenCreditRulesTool.NAME, Map.of()))
+             .then(r -> {
+                 try { seen[0] = AgenticCoachServiceIntegrationTest.toolResults(r); } catch (Exception e) { throw new RuntimeException(e); }
+                 return new AgentModelClient.Response("Mark plan actions as done on the Actions page.", List.of(), 5, 5, "STOP");
+             });
+        coach(a, "How can I earn more credits?");
+        JsonNode tool = JSON.readTree(seen[0]).get(0).get("response");
+        int active = jdbc.queryForObject("SELECT count(*) FROM credit_rules WHERE active AND valid_from <= CURRENT_DATE "
+                + "AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)", Integer.class);
+        assertEquals(active, tool.get("earning_rules").size());
+        for (JsonNode rule : tool.get("earning_rules")) {
+            assertEquals(GetGreenCreditRulesTool.AWARDED_BY.containsKey(rule.get("rule").asText()), rule.get("awarded_by_app_today").asBoolean());
+        }
+        assertTrue(tool.get("rewards_catalogue").size() > 0);
+        assertTrue(tool.get("kind").asText().contains("not tradable"));
     }
 
     @Test

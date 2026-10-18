@@ -19,6 +19,10 @@ const RULES: { re: RegExp; reply: string }[] = [
     re: new RegExp(String.raw`^(thanks?|thank\s*(you|u)|thx|ty|tysm)(\s*(so\s*much|a\s*lot|very\s*much))?` + TRAIL + '$', 'i'),
     reply: "You're welcome!",
   },
+  {
+    re: new RegExp(String.raw`^(bye+|good\s*bye|goodbye|see\s*(you|ya)(\s*later)?|cya|take\s*care|good\s*night)` + TRAIL + '$', 'i'),
+    reply: 'Bye! 🌱 Come back anytime.',
+  },
 ];
 
 export function smallTalkReply(message: string): string | null {

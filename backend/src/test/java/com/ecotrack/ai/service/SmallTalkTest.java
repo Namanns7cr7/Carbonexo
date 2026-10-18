@@ -13,6 +13,9 @@ class SmallTalkTest {
         assertThat(SmallTalk.reply("how are you doing")).contains("I'm doing well, thanks! How are you?");
         assertThat(SmallTalk.reply("how are you doing?")).contains("I'm doing well, thanks! How are you?");
         assertThat(SmallTalk.reply("thanks")).contains("You're welcome!");
+        assertThat(SmallTalk.reply("hi")).contains("Hey! 👋 How can I help you?");
+        assertThat(SmallTalk.reply("hiii")).contains("Hey! 👋 How can I help you?");
+        assertThat(SmallTalk.reply("bye")).contains("Bye! 🌱 Come back anytime.");
     }
 
     @Test
@@ -22,5 +25,8 @@ class SmallTalkTest {
         assertThat(SmallTalk.reply("how can I reduce my electricity consumption?")).isEmpty();
         assertThat(SmallTalk.reply("compare my car with a bus for 20 km")).isEmpty();
         assertThat(SmallTalk.reply("thanks, what is my credit score?")).isEmpty();
+        assertThat(SmallTalk.reply("Hi, what are carbon credits?")).isEmpty();
+        assertThat(SmallTalk.reply("Hey, how many green credits do I have?")).isEmpty();
+        assertThat(SmallTalk.reply("Hello, can you explain my score?")).isEmpty();
     }
 }
