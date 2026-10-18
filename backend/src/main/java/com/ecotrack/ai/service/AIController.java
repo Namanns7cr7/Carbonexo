@@ -85,9 +85,25 @@ public class AIController {
         // | safe_limited (agentic, approved factors and reviewed evidence only; failures reported plainly)
         AgenticCoachService.Mode mode = AgenticCoachService.Mode.fromConfig(appConfig.getOrDefault("ai.coach.mode", "legacy"));
         if (agenticCoach != null && mode != null) {
-            return ResponseEntity.ok(agenticCoach.chat(userId, message, mode));
+            return ResponseEntity.ok(agenticCoach.chat(userId, message, mode, pageHint(body)));
         }
         return ResponseEntity.ok(service.chat(userId, message));
+    }
+
+    private static final java.util.regex.Pattern PAGE_ROUTE = java.util.regex.Pattern.compile("/app(/[a-z0-9-]{1,40}){0,3}");
+    private static final java.util.regex.Pattern PAGE_TITLE = java.util.regex.Pattern.compile("[\\p{L}\\p{N} &'-]{1,60}");
+
+    /**
+     * Optional {"pageContext":{"route":"/app/credits","pageTitle":"Green Credits"}} from the client, reduced to a
+     * short, validated label. Anything else in it (client-side numbers, ids, filters) is ignored, and an invalid
+     * route or title drops the hint rather than passing free text into the prompt.
+     */
+    static String pageHint(Map<String, Object> body) {
+        if (body == null || !(body.get("pageContext") instanceof Map<?, ?> ctx)) return null;
+        Object route = ctx.get("route"), title = ctx.get("pageTitle");
+        if (!(route instanceof String r) || !PAGE_ROUTE.matcher(r).matches()) return null;
+        if (!(title instanceof String t) || !PAGE_TITLE.matcher(t).matches()) return null;
+        return t + " (" + r + ")";
     }
 
     @GetMapping("/coach/history")

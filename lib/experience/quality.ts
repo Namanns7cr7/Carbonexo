@@ -31,7 +31,7 @@ export function earthQuality(
   }
   // A phone, or a globe drawn as a panel rather than a hero: lightweight and battery-efficient
   if (coarsePointer || compact) {
-    return { webgl: true, texture: '2k', segments: 80, dpr: [1, 1.5], clouds: true, stars: 1000, spin: 0.04 };
+    return { webgl: true, texture: '2k', segments: 80, dpr: [1, 1.25], clouds: true, stars: 1000, spin: 0.04 };
   }
   // Desktop: 2K texture loads instantly, uses 75% less VRAM and maintains smooth 60fps
   return { webgl: true, texture: '2k', segments: 112, dpr: [1, 1.5], clouds: true, stars: 1600, spin: 0.04 };

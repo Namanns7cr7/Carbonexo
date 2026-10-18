@@ -128,6 +128,9 @@ describe('regions and quality', () => {
     const touch = earthQuality('full', { coarsePointer: true });
     expect(touch.texture).toBe('2k');
     expect(touch.dpr[1]).toBeLessThan(desk.dpr[1]);
+    expect(touch.segments).toBeLessThan(desk.segments);
+    expect(touch.stars).toBeLessThan(desk.stars);
+    expect(earthQuality('full', { compact: true })).toEqual(touch);
   });
 });
 
