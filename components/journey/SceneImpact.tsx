@@ -10,7 +10,7 @@
  * Points are never presented as carbon credits.
  */
 
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { InertialRail, TactileCard } from '@/components/physics';
 import { useJourneyData, type FootprintView } from './useJourneyData';
@@ -34,6 +34,7 @@ const MILESTONES: Milestone[] = [
 
 export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) {
   const d = useJourneyData();
+  const [canDrag, setCanDrag] = useState(false);
   const real = d.mode === 'real';
   const earnedCount = real ? MILESTONES.filter((m) => m.earned(d)).length : 0;
 
@@ -78,9 +79,9 @@ export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) 
         <div className="pointer-events-auto">
           <div className="mb-3 flex items-center justify-between gap-4 md:max-w-[620px]">
             <h3 className="text-[13px] font-bold uppercase tracking-[0.14em] text-muted">Milestones</h3>
-            <span className="text-[12px] text-muted">Drag to explore →</span>
+            {canDrag && <span className="text-[12px] text-muted">Drag to explore →</span>}
           </div>
-          <InertialRail label="Passport milestones" className="-mx-5 px-5 sm:-mx-6 sm:px-6">
+          <InertialRail label="Passport milestones" onOverflowChange={setCanDrag} className="-mx-5 px-5 sm:-mx-6 sm:px-6">
             {MILESTONES.map((m, i) => {
               const on = real && m.earned(d);
               return (

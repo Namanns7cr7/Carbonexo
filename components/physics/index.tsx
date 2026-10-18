@@ -15,6 +15,7 @@
 import Link from 'next/link';
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, type HTMLMotionProps } from 'framer-motion';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { railTravel } from '@/lib/experience/rail';
 
 /** Shared DOM springs. Match SPRINGS in lib/physics/spring.ts: just under critical. */
 export const UI_SPRING = { stiffness: 320, damping: 26, mass: 0.6 } as const;
@@ -125,30 +126,49 @@ export function TactileCard({ className = '', children, style, ...rest }: HTMLMo
  * both ends, and still a normal scroll region for keyboard and screen-reader
  * users (it scrolls natively when focused and arrow keys are used).
  */
-export function InertialRail({ children, className = '', label }: { children: ReactNode; className?: string; label: string }) {
+export function InertialRail({
+  children,
+  className = '',
+  label,
+  onOverflowChange,
+}: {
+  children: ReactNode;
+  className?: string;
+  label: string;
+  /** Called with whether the items overflow, so a caller can show a drag hint only when there is something to drag. */
+  onOverflowChange?: (overflowing: boolean) => void;
+}) {
   const reduce = useReducedMotion();
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const [limit, setLimit] = useState(0);
+  const draggable = !reduce && limit > 0;
 
+  // The container (padding included) and the track are measured the same way in both modes.
+  // Re-attached when the mode changes, because the elements are replaced.
   useEffect(() => {
     const measure = () => {
-      if (outer.current && inner.current) setLimit(Math.max(0, inner.current.scrollWidth - outer.current.clientWidth));
+      if (!outer.current || !inner.current) return;
+      const cs = getComputedStyle(outer.current);
+      setLimit(railTravel(inner.current.scrollWidth, outer.current.clientWidth, parseFloat(cs.paddingLeft) || 0, parseFloat(cs.paddingRight) || 0));
     };
     measure();
     const ro = new ResizeObserver(measure);
     if (outer.current) ro.observe(outer.current);
     if (inner.current) ro.observe(inner.current);
     return () => ro.disconnect();
-  }, []);
+  }, [draggable]);
 
-  if (reduce || limit === 0) {
+  useEffect(() => {
+    onOverflowChange?.(limit > 0);
+  }, [limit, onOverflowChange]);
+
+  if (!draggable) {
     return (
-      <div role="region" aria-label={label} tabIndex={0} className={`overflow-x-auto outline-none focus-visible:ring-2 focus-visible:ring-[var(--lime)] ${className}`}>
+      <div ref={outer} role="region" aria-label={label} tabIndex={0} className={`overflow-x-auto outline-none focus-visible:ring-2 focus-visible:ring-[var(--lime)] ${className}`}>
         <div ref={inner} className="flex w-max gap-4">
           {children}
         </div>
-        <div ref={outer} className="h-0 w-full" aria-hidden />
       </div>
     );
   }
