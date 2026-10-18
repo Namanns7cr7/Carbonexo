@@ -1,5 +1,8 @@
 package com.ecotrack.ai.service;
 
+import com.ecotrack.ai.agent.AgenticCoachService;
+import com.ecotrack.config.AppConfigService;
+import org.springframework.beans.factory.ObjectProvider;
 import com.ecotrack.ai.service.dto.CursorPage;
 import com.ecotrack.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +18,14 @@ import java.util.UUID;
 public class AIController {
 
     private final AIService service;
+    private final AppConfigService appConfig;
+    private final AgenticCoachService agenticCoach;
 
-    public AIController(AIService service) {
+    public AIController(AIService service, AppConfigService appConfig,
+                        ObjectProvider<AgenticCoachService> agenticCoach) {
         this.service = service;
+        this.appConfig = appConfig;
+        this.agenticCoach = agenticCoach.getIfAvailable();
     }
 
     @PostMapping("/recommendations")
@@ -56,8 +64,14 @@ public class AIController {
 
     @PostMapping("/coach")
     public ResponseEntity<CoachResponse> coach(@RequestBody Map<String, String> body) {
-        UUID userId = SecurityUtils.currentUserId();
+        UUID userId = SecurityUtils.currentUserId();   // the ONLY source of identity for every coach tool
         String message = body.getOrDefault("message", "");
+        // app_config ai.coach.mode: legacy (default, production) | tools | tools_rag (agentic, source-grounded)
+        // | safe_limited (agentic, approved factors and reviewed evidence only; failures reported plainly)
+        AgenticCoachService.Mode mode = AgenticCoachService.Mode.fromConfig(appConfig.getOrDefault("ai.coach.mode", "legacy"));
+        if (agenticCoach != null && mode != null) {
+            return ResponseEntity.ok(agenticCoach.chat(userId, message, mode));
+        }
         return ResponseEntity.ok(service.chat(userId, message));
     }
 

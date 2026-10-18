@@ -1,0 +1,64 @@
+{
+  "pilot_version": "okf-pilot.v1",
+  "okf_version": "0.2",
+  "bundle_dir": "datasets/v2/okf/bundle/ecomind",
+  "producer": "carbonexo-okf-producer/0.1.0",
+  "content_as_of": "2026-10-17T07:50:00Z",
+  "notes": [
+    "15 concepts. Batch 2 (after pilot verification): recommendations, GLOBAL food proxies, remaining DESNZ/IN factors, purchases-vs-meals and delivery-vs-meal rules.",
+    "content_as_of is generated.at for data-derived concepts: the last meaningful change of the Dataset V2 candidate set they are produced from."
+  ],
+  "sources": [
+    {"source_id": "niti-2026-power", "path": "sources/niti-2026-power.md", "stale_after": "2026-12-31T00:00:00Z"},
+    {"source_id": "indiaghgp-road-2015", "path": "sources/indiaghgp-road-2015.md", "stale_after": "2027-04-17T00:00:00Z"},
+    {"source_id": "desnz-2026-flat", "path": "sources/desnz-2026-flat.md", "stale_after": "2027-06-30T00:00:00Z"}
+  ],
+  "regions": [
+    {"region": "IN", "path": "regions/in.md", "stale_after": "2027-04-17T00:00:00Z"}
+  ],
+  "factors": [
+    {"factor_id": "elec.grid.in.niti_annex_e.fy2024_25", "path": "factors/in/elec-grid-fy2024-25.md", "title": "India grid electricity, weighted average (FY 2024-25)",
+     "tags": ["india", "electricity", "grid"], "stale_after": "2026-12-31T00:00:00Z",
+     "links": ["/methodology/in-grid-electricity.md", "/accounting/meter-vs-appliance.md"],
+     "corroborated_by": ["elec.grid.in.cea_v21.weighted_avg"]},
+    {"factor_id": "road.in.car.petrol.hatch_lt1400cc", "path": "factors/in/car-petrol-hatch-lt1400cc.md", "title": "Petrol hatchback below 1400 cc, India (per vehicle-km)",
+     "tags": ["india", "transport", "car"], "stale_after": "2027-04-17T00:00:00Z", "links": []},
+    {"factor_id": "road.in.bus.intracity_stu", "path": "factors/in/bus-intracity-stu.md", "title": "Intracity State Transport bus, India (per passenger-km)",
+     "tags": ["india", "transport", "bus"], "stale_after": "2027-04-17T00:00:00Z", "links": []},
+    {"factor_id": "rail.gb.national.y2026", "path": "factors/gb/rail-national-2026.md", "title": "UK national rail, DESNZ 2026 (per passenger-km)",
+     "tags": ["uk", "transport", "rail"], "stale_after": "2027-06-30T00:00:00Z", "links": []}
+  ],
+  "legacy_factors": [
+    {"legacy_key": "clothing_item", "path": "factors/legacy/clothing-item.md", "title": "Clothing item (legacy, unsupported)",
+     "conflicts_with": [{"table": "embodied_carbon_factors (V7)", "key": "clothing", "value": 22.0}]}
+  ],
+  "tools": [
+    {"name": "getEmissionFactors", "path": "tools/get-emission-factors.md", "stale_after": "2027-01-17T00:00:00Z",
+     "links": ["/computations/activity-emissions.md", "/policies/verification-policy.md"]}
+  ],
+  "authored": [
+    "methodology/in-grid-electricity.md",
+    "accounting/meter-vs-appliance.md",
+    "computations/activity-emissions.md",
+    "computations/carbon-twin-scenario.md",
+    "policies/verification-policy.md"
+  ],
+  "measures": {
+    "in.grid.weighted_average.FY2024-25": ["elec.grid.in.niti_annex_e.fy2024_25", "elec.grid.in.cea_v21.weighted_avg"]
+  },
+  "source_checks": {
+    "elec.grid.in.niti_annex_e.fy2024_25": {
+      "artifact": "niti-2026-power", "method": "pdftotext_row_ratio",
+      "pattern": "2024-25\\s+(1234\\.19)\\s+1461\\.85\\s+255\\.01\\s+(1739\\.06)", "ratio_groups": [1, 2], "round": 3
+    },
+    "road.in.car.petrol.hatch_lt1400cc": {
+      "artifact": "indiaghgp-road-2015", "method": "pdftotext_value",
+      "pattern": "Hatchback\\s+<1400 CC Gasoline\\s+(0\\.130)\\b", "value_group": 1
+    },
+    "road.in.bus.intracity_stu": {
+      "artifact": "indiaghgp-road-2015", "method": "pdftotext_value",
+      "pattern": "emission factor for bus transport is (0\\.015161) kg CO2/pax-km", "value_group": 1
+    },
+    "rail.gb.national.y2026": {"artifact": "desnz-2026-flat", "method": "desnz_reextract"}
+  }
+}

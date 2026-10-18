@@ -1,0 +1,54 @@
+{
+  "k": 3,
+  "labelled_cases": 72,
+  "scenarios": {
+    "fresh_2026-10-17": {
+      "flat_rag": {
+        "cases": 72,
+        "precision_at_3": 0.2361,
+        "recall_at_3": 0.3403,
+        "mrr": 0.3866,
+        "region_violations": 5,
+        "deprecated_or_stale_served_as_evidence": 5,
+        "raw_factor_numbers_exposed": 28,
+        "items_with_resolvable_citation_pct": 0.0,
+        "items_labelled_with_trust_pct": 0.0
+      },
+      "okf_rag": {
+        "cases": 72,
+        "precision_at_3": 0.2546,
+        "recall_at_3": 0.3843,
+        "mrr": 0.4468,
+        "region_violations": 0,
+        "deprecated_or_stale_served_as_evidence": 0,
+        "raw_factor_numbers_exposed": 0,
+        "items_with_resolvable_citation_pct": 62.6,
+        "items_labelled_with_trust_pct": 100.0
+      }
+    },
+    "after_staleness_2027-01-05": {
+      "flat_rag": {
+        "cases": 72,
+        "precision_at_3": 0.2361,
+        "recall_at_3": 0.3403,
+        "mrr": 0.3866,
+        "region_violations": 5,
+        "deprecated_or_stale_served_as_evidence": 61,
+        "raw_factor_numbers_exposed": 28,
+        "items_with_resolvable_citation_pct": 0.0,
+        "items_labelled_with_trust_pct": 0.0
+      },
+      "okf_rag": {
+        "cases": 72,
+        "precision_at_3": 0.1713,
+        "recall_at_3": 0.2685,
+        "mrr": 0.3241,
+        "region_violations": 0,
+        "deprecated_or_stale_served_as_evidence": 0,
+        "raw_factor_numbers_exposed": 0,
+        "items_with_resolvable_citation_pct": 43.2,
+        "items_labelled_with_trust_pct": 100.0
+      }
+    }
+  }
+}

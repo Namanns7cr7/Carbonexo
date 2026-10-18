@@ -1,0 +1,224 @@
+{
+  "version": "coach-tools.v1",
+  "status": "design - not wired into AIService yet",
+  "global_rules": {
+    "identity": "No tool accepts a user id. Every tool acts as the authenticated principal (SecurityUtils.currentUserId()) resolved server-side. A user id, email or name supplied by the model or the user message is ignored.",
+    "side_effects": "All v1 tools are read-only. runCarbonTwinScenario reuses SimulationService, which never writes logs or credits.",
+    "limits": {"max_model_iterations_per_turn": 3, "max_tool_calls_per_turn": 6, "default_tool_timeout_ms": 2000, "retrieval_timeout_ms": 3000, "turn_deadline_ms": 15000},
+    "numbers": "Every kg figure in an answer must come from a tool output in the same turn. Tool outputs carry factor_ids + dataset_version so the citation validator can check them.",
+    "quantity_kinds": {
+      "logged_estimate": "Sum of the user's logged activities x the factor in force at logging time. An estimate, not a measurement.",
+      "personal_baseline_estimate": "The user's own typical emissions for an activity, derived from their logged history under a stated coverage rule.",
+      "hypothetical_reduction": "What-if output (Carbon Twin, comparisons). Never described as saved or achieved.",
+      "self_reported_action": "The user ticked an action as done. Not verified.",
+      "verified_measurement": "Backed by an uploaded and confirmed document (e.g. an electricity bill with OCR + user confirmation).",
+      "green_credits": "In-app reward points from credit_rules. Not CO2, not offsets."
+    },
+    "not_estimated": "When status is not_estimated or regional_gap, the answer must say 'Not estimated' and list missing_information. Never substitute a number."
+  },
+  "definitions": {
+    "FactorRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["factor_id", "value", "unit", "region", "applicable_year", "source_id", "source_locator", "scientific_status", "uncertainty_level", "dataset_version"],
+      "properties": {
+        "factor_id": {"type": "string"}, "value": {"type": "number"}, "unit": {"type": "string"},
+        "region": {"type": "string"}, "applicable_year": {"type": "string"}, "source_id": {"type": "string"},
+        "source_locator": {"type": "string"}, "scientific_status": {"enum": ["supported", "provisional"]},
+        "uncertainty_level": {"enum": ["low", "medium", "high", "unknown"]}, "proxy_used": {"type": "boolean"},
+        "dataset_version": {"type": "string"}
+      }
+    },
+    "EstimateStatus": {"enum": ["estimated", "not_estimated", "regional_gap"]},
+    "QuantityKind": {"enum": ["logged_estimate", "personal_baseline_estimate", "hypothetical_reduction", "self_reported_action", "verified_measurement", "green_credits"]},
+    "Category": {"enum": ["travel", "food", "electricity", "shopping", "waste"]}
+  },
+  "tools": [
+    {
+      "name": "getUserProfile",
+      "description": "The signed-in user's region and stated habits. Use first when region, diet or travel mode matters.",
+      "backed_by": "UserProfileService.getProfile",
+      "input_schema": {"type": "object", "additionalProperties": false, "properties": {}},
+      "output_schema": {
+        "type": "object", "additionalProperties": false,
+        "required": ["region", "region_confirmed", "onboarded"],
+        "properties": {
+          "region": {"type": "string"}, "region_confirmed": {"type": "boolean"},
+          "travel_mode": {"type": ["string", "null"]}, "daily_distance_km": {"type": ["number", "null"]},
+          "diet": {"type": ["string", "null"]}, "weekly_goal_pct": {"type": ["integer", "null"]},
+          "onboarded": {"type": "boolean"}, "memory_consent": {"type": "boolean"}
+        }
+      },
+      "timeout_ms": 1000
+    },
+    {
+      "name": "getActivitySummary",
+      "description": "Totals of the user's LOGGED activities for a period, by category, with logging coverage.",
+      "backed_by": "ActivityLogRepository.breakdownByCategory + coverage query",
+      "input_schema": {
+        "type": "object", "additionalProperties": false, "required": ["period"],
+        "properties": {
+          "period": {"enum": ["today", "last_7_days", "this_month", "last_30_days"]},
+          "category": {"$ref": "#/definitions/Category"}
+        }
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false,
+        "required": ["from", "to", "quantity_kind", "totals", "coverage"],
+        "properties": {
+          "from": {"type": "string", "format": "date"}, "to": {"type": "string", "format": "date"},
+          "quantity_kind": {"const": "logged_estimate"},
+          "totals": {"type": "array", "items": {"type": "object", "required": ["category", "kg", "entries", "unsupported_entries"], "properties": {
+            "category": {"$ref": "#/definitions/Category"}, "kg": {"type": "number"}, "entries": {"type": "integer"},
+            "unsupported_entries": {"type": "integer", "description": "Entries whose factor is unsupported; their kg are EXCLUDED from kg and listed here."}}}},
+          "coverage": {"type": "object", "required": ["days_with_logs", "days_in_period"], "properties": {"days_with_logs": {"type": "integer"}, "days_in_period": {"type": "integer"}}},
+          "factor_dataset_versions": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "timeout_ms": 2000
+    },
+    {
+      "name": "getEmissionFactors",
+      "description": "Deterministic factor lookup by activity key and region. The ONLY way the model obtains a factor.",
+      "backed_by": "FactorRegistry (V2 factor_records), region -> GLOBAL proxy -> regional_gap",
+      "input_schema": {
+        "type": "object", "additionalProperties": false, "required": ["activity"],
+        "properties": {
+          "activity": {"type": "string", "description": "Catalog key, e.g. home_electricity, car_ride, bus, food.global.peas"},
+          "region": {"type": "string", "description": "Defaults to the profile region."},
+          "variant": {"type": "string", "description": "e.g. petrol_hatch_lt1400cc, intracity"}
+        }
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false, "required": ["status", "missing_information"],
+        "properties": {
+          "status": {"$ref": "#/definitions/EstimateStatus"},
+          "factor": {"$ref": "#/definitions/FactorRef"},
+          "missing_information": {"type": "array", "items": {"type": "string"}},
+          "alternatives_available": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "timeout_ms": 1000
+    },
+    {
+      "name": "getCarbonTrends",
+      "description": "Logged-emission time series for the dashboard trend questions.",
+      "backed_by": "DashboardService week/month aggregation",
+      "input_schema": {
+        "type": "object", "additionalProperties": false, "required": ["granularity", "periods"],
+        "properties": {"granularity": {"enum": ["day", "week", "month"]}, "periods": {"type": "integer", "minimum": 1, "maximum": 12}}
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false, "required": ["quantity_kind", "series"],
+        "properties": {
+          "quantity_kind": {"const": "logged_estimate"},
+          "series": {"type": "array", "items": {"type": "object", "required": ["period_start", "kg", "days_with_logs"], "properties": {
+            "period_start": {"type": "string", "format": "date"}, "kg": {"type": "number"}, "days_with_logs": {"type": "integer"}}}}
+        }
+      },
+      "timeout_ms": 2000
+    },
+    {
+      "name": "retrieveScientificEvidence",
+      "description": "Hybrid (keyword + vector) search over the licensed scientific corpus. Returns quotable chunks with locators. NEVER a source of numeric factors when getEmissionFactors can answer.",
+      "backed_by": "ScientificRetrievalService (sci_chunks; no access to ai_memory)",
+      "input_schema": {
+        "type": "object", "additionalProperties": false, "required": ["query"],
+        "properties": {
+          "query": {"type": "string", "maxLength": 500},
+          "region": {"type": "string"},
+          "source_ids": {"type": "array", "items": {"type": "string"}},
+          "max_results": {"type": "integer", "minimum": 1, "maximum": 5, "default": 4}
+        }
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false, "required": ["confidence", "results", "corpus_version"],
+        "properties": {
+          "confidence": {"enum": ["high", "medium", "low", "none"]},
+          "corpus_version": {"type": "string"},
+          "results": {"type": "array", "items": {"type": "object", "required": ["chunk_id", "source_id", "title", "locator", "text", "score"], "properties": {
+            "chunk_id": {"type": "string"}, "source_id": {"type": "string"}, "title": {"type": "string"},
+            "locator": {"type": "string"}, "text": {"type": "string"}, "score": {"type": "number"}}}}
+        }
+      },
+      "timeout_ms": 3000
+    },
+    {
+      "name": "calculateEmissionComparison",
+      "description": "Deterministic A-vs-B comparison (e.g. car vs bus for 12 km/day). Returns a HYPOTHETICAL difference.",
+      "backed_by": "CarbonCalculationService.calculateCo2 over FactorRegistry",
+      "input_schema": {
+        "type": "object", "additionalProperties": false, "required": ["baseline", "alternative"],
+        "properties": {
+          "baseline": {"type": "object", "required": ["activity", "quantity"], "properties": {"activity": {"type": "string"}, "variant": {"type": "string"}, "quantity": {"type": "number", "minimum": 0}, "occupancy": {"type": "integer", "minimum": 1}}},
+          "alternative": {"type": "object", "required": ["activity", "quantity"], "properties": {"activity": {"type": "string"}, "variant": {"type": "string"}, "quantity": {"type": "number", "minimum": 0}, "occupancy": {"type": "integer", "minimum": 1}}},
+          "occurrences_per_week": {"type": "number", "minimum": 0, "maximum": 50},
+          "weeks": {"type": "number", "minimum": 0, "maximum": 52},
+          "region": {"type": "string"}
+        }
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false, "required": ["status", "quantity_kind", "missing_information"],
+        "properties": {
+          "status": {"$ref": "#/definitions/EstimateStatus"},
+          "quantity_kind": {"const": "hypothetical_reduction"},
+          "baseline_kg": {"type": "number"}, "alternative_kg": {"type": "number"}, "difference_kg": {"type": "number"},
+          "formula": {"type": "string"},
+          "factors": {"type": "array", "items": {"$ref": "#/definitions/FactorRef"}},
+          "missing_information": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "timeout_ms": 1500
+    },
+    {
+      "name": "runCarbonTwinScenario",
+      "description": "Carbon Twin what-if over a month/year horizon. Same engine as the Simulate screen. Projected credits are not awarded.",
+      "backed_by": "SimulationService.simulate (read-only)",
+      "input_schema": {
+        "type": "object", "additionalProperties": false, "required": ["horizon", "changes"],
+        "properties": {
+          "horizon": {"enum": ["MONTH", "YEAR"]},
+          "changes": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"type": "object", "required": ["factorKey", "quantity", "frequency", "deltaType"], "properties": {
+            "factorKey": {"type": "string"}, "quantity": {"type": "number", "minimum": 0},
+            "frequency": {"enum": ["per_day", "per_week", "per_month"]},
+            "deltaType": {"enum": ["REPLACE_WITH", "REDUCE_BY"]},
+            "replacementFactorKey": {"type": "string"}, "amount": {"type": "number", "minimum": 0}}}}
+        }
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false, "required": ["status", "quantity_kind", "baselineCo2Kg", "projectedCo2Kg", "deltaCo2Kg", "projectedCreditsDelta_awarded"],
+        "properties": {
+          "status": {"$ref": "#/definitions/EstimateStatus"},
+          "quantity_kind": {"const": "hypothetical_reduction"},
+          "baselineCo2Kg": {"type": "number"}, "projectedCo2Kg": {"type": "number"}, "deltaCo2Kg": {"type": "number"},
+          "projectedCreditsDelta": {"type": "integer"}, "projectedCreditsDelta_awarded": {"const": false},
+          "factors": {"type": "array", "items": {"$ref": "#/definitions/FactorRef"}},
+          "missing_information": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "timeout_ms": 2000
+    },
+    {
+      "name": "getActionRecommendations",
+      "description": "Candidate actions ranked for this user, each with a per-user hypothetical estimate or not_estimated.",
+      "backed_by": "action_templates + calculateEmissionComparison over the user's logged baseline",
+      "input_schema": {
+        "type": "object", "additionalProperties": false,
+        "properties": {"category": {"$ref": "#/definitions/Category"}, "max_results": {"type": "integer", "minimum": 1, "maximum": 5, "default": 3}}
+      },
+      "output_schema": {
+        "type": "object", "additionalProperties": false, "required": ["actions"],
+        "properties": {
+          "actions": {"type": "array", "items": {"type": "object", "required": ["action_key", "title", "estimate_status", "quantity_kind"], "properties": {
+            "action_key": {"type": "string"}, "title": {"type": "string"},
+            "estimate_status": {"$ref": "#/definitions/EstimateStatus"},
+            "quantity_kind": {"const": "hypothetical_reduction"},
+            "kg_per_week": {"type": "number"}, "basis": {"type": "string"},
+            "factors": {"type": "array", "items": {"$ref": "#/definitions/FactorRef"}},
+            "missing_information": {"type": "array", "items": {"type": "string"}},
+            "self_reported_completions": {"type": "integer"}}}}
+        }
+      },
+      "timeout_ms": 2000
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "bundle": "datasets/v2/okf/bundle/ecomind",
+  "validated_at": "2026-10-17T09:01:38Z",
+  "concepts": 15,
+  "types": [
+    "Accounting Rule",
+    "Attested Computation",
+    "Emission Factor",
+    "Methodology",
+    "Region",
+    "Scientific Source",
+    "Tool Contract",
+    "Verification Policy"
+  ],
+  "okf_conformant": true,
+  "okf_conformance_errors": [],
+  "okf_spec_warnings": [],
+  "trust_tiers": {
+    "unverified": 8,
+    "machine-confirmed": 7
+  },
+  "statuses": {
+    "draft": 14,
+    "deprecated": 1
+  },
+  "carbonexo_policy_passed": true,
+  "carbonexo_policy": {
+    "errors": [],
+    "missing_evidence": [],
+    "stale": [],
+    "conflicts": [],
+    "broken_links": [],
+    "warnings": []
+  },
+  "note": "OKF conformance does not imply scientific correctness. No concept is human-reviewed unless reviewed/human_reviews.csv says so."
+}

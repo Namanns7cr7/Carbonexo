@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   getRecommendations, analyzeElectricity, getDailyTip,
-  sendCoachMessage, getCoachHistory,
+  sendCoachMessage, getCoachHistory, sendCoachFeedback,
 } from './ai';
 
 function stubFetch(payload: unknown) {
@@ -65,5 +65,14 @@ describe('ai API helpers', () => {
     const res = await getCoachHistory();
     expect(res).toHaveLength(1);
     expect((fetchMock.mock.calls[0] as any)[0]).toContain('/api/ai/coach/history');
+  });
+  it('sendCoachFeedback posts rating, reasons and opt-in consent to the response', async () => {
+    const fetchMock = stubFetch({ feedback_id: 'f1' });
+    await sendCoachFeedback('r 1', { rating: -1, reasons: ['incorrect_number'], consentResearch: false });
+    expect((fetchMock.mock.calls[0] as any)[0]).toContain('/api/ai/responses/r%201/feedback');
+    const opts = (fetchMock.mock.calls[0] as any)[1] as RequestInit;
+    expect(opts.method).toBe('POST');
+    expect(opts.body).toContain('"consentResearch":false');
+    expect(opts.body).toContain('incorrect_number');
   });
 });

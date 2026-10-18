@@ -1,0 +1,22 @@
+-[ RECORD 1 ]-------------------------------+---------
+users                                       | 301
+users_never_logged                          | 60
+mean_logging_coverage                       | 0.384
+old_total_lifetime_saved_kg                 | 183509.1
+users_shown_positive_lifetime_saved         | 301
+users_shown_saved_with_zero_logs            | 60
+lifetime_saved_kg_from_users_with_zero_logs | 53568.0
+unlogged_day_component_kg                   | 159320.0
+logged_day_component_kg                     | 24189.1
+pct_of_gross_saved_from_unlogged_days       | 86.8
+old_total_month_saved_kg                    | 29019.2
+users_eligible_for_personal_baseline_v2     | 116
+total_credit_balance_unchanged              | 33725
+ledger_rows_from_kg_saved_rule              | 0
+
+-[ RECORD 1 ]--------------+--------
+electricity_logs           | 12473
+stored_kg_at_legacy_factor | 33673.8
+preview_kg_at_in_factor    | 53129.8
+preview_delta_kg           | 19456.0
+

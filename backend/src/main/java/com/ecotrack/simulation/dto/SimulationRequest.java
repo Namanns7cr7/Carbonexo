@@ -51,14 +51,26 @@ public record SimulationRequest(
             BigDecimal customFactorKgPerUnit,
             /** REPLACE_WITH a custom activity: both set instead of replacementFactorKey. */
             String customReplacementLabel,
-            BigDecimal customReplacementFactorKgPerUnit
+            BigDecimal customReplacementFactorKgPerUnit,
+            /** Type within the activity in the user's region (e.g. car_ride petrol_hatch_lt1400cc); absent = range over types. */
+            String variant,
+            String replacementVariant
     ) {
         /** The pre-custom-replacement shape, kept so existing callers compile unchanged. */
         public SimulationItem(String factorKey, String category, BigDecimal quantity, String frequency,
                               DeltaType deltaType, String replacementFactorKey, BigDecimal amount,
                               String customLabel, BigDecimal customFactorKgPerUnit) {
             this(factorKey, category, quantity, frequency, deltaType, replacementFactorKey, amount,
-                    customLabel, customFactorKgPerUnit, null, null);
+                    customLabel, customFactorKgPerUnit, null, null, null, null);
+        }
+
+        /** The pre-variant shape. */
+        public SimulationItem(String factorKey, String category, BigDecimal quantity, String frequency,
+                              DeltaType deltaType, String replacementFactorKey, BigDecimal amount,
+                              String customLabel, BigDecimal customFactorKgPerUnit,
+                              String customReplacementLabel, BigDecimal customReplacementFactorKgPerUnit) {
+            this(factorKey, category, quantity, frequency, deltaType, replacementFactorKey, amount,
+                    customLabel, customFactorKgPerUnit, customReplacementLabel, customReplacementFactorKgPerUnit, null, null);
         }
     }
 }

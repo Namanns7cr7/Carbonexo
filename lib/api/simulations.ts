@@ -1,4 +1,4 @@
-import { api, ApiError } from './client';
+import { api } from './client';
 
 export type SimulationHorizon = 'MONTH' | 'YEAR';
 export type SimulationDeltaType = 'REPLACE_WITH' | 'REDUCE_BY';
@@ -18,6 +18,9 @@ export interface SimulationChange {
   customFactorKgPerUnit?: number;
   customReplacementLabel?: string;
   customReplacementFactorKgPerUnit?: number;
+  /** Type within the activity for the user's region (e.g. car_ride petrol_hatch_lt1400cc); omit for a range over types. */
+  variant?: string;
+  replacementVariant?: string;
 }
 
 export interface SimulationRequestBody {
@@ -25,10 +28,20 @@ export interface SimulationRequestBody {
   horizon: SimulationHorizon;
 }
 
+export type SimulationStatus = 'ESTIMATED' | 'ESTIMATED_RANGE' | 'PARTIAL' | 'NOT_ESTIMATED';
+
 export interface SimulationBreakdownItem {
   factorKey: string;
-  baselineKg: number;
-  projectedKg: number;
+  /** Exact figures; null unless status is ESTIMATED. */
+  baselineKg: number | null;
+  projectedKg: number | null;
+  status?: SimulationStatus;
+  baselineKgMin?: number | null;
+  baselineKgMax?: number | null;
+  projectedKgMin?: number | null;
+  projectedKgMax?: number | null;
+  missingInformation?: string | null;
+  factorSource?: 'registry' | 'user_supplied';
 }
 
 export interface SimulationWeeklyGoalImpact {
@@ -37,85 +50,31 @@ export interface SimulationWeeklyGoalImpact {
 }
 
 export interface SimulationResult {
-  baselineCo2Kg: number;
-  projectedCo2Kg: number;
-  deltaCo2Kg: number;
+  /** Exact totals: set only when status is ESTIMATED (otherwise use the min/max delta). */
+  baselineCo2Kg: number | null;
+  projectedCo2Kg: number | null;
+  deltaCo2Kg: number | null;
   weeklyGoalImpact: SimulationWeeklyGoalImpact;
   projectedCreditsDelta: number;
   breakdown: SimulationBreakdownItem[];
   aiInsight: string | null;
-  /** Client-side tag: 'offline-estimate' when the server was unreachable and the browser computed it. */
-  source?: 'server' | 'offline-estimate';
-}
-
-import { DEFAULT_EMISSION_FACTORS } from './dashboard';
-
-function simulateClientSide(request: SimulationRequestBody): SimulationResult {
-  const horizonWeeks = request.horizon === 'YEAR' ? 52 : 4.33;
-  let baselineTotal = 0;
-  let projectedTotal = 0;
-  const breakdown: SimulationBreakdownItem[] = [];
-
-  for (const change of request.changes) {
-    const factor = DEFAULT_EMISSION_FACTORS.find((f) => f.factorKey === change.factorKey);
-    const factorRate = change.customFactorKgPerUnit ?? factor?.factorKgPerUnit ?? 0.18;
-    const weeklyFreq = change.frequency === 'per_day' ? 7 : change.frequency === 'per_month' ? 0.25 : 1;
-    const horizonQty = change.quantity * weeklyFreq * horizonWeeks;
-    const baseKg = Math.round(horizonQty * factorRate * 10) / 10;
-
-    let projKg = baseKg;
-    if (change.deltaType === 'REPLACE_WITH') {
-      const repFactor = DEFAULT_EMISSION_FACTORS.find((f) => f.factorKey === change.replacementFactorKey);
-      const repRate = change.customReplacementFactorKgPerUnit ?? repFactor?.factorKgPerUnit ?? 0.04;
-      projKg = Math.round(horizonQty * repRate * 10) / 10;
-    } else {
-      const amt = change.amount ?? 1;
-      const reducedQty = Math.max(0, change.quantity - amt) * weeklyFreq * horizonWeeks;
-      projKg = Math.round(reducedQty * factorRate * 10) / 10;
-    }
-
-    baselineTotal += baseKg;
-    projectedTotal += projKg;
-    breakdown.push({
-      factorKey: change.factorKey ?? change.customLabel ?? 'custom',
-      baselineKg: baseKg,
-      projectedKg: projKg,
-    });
-  }
-
-  const delta = Math.round((projectedTotal - baselineTotal) * 10) / 10;
-
-  return {
-    baselineCo2Kg: Math.round(baselineTotal * 10) / 10,
-    projectedCo2Kg: Math.round(projectedTotal * 10) / 10,
-    deltaCo2Kg: delta,
-    // The browser has no weekly-goal or credit-rule data, so it does not invent them.
-    weeklyGoalImpact: { currentProgressPct: 0, projectedProgressPct: 0 },
-    projectedCreditsDelta: 0,
-    breakdown,
-    aiInsight: null,
-    source: 'offline-estimate',
-  };
+  /** ESTIMATED | ESTIMATED_RANGE (type not stated) | PARTIAL (some changes not estimated) | NOT_ESTIMATED. */
+  status?: SimulationStatus;
+  deltaCo2KgMin?: number | null;
+  deltaCo2KgMax?: number | null;
+  /** Factor registry version and its review authority: APPROVED, CANDIDATE (unreviewed) or NONE. */
+  factorDatasetVersion?: string;
+  factorAuthority?: 'APPROVED' | 'CANDIDATE' | 'NONE';
+  source?: 'server';
 }
 
 /**
  * Runs a read-only "carbon twin" what-if simulation — nothing is persisted.
  *
- * Only an unreachable server falls back to the browser's estimate (labelled
- * 'offline-estimate'). A server *answer* — including a 400 for an invalid
- * scenario — is returned or thrown as-is, never replaced by a local guess.
+ * The server's registry is the only calculator (the same one the AI coach uses). There is no
+ * browser fallback: an unreachable server is an error, never a local guess with stand-in factors.
  */
-export async function runSimulation(
-  request: SimulationRequestBody,
-  { insight = true }: { insight?: boolean } = {},
-): Promise<SimulationResult> {
-  try {
-    // insight=false skips the server's AI sentence, which takes seconds; the numbers come back at once.
-    const res = await api.post<SimulationResult>(insight ? '/api/simulations' : '/api/simulations?insight=false', request);
-    return { ...res, source: 'server' };
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    console.warn('Simulation API unreachable; using the offline estimate:', err);
-    return simulateClientSide(request);
-  }
+export async function runSimulation(request: SimulationRequestBody): Promise<SimulationResult> {
+  const res = await api.post<SimulationResult>('/api/simulations', request);
+  return { ...res, source: 'server' };
 }

@@ -1,0 +1,591 @@
+{
+  "copies": {
+    "V3__reference_data.sql": {
+      "car_ride": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.18,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "motorbike": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.1,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "bus": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.08,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "metro_train": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.04,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "flight": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.25,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "bike": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "walk": {
+        "category": "travel",
+        "unit": "km",
+        "value": 0.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "beef_meal": {
+        "category": "food",
+        "unit": "item",
+        "value": 5.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "chicken_meal": {
+        "category": "food",
+        "unit": "item",
+        "value": 1.2,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "fish_meal": {
+        "category": "food",
+        "unit": "item",
+        "value": 1.3,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "veg_meal": {
+        "category": "food",
+        "unit": "item",
+        "value": 0.6,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "vegan_meal": {
+        "category": "food",
+        "unit": "item",
+        "value": 0.4,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "dairy": {
+        "category": "food",
+        "unit": "item",
+        "value": 1.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "food_delivery": {
+        "category": "food",
+        "unit": "item",
+        "value": 0.6,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "home_electricity": {
+        "category": "electricity",
+        "unit": "kWh",
+        "value": 0.45,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "air_conditioning": {
+        "category": "electricity",
+        "unit": "kWh",
+        "value": 0.45,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "geyser_heater": {
+        "category": "electricity",
+        "unit": "kWh",
+        "value": 0.45,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "laundry_dryer": {
+        "category": "electricity",
+        "unit": "kWh",
+        "value": 0.45,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "clothing_item": {
+        "category": "shopping",
+        "unit": "item",
+        "value": 10.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "electronics": {
+        "category": "shopping",
+        "unit": "item",
+        "value": 30.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "online_order": {
+        "category": "shopping",
+        "unit": "item",
+        "value": 2.5,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "groceries": {
+        "category": "shopping",
+        "unit": "item",
+        "value": 1.0,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "general_waste": {
+        "category": "waste",
+        "unit": "item",
+        "value": 0.5,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "plastic_bottle": {
+        "category": "waste",
+        "unit": "item",
+        "value": 0.2,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      },
+      "food_waste": {
+        "category": "waste",
+        "unit": "item",
+        "value": 0.4,
+        "region": "GLOBAL",
+        "source": "frontend catalog"
+      }
+    },
+    "V7__embodied_carbon_factors.sql": {
+      "electronics": {
+        "label": "Electronics (generic device)",
+        "value": 85.0,
+        "unit": "item",
+        "alternative": "refurbished_electronics"
+      },
+      "refurbished_electronics": {
+        "label": "Refurbished electronics",
+        "value": 15.0,
+        "unit": "item",
+        "alternative": null
+      },
+      "clothing": {
+        "label": "Clothing item (new)",
+        "value": 22.0,
+        "unit": "item",
+        "alternative": "secondhand_clothing"
+      },
+      "secondhand_clothing": {
+        "label": "Secondhand clothing item",
+        "value": 3.0,
+        "unit": "item",
+        "alternative": null
+      },
+      "packaged_food": {
+        "label": "Packaged food item",
+        "value": 1.5,
+        "unit": "item",
+        "alternative": "bulk_unpackaged_food"
+      },
+      "bulk_unpackaged_food": {
+        "label": "Bulk / unpackaged food item",
+        "value": 0.5,
+        "unit": "item",
+        "alternative": null
+      },
+      "furniture": {
+        "label": "Furniture piece (new)",
+        "value": 90.0,
+        "unit": "item",
+        "alternative": "secondhand_furniture"
+      },
+      "secondhand_furniture": {
+        "label": "Secondhand furniture piece",
+        "value": 10.0,
+        "unit": "item",
+        "alternative": null
+      },
+      "appliances": {
+        "label": "Major appliance (new)",
+        "value": 150.0,
+        "unit": "item",
+        "alternative": "refurbished_appliances"
+      },
+      "refurbished_appliances": {
+        "label": "Refurbished appliance",
+        "value": 30.0,
+        "unit": "item",
+        "alternative": null
+      },
+      "footwear": {
+        "label": "Footwear (new pair)",
+        "value": 14.0,
+        "unit": "item",
+        "alternative": "secondhand_footwear"
+      },
+      "secondhand_footwear": {
+        "label": "Secondhand footwear pair",
+        "value": 2.0,
+        "unit": "item",
+        "alternative": null
+      },
+      "toys": {
+        "label": "Toy (new)",
+        "value": 5.0,
+        "unit": "item",
+        "alternative": "secondhand_toys"
+      },
+      "secondhand_toys": {
+        "label": "Secondhand toy",
+        "value": 1.0,
+        "unit": "item",
+        "alternative": null
+      },
+      "books": {
+        "label": "Book (new, printed)",
+        "value": 2.5,
+        "unit": "item",
+        "alternative": "secondhand_books"
+      },
+      "secondhand_books": {
+        "label": "Secondhand book",
+        "value": 0.3,
+        "unit": "item",
+        "alternative": null
+      }
+    },
+    "lib/carbon.ts": {
+      "car_ride": {
+        "unit": "km",
+        "value": 0.18
+      },
+      "motorbike": {
+        "unit": "km",
+        "value": 0.1
+      },
+      "bus": {
+        "unit": "km",
+        "value": 0.08
+      },
+      "metro_train": {
+        "unit": "km",
+        "value": 0.04
+      },
+      "flight": {
+        "unit": "km",
+        "value": 0.25
+      },
+      "bike": {
+        "unit": "km",
+        "value": 0.0
+      },
+      "walk": {
+        "unit": "km",
+        "value": 0.0
+      },
+      "beef_meal": {
+        "unit": "item",
+        "value": 5.0
+      },
+      "chicken_meal": {
+        "unit": "item",
+        "value": 1.2
+      },
+      "fish_meal": {
+        "unit": "item",
+        "value": 1.3
+      },
+      "veg_meal": {
+        "unit": "item",
+        "value": 0.6
+      },
+      "vegan_meal": {
+        "unit": "item",
+        "value": 0.4
+      },
+      "dairy": {
+        "unit": "item",
+        "value": 1.0
+      },
+      "food_delivery": {
+        "unit": "item",
+        "value": 0.6
+      },
+      "home_electricity": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "air_conditioning": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "geyser_heater": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "laundry_dryer": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "clothing_item": {
+        "unit": "item",
+        "value": 10.0
+      },
+      "electronics": {
+        "unit": "item",
+        "value": 30.0
+      },
+      "online_order": {
+        "unit": "item",
+        "value": 2.5
+      },
+      "groceries": {
+        "unit": "item",
+        "value": 1.0
+      },
+      "general_waste": {
+        "unit": "item",
+        "value": 0.5
+      },
+      "plastic_bottle": {
+        "unit": "item",
+        "value": 0.2
+      },
+      "food_waste": {
+        "unit": "item",
+        "value": 0.4
+      }
+    },
+    "lib/api/dashboard.ts": {
+      "car_ride": {
+        "unit": "km",
+        "value": 0.18
+      },
+      "motorbike": {
+        "unit": "km",
+        "value": 0.1
+      },
+      "bus": {
+        "unit": "km",
+        "value": 0.08
+      },
+      "metro_train": {
+        "unit": "km",
+        "value": 0.04
+      },
+      "flight": {
+        "unit": "km",
+        "value": 0.25
+      },
+      "bike": {
+        "unit": "km",
+        "value": 0.0
+      },
+      "walk": {
+        "unit": "km",
+        "value": 0.0
+      },
+      "beef_meal": {
+        "unit": "item",
+        "value": 5.0
+      },
+      "chicken_meal": {
+        "unit": "item",
+        "value": 1.2
+      },
+      "fish_meal": {
+        "unit": "item",
+        "value": 1.3
+      },
+      "veg_meal": {
+        "unit": "item",
+        "value": 0.6
+      },
+      "vegan_meal": {
+        "unit": "item",
+        "value": 0.4
+      },
+      "dairy": {
+        "unit": "item",
+        "value": 1.0
+      },
+      "food_delivery": {
+        "unit": "item",
+        "value": 0.6
+      },
+      "home_electricity": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "air_conditioning": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "geyser_heater": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "laundry_dryer": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "clothing_item": {
+        "unit": "item",
+        "value": 10.0
+      },
+      "electronics": {
+        "unit": "item",
+        "value": 30.0
+      },
+      "online_order": {
+        "unit": "item",
+        "value": 2.5
+      },
+      "groceries": {
+        "unit": "item",
+        "value": 1.0
+      },
+      "general_waste": {
+        "unit": "item",
+        "value": 0.5
+      },
+      "plastic_bottle": {
+        "unit": "item",
+        "value": 0.2
+      },
+      "food_waste": {
+        "unit": "item",
+        "value": 0.4
+      }
+    },
+    "Carbonexo_Dataset_Export.md": {
+      "car_ride": {
+        "unit": "km",
+        "value": 0.18
+      },
+      "motorbike": {
+        "unit": "km",
+        "value": 0.1
+      },
+      "bus": {
+        "unit": "km",
+        "value": 0.08
+      },
+      "metro_train": {
+        "unit": "km",
+        "value": 0.04
+      },
+      "flight": {
+        "unit": "km",
+        "value": 0.25
+      },
+      "bike": {
+        "unit": "km",
+        "value": 0.0
+      },
+      "walk": {
+        "unit": "km",
+        "value": 0.0
+      },
+      "beef_meal": {
+        "unit": "item",
+        "value": 5.0
+      },
+      "chicken_meal": {
+        "unit": "item",
+        "value": 1.2
+      },
+      "fish_meal": {
+        "unit": "item",
+        "value": 1.3
+      },
+      "veg_meal": {
+        "unit": "item",
+        "value": 0.6
+      },
+      "vegan_meal": {
+        "unit": "item",
+        "value": 0.4
+      },
+      "dairy": {
+        "unit": "item",
+        "value": 1.0
+      },
+      "food_delivery": {
+        "unit": "item",
+        "value": 0.6
+      },
+      "home_electricity": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "air_conditioning": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "geyser_heater": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "laundry_dryer": {
+        "unit": "kWh",
+        "value": 0.45
+      },
+      "clothing_item": {
+        "unit": "item",
+        "value": 10.0
+      },
+      "electronics": {
+        "unit": "item",
+        "value": 30.0
+      },
+      "online_order": {
+        "unit": "item",
+        "value": 2.5
+      },
+      "groceries": {
+        "unit": "item",
+        "value": 1.0
+      },
+      "general_waste": {
+        "unit": "item",
+        "value": 0.5
+      },
+      "plastic_bottle": {
+        "unit": "item",
+        "value": 0.2
+      },
+      "food_waste": {
+        "unit": "item",
+        "value": 0.4
+      }
+    }
+  },
+  "issues": [
+    "clothing_item (shopping, 10.0) vs embodied clothing (22.0): two incompatible values for the same purchase",
+    "electronics (shopping, 30.0) vs embodied electronics (85.0): two incompatible values for the same purchase",
+    "all activity factors are region GLOBAL - no region-specific factor can ever be selected",
+    "25/25 activity factors cite 'frontend catalog' (circular provenance)"
+  ]
+}

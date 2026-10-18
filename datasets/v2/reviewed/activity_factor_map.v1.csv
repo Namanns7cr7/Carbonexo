@@ -1,0 +1,56 @@
+activity_key,region,variant,factor_id,status,quantity_unit,occupancy_rule,accounting_rule,missing_information
+home_electricity,IN,default,elec.grid.in.niti_annex_e.fy2024_25,estimated,kWh,,meter_total,
+air_conditioning,IN,default,elec.grid.in.niti_annex_e.fy2024_25,estimated,kWh,,attribution_of_meter_total,
+geyser_heater,IN,default,elec.grid.in.niti_annex_e.fy2024_25,estimated,kWh,,attribution_of_meter_total,
+laundry_dryer,IN,default,elec.grid.in.niti_annex_e.fy2024_25,estimated,kWh,,attribution_of_meter_total,
+car_ride,IN,default,,not_estimated,km,,,car fuel type and engine size (petrol/diesel/CNG; hatchback/sedan/SUV)
+car_ride,IN,petrol_small_lt800cc,road.in.car.petrol.small_lt800cc,estimated,km,divide_by_stated_occupancy,,
+car_ride,IN,petrol_hatch_lt1000cc,road.in.car.petrol.hatch_lt1000cc,estimated,km,divide_by_stated_occupancy,,
+car_ride,IN,petrol_hatch_lt1400cc,road.in.car.petrol.hatch_lt1400cc,estimated,km,divide_by_stated_occupancy,,
+car_ride,IN,petrol_sedan_lt1400cc,road.in.car.petrol.sedan_lt1400cc,estimated,km,divide_by_stated_occupancy,,
+car_ride,IN,petrol_compact_suv_lt1600cc,road.in.car.petrol.compact_suv_lt1600cc,estimated,km,divide_by_stated_occupancy,,
+car_ride,IN,diesel_hatch_lt1400cc,road.in.car.diesel.hatch_lt1400cc,estimated,km,divide_by_stated_occupancy,,
+car_ride,IN,cng_small_lt800cc,road.in.car.cng.small_lt800cc,estimated,km,divide_by_stated_occupancy,,
+motorbike,IN,default,,not_estimated,km,,,engine size (scooter below 110cc or motorcycle below 125cc)
+motorbike,IN,scooter_lt110cc,road.in.2w.scooter_lt110cc,provisional,km,,,
+motorbike,IN,motorcycle_lt125cc,road.in.2w.motorcycle_lt125cc,provisional,km,,,
+auto_rickshaw,IN,default,,not_estimated,km,,,fuel type (petrol/diesel/CNG)
+auto_rickshaw,IN,petrol,road.in.3w.petrol,estimated,km,divide_by_stated_occupancy,,
+auto_rickshaw,IN,diesel,road.in.3w.diesel,estimated,km,divide_by_stated_occupancy,,
+auto_rickshaw,IN,cng,road.in.3w.cng,estimated,km,divide_by_stated_occupancy,,
+bus,IN,default,road.in.bus.intracity_stu,estimated,km,,intracity_only,
+bus,IN,intracity,road.in.bus.intracity_stu,estimated,km,,intracity_only,
+bus,IN,intercity,,not_estimated,km,,,a verified Indian intercity bus factor (the STU factor covers intracity only)
+metro_train,IN,default,,not_estimated,km,,,a verified Indian per-passenger-km metro or rail factor (UK rail factors do not apply)
+flight,IN,default,,not_estimated,km,,,an approved aviation factor for flights within India (UK DESNZ factors do not apply)
+beef_meal,IN,default,,not_estimated,item,,,recipe / ingredient quantities (log the beef in grams instead)
+chicken_meal,IN,default,,not_estimated,item,,,recipe / ingredient quantities
+fish_meal,IN,default,,not_estimated,item,,,recipe / ingredient quantities; farmed vs wild
+veg_meal,IN,default,,not_estimated,item,,,recipe / ingredient quantities
+vegan_meal,IN,default,,not_estimated,item,,,recipe / ingredient quantities
+dairy,IN,default,,not_estimated,item,,,product and quantity in ml or g
+food_delivery,IN,default,,not_estimated,item,,,last-mile distance and a sourced packaging factor; the meal is logged separately
+clothing_item,IN,default,,not_estimated,item,,,garment type and weight; a sourced garment factor set
+electronics,IN,default,,not_estimated,item,,,device type and model; a manufacturer LCA
+online_order,IN,default,,not_estimated,item,,,delivery-leg factor; the product is logged separately
+groceries,IN,default,,not_estimated,item,,,item and quantity
+general_waste,IN,default,,not_estimated,item,,,mass and treatment route; an India-relevant waste factor
+plastic_bottle,IN,default,,not_estimated,item,,,disposal route
+food_waste,IN,default,,not_estimated,item,,,mass and treatment route
+home_electricity,GB,default,elec.grid.gb.generation.y2026,estimated,kWh,,meter_total,
+air_conditioning,GB,default,elec.grid.gb.generation.y2026,estimated,kWh,,attribution_of_meter_total,
+car_ride,GB,default,road.gb.car.unknown_fuel_avg.y2026,estimated,km,divide_by_stated_occupancy,,
+car_ride,GB,petrol,road.gb.car.petrol_avg.y2026,estimated,km,divide_by_stated_occupancy,,
+car_ride,GB,bev,road.gb.car.bev_avg.y2026,estimated,km,divide_by_stated_occupancy,,
+motorbike,GB,default,road.gb.motorbike.avg.y2026,estimated,km,,,
+bus,GB,default,road.gb.bus.avg_local.y2026,estimated,km,,,
+bus,GB,coach,road.gb.coach.y2026,estimated,km,,,
+metro_train,GB,default,rail.gb.national.y2026,estimated,km,,,
+metro_train,GB,underground,rail.gb.underground.y2026,estimated,km,,,
+metro_train,GB,light_rail_tram,rail.gb.light_rail_tram.y2026,estimated,km,,,
+flight,GB,default,air.gb.domestic.avg.with_rf.y2026,estimated,km,,,
+flight,GB,without_rf,air.gb.domestic.avg.without_rf.y2026,estimated,km,,,
+taxi,GB,default,road.gb.taxi.regular.y2026,estimated,km,,,
+lifestyle_target_2030,IN,default,target.lifestyle.2030,estimated,person_year,,whole_lifestyle_target,
+lifestyle_target_2040,IN,default,target.lifestyle.2040,estimated,person_year,,whole_lifestyle_target,
+lifestyle_target_2050,IN,default,target.lifestyle.2050,estimated,person_year,,whole_lifestyle_target,

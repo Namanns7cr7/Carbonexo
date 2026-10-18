@@ -119,7 +119,8 @@ export default function Simulate() {
   // Publish the result to the shared Living World as a hypothetical. It never
   // touches the logged footprint, and it is withdrawn when you leave the page.
   useEffect(() => {
-    if (!result) return;
+    // Only exact results reach the Living World; a range or a not-estimated change has no single number to show.
+    if (!result || result.baselineCo2Kg == null || result.projectedCo2Kg == null || result.deltaCo2Kg == null) return;
     setScenario({
       label: scenarioLabel || 'this change',
       horizon: horizon,
@@ -529,9 +530,45 @@ export default function Simulate() {
         </Card>
       )}
 
-      {result && (() => {
-        const improving = result.deltaCo2Kg <= 0;
-        const pctChange = result.baselineCo2Kg > 0 ? Math.round((result.deltaCo2Kg / result.baselineCo2Kg) * 100) : 0;
+      {result && result.deltaCo2Kg == null && (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Card className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-[15px] font-bold">What this would mean for you</h2>
+            <ProvenanceBadge provenance="hypothetical" />
+          </div>
+          {result.status === 'NOT_ESTIMATED' ? (
+            <p role="status" className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm">
+              <strong>Not estimated.</strong> We don&apos;t have a verified emission factor for part of this change in your region, so we
+              won&apos;t guess a number.
+            </p>
+          ) : (
+            <div className="rounded-xl border border-border bg-surface2 px-4 py-3">
+              <div className="font-display text-xl font-extrabold" style={{ color: 'var(--lime-deep)' }}>
+                {result.deltaCo2KgMin} to {result.deltaCo2KgMax} kg
+              </div>
+              <div className="mt-0.5 text-xs text-muted">
+                {result.status === 'PARTIAL'
+                  ? 'Change from the parts we could estimate. Negative means lower emissions.'
+                  : 'Range across vehicle or product types. Choose the exact type to narrow it. Negative means lower emissions.'}
+              </div>
+            </div>
+          )}
+          {result.breakdown.filter((b) => b.missingInformation).map((b) => (
+            <p key={b.factorKey} className="text-xs text-muted">
+              {labelFor(b.factorKey)}: needs {b.missingInformation}.
+            </p>
+          ))}
+          <FactorNote result={result} />
+        </Card>
+        </motion.div>
+      )}
+
+      {result && result.deltaCo2Kg != null && result.baselineCo2Kg != null && result.projectedCo2Kg != null && (() => {
+        const delta = result.deltaCo2Kg;
+        const baseline = result.baselineCo2Kg;
+        const improving = delta <= 0;
+        const pctChange = baseline > 0 ? Math.round((delta / baseline) * 100) : 0;
         const gaugeFraction = Math.min(1, Math.abs(pctChange) / 100);
         const gaugeColor = improving ? 'var(--lime)' : '#e0a86a';
         const gaugeTextColor = improving ? 'var(--lime-deep)' : '#e0a86a';
@@ -542,11 +579,7 @@ export default function Simulate() {
             <h2 className="text-[15px] font-bold">What this would mean for you</h2>
             <ProvenanceBadge provenance="hypothetical" />
           </div>
-          {result.source === 'offline-estimate' && (
-            <p role="status" className="rounded-xl border border-border bg-surface2 px-3.5 py-2.5 text-xs text-muted">
-              The server couldn&apos;t be reached, so this is your browser&apos;s estimate from the standard factors. Goal impact isn&apos;t available offline.
-            </p>
-          )}
+          <FactorNote result={result} />
 
           <ScenarioWorld />
 
@@ -573,19 +606,19 @@ export default function Simulate() {
               <Card className="!p-4 text-center">
                 <div
                   className="font-display text-xl font-extrabold"
-                  style={{ color: result.deltaCo2Kg <= 0 ? 'var(--lime-deep)' : '#e0a86a' }}
+                  style={{ color: delta <= 0 ? 'var(--lime-deep)' : '#e0a86a' }}
                 >
-                  {result.deltaCo2Kg > 0 ? '+' : ''}{result.deltaCo2Kg} kg
+                  {delta > 0 ? '+' : ''}{delta} kg
                 </div>
-                <div className="mt-0.5 text-[11px] font-semibold text-muted">{improving ? 'You’d save' : 'Extra'}</div>
+                <div className="mt-0.5 text-[11px] font-semibold text-muted">{improving ? 'Would be lower by' : 'Would be higher by'}</div>
               </Card>
             </div>
           </div>
 
-          {result.source !== 'offline-estimate' && result.weeklyGoalImpact.projectedProgressPct === 0 && result.weeklyGoalImpact.currentProgressPct === 0 && (
+          {result.weeklyGoalImpact.projectedProgressPct === 0 && result.weeklyGoalImpact.currentProgressPct === 0 && (
             <p className="text-xs text-muted">Weekly goal impact appears once you have a week of logs to set a target against.</p>
           )}
-          {result.source !== 'offline-estimate' && (result.weeklyGoalImpact.projectedProgressPct > 0 || result.weeklyGoalImpact.currentProgressPct > 0) && (
+          {(result.weeklyGoalImpact.projectedProgressPct > 0 || result.weeklyGoalImpact.currentProgressPct > 0) && (
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold">How close this gets you to your weekly goal</span>
@@ -628,7 +661,9 @@ export default function Simulate() {
               {result.breakdown.map((b) => (
                 <div key={b.factorKey} className="flex items-center justify-between py-2 text-sm">
                   <span className="text-muted">{labelFor(b.factorKey)}</span>
-                  <span className="font-semibold">{b.baselineKg} kg → {b.projectedKg} kg</span>
+                  <span className="font-semibold">
+                    {b.baselineKg} kg → {b.projectedKg} kg{b.factorSource === 'user_supplied' ? ' (your rate)' : ''}
+                  </span>
                 </div>
               ))}
             </div>
@@ -638,6 +673,18 @@ export default function Simulate() {
         );
       })()}
     </div>
+  );
+}
+
+/** Which factor dataset produced the numbers, and whether a person has reviewed it yet. */
+function FactorNote({ result }: { result: SimulationResult }) {
+  if (!result.factorAuthority || result.factorAuthority === 'APPROVED') return null;
+  return (
+    <p className="text-[11px] text-muted">
+      {result.factorAuthority === 'CANDIDATE'
+        ? `Provisional factors (dataset ${result.factorDatasetVersion}), not yet reviewed by a person.`
+        : 'No reviewed emission-factor dataset is active yet, so changes are not estimated.'}
+    </p>
   );
 }
 
