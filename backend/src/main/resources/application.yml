@@ -101,6 +101,7 @@ ecotrack:
     embedding-location: ${AGENT_EMBEDDING_LOCATION:asia-south1}
     embedding-timeout-ms: ${AGENT_EMBEDDING_TIMEOUT_MS:3000}
     embeddings-enabled: ${AGENT_EMBEDDINGS_ENABLED:true}
+    client: ${AGENT_CLIENT:auto}                       # auto = REST for gemini-3* (thought signatures), SDK otherwise
   ai-probe:
     enabled: ${AI_PROBE_ON_STARTUP:false}                 # one tiny live call per model at startup (staging)
 
