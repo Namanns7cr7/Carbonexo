@@ -37,6 +37,11 @@ export type { EarthLayer, RouteArc } from './EarthCanvas';
 
 const EarthCanvas = dynamic(() => import('./EarthCanvas'), { ssr: false, loading: () => null });
 
+/** Below this width the globe is a panel, not a hero, and 2K textures are indistinguishable from 4K. */
+const COMPACT_GLOBE_PX = 720;
+/** Below this width it is an icon: the poster looks the same, and a WebGL scene would cost ~300 ms per mount. */
+const MIN_3D_GLOBE_PX = 120;
+
 export interface LivingEarthProps {
   /** Where the camera looks. Changing it flies the camera there. */
   region?: Region;
@@ -134,9 +139,39 @@ export function LivingEarth({
     };
   }, []);
 
-  const quality = earthQuality(tier, { coarsePointer: coarse });
-  const use3d = quality.webgl && !failed;
-  const mount3d = use3d && near;
+  // Build the 3D globe only once the page has painted and the browser is idle:
+  // shader compiles and texture uploads block the main thread, and doing them
+  // in the same frame as a navigation made every click into a globe page feel
+  // stuck. The poster covers the gap, and the canvas fades in when ready.
+  // The box is measured here too, so a panel-sized globe gets panel-sized textures.
+  const [settled, setSettled] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [tiny, setTiny] = useState(false);
+  useEffect(() => {
+    const el = box.current;
+    const width = el ? el.getBoundingClientRect().width : COMPACT_GLOBE_PX; // unmeasured: treat as a hero
+    setCompact(width < COMPACT_GLOBE_PX);
+    setTiny(width < MIN_3D_GLOBE_PX);
+    // A hero globe is the first thing the page shows: mount it now rather than after the poster.
+    if (width >= COMPACT_GLOBE_PX) {
+      setSettled(true);
+      return;
+    }
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => setSettled(true), { timeout: 1200 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(() => setSettled(true), 200);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  const quality = earthQuality(tier, { coarsePointer: coarse, compact });
+  const use3d = quality.webgl && !failed && !tiny;
+  const mount3d = use3d && near && settled;
 
   // Declarative framing → an anchor. Ignored when the page steers via anchorRef.
   const ownAnchor = useMemo<GlobeAnchor>(() => {

@@ -54,7 +54,6 @@
 /swagger-ui/**
 /actuator/health/**
 /actuator/info
-/actuator/prometheus
 ```
 
 All other endpoints require valid JWT.

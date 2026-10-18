@@ -48,6 +48,18 @@ describe('ai API helpers', () => {
     expect(opts.body).toContain('how do I save energy?');
   });
 
+  it('sendCoachMessage transmits pageContext to backend for page-aware grounding', async () => {
+    const fetchMock = stubFetch({ result: 'contextual answer', model: 'Gemini 3 Flash' });
+    const ctx = { route: '/app/credits', pageTitle: 'Green Credits', contextVersion: 1 };
+    const res = await sendCoachMessage('How do I earn more?', ctx);
+    expect(res.result).toBe('contextual answer');
+    expect(res.model).toBe('Gemini 3 Flash');
+    const opts = (fetchMock.mock.calls[0] as any)[1] as RequestInit;
+    expect(opts.body).toContain('How do I earn more?');
+    expect(opts.body).toContain('/app/credits');
+    expect(opts.body).toContain('Green Credits');
+  });
+
   it('getCoachHistory reads the history endpoint', async () => {
     const fetchMock = stubFetch([{ id: '1', role: 'user', content: 'hi', createdAt: 'now' }]);
     const res = await getCoachHistory();

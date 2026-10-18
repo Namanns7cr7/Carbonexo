@@ -69,13 +69,13 @@ ecotrack:
     electricity-factor-default: ${CARBON_ELECTRICITY_FACTOR:0.45}  # kg CO2 / kWh fallback
   ai:
     provider: ${AI_PROVIDER:gemini}                # gemini | canned
-    default-model: ${AI_DEFAULT_MODEL:gemini-2.5-pro}
-    fast-model: ${AI_FAST_MODEL:gemini-2.0-flash}
+    default-model: ${AI_DEFAULT_MODEL:gemini-3.1-pro-preview}
+    fast-model: ${AI_FAST_MODEL:gemini-3-flash-preview}
     timeout-seconds: ${AI_TIMEOUT:30}
     fallback-to-canned: ${AI_FALLBACK:true}
     gemini:
       project-id: ${GCP_PROJECT_ID:}
-      location: ${GCP_LOCATION:us-central1}
+      location: ${GCP_LOCATION:global}               # Gemini 3 preview models are only served from "global"
     # pgvector long-term memory for the coach (see AiMemoryProperties). Off by default;
     # needs pgvector on the server (V10). Any failure falls back to the non-vector coach.
     # Runtime kill switch: app_config row ai.memory.enabled=false.
@@ -108,8 +108,10 @@ management:
 # ---- OpenAPI / Swagger ----
 springdoc:
   swagger-ui:
+    enabled: ${API_DOCS_ENABLED:true}   # deploy scripts set false so prod doesn't publish the API map
     path: /swagger-ui.html
   api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
     path: /v3/api-docs
 
 logging:

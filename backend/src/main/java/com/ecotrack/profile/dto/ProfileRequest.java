@@ -1,4 +1,4 @@
-package com.ecotrack.profile;
+package com.ecotrack.profile.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { getBalance, getHistory, type CreditHistoryEntry } from '@/lib/api/credits';
 import { PageHead, Card } from '@/components/app/ui';
 import { useCountUp } from '@/lib/useCountUp';
+import { useRegisterPageContext } from '@/lib/context/ecomind-context';
 
 function BalanceValue({ balance }: { balance: number }) {
   const { ref, display } = useCountUp(balance, { duration: 1200 });
@@ -18,6 +19,18 @@ function BalanceValue({ balance }: { balance: number }) {
 export default function CreditsPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [history, setHistory] = useState<CreditHistoryEntry[]>([]);
+
+  useRegisterPageContext({
+    pageTitle: 'Green Credits',
+    activeFeature: 'wallet_ledger',
+    visibleMetricIds: ['balance', 'historyCount'],
+    metadata: {
+      balance: balance ?? 0,
+      historyCount: history.length,
+      creditType: 'gamified_green_points',
+      tradableOnCarbonMarkets: false,
+    },
+  });
 
   useEffect(() => {
     const fetchData = async () => {

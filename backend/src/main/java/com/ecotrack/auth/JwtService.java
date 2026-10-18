@@ -20,8 +20,15 @@ public class JwtService {
     private final long accessTtlSeconds;
     private final String issuer;
 
+    /** The placeholder from application.yml; it is public on GitHub, so tokens signed with it can be forged. */
+    static final String DEV_DEFAULT_SECRET = "change-me-dev-only-secret-change-me-dev-only-secret";
+
     public JwtService(AppProperties props) {
         AppProperties.Security.Jwt jwt = props.security().jwt();
+        // Cloud Run sets K_SERVICE; refuse to boot there without a real JWT_SECRET.
+        if (DEV_DEFAULT_SECRET.equals(jwt.secret()) && System.getenv("K_SERVICE") != null) {
+            throw new IllegalStateException("JWT_SECRET is unset: refusing to start with the public dev default");
+        }
         this.key = Keys.hmacShaKeyFor(jwt.secret().getBytes(StandardCharsets.UTF_8));
         this.accessTtlSeconds = jwt.accessTokenTtlSeconds();
         this.issuer = jwt.issuer();

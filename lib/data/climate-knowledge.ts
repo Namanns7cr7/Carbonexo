@@ -186,6 +186,22 @@ export function generateScientificCoachAdvice({
 } {
   const q = query.toLowerCase();
 
+  // Match: Greetings
+  if (/^(hi+|hello+|hey+|hola|howdy|good\s*(morning|afternoon|evening)|sup|yo)\b/i.test(q.trim())) {
+    return {
+      response: `Hey **${userName}**! 🌱 I'm your Carbonexo Coach.\n\n` +
+        `Ask me anything about your carbon footprint, green habits, or practical swaps! For example:\n\n` +
+        `• 🚆 **Transit**: Car vs. metro or train savings (DEFRA 2024)\n` +
+        `• 🥩 **Food**: Beef vs. chicken or plant proteins (Oxford study)\n` +
+        `• ⚡ **Home**: AC and appliance energy efficiency (US EPA)\n` +
+        `• 🎯 **Targets**: How your footprint compares to the 2030 Paris Climate threshold (IPCC)\n\n` +
+        `What area of your daily routine would you like to explore today?`,
+      source: 'Carbonexo Scientific Knowledge Engine',
+      citation: 'DEFRA 2024; Oxford Science 2018; US EPA 2024; IPCC AR6',
+      promptUsed: `Context: Friendly conversational greeting with user ${userName}. Prompted interactive guidance for carbon exploration.`,
+    };
+  }
+
   // Match: Transport / Car / Metro / Train / Flight / Commute
   if (q.includes('travel') || q.includes('car') || q.includes('metro') || q.includes('train') || q.includes('commute') || q.includes('flight')) {
     const bm = CLIMATE_KNOWLEDGE_BASE[0]; // DEFRA Transport

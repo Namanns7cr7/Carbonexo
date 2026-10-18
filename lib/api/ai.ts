@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { EcoMindPageContext } from '../context/ecomind-context';
 
 export async function getRecommendations(): Promise<string> {
   const res = await api.post<{ result: string }>('/api/ai/recommendations');
@@ -28,10 +29,18 @@ export async function getMonthlyReport(period: string): Promise<string> {
 export interface CoachResponse {
   result: string;
   prompt?: string;
+  provider?: string;
+  model?: string;
+  responseId?: string;
+  citations?: string[];
+  pageContextApplied?: boolean;
 }
 
-export async function sendCoachMessage(message: string): Promise<CoachResponse> {
-  return api.post<CoachResponse>('/api/ai/coach', { message });
+export async function sendCoachMessage(
+  message: string,
+  pageContext?: EcoMindPageContext
+): Promise<CoachResponse> {
+  return api.post<CoachResponse>('/api/ai/coach', { message, pageContext });
 }
 
 export interface CoachHistoryEntry {

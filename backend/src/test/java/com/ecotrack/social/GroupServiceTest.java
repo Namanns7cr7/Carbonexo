@@ -2,7 +2,6 @@ package com.ecotrack.social;
 
 import com.ecotrack.ai.AIProvider;
 import com.ecotrack.ai.PromptRenderer;
-import com.ecotrack.carbon.CarbonCalculationService;
 import com.ecotrack.config.AppProperties;
 import com.ecotrack.exception.ResourceNotFoundException;
 import com.ecotrack.profile.UserProfile;
@@ -40,7 +39,6 @@ class GroupServiceTest {
     private UserProfileRepository profileRepo;
     private SocialActivityLogRepository activityRepo;
     private SocialCreditLedgerRepository creditRepo;
-    private CarbonCalculationService carbonService;
     private AIProvider aiProvider;
     private PromptRenderer promptRenderer;
     private GroupService service;
@@ -53,14 +51,13 @@ class GroupServiceTest {
         profileRepo = mock(UserProfileRepository.class);
         activityRepo = mock(SocialActivityLogRepository.class);
         creditRepo = mock(SocialCreditLedgerRepository.class);
-        carbonService = mock(CarbonCalculationService.class);
         aiProvider = mock(AIProvider.class);
         promptRenderer = mock(PromptRenderer.class);
         var aiConfig = new AppProperties.Ai("canned", "model-default", "model-fast", 5, true, null);
         var props = new AppProperties(null, null, null, null, null, null, aiConfig);
         when(promptRenderer.render(anyString(), anyMap())).thenReturn("Rendered prompt");
         when(aiProvider.generate(anyString(), anyString())).thenReturn("Great week, team!");
-        service = new GroupService(groupRepo, memberRepo, userRepo, profileRepo, activityRepo, creditRepo, carbonService,
+        service = new GroupService(groupRepo, memberRepo, userRepo, profileRepo, activityRepo, creditRepo,
                 aiProvider, promptRenderer, props);
     }
 
@@ -276,8 +273,10 @@ class GroupServiceTest {
         when(profileRepo.findByUserIdAndDeletedAtIsNull(userA)).thenReturn(Optional.of(profileA));
         when(profileRepo.findByUserIdAndDeletedAtIsNull(userB)).thenReturn(Optional.empty()); // falls back to default 15%
 
-        when(carbonService.carbonSaved(eq(userA), any(), any(), any())).thenReturn(new BigDecimal("10.0"));
-        when(carbonService.carbonSaved(eq(userB), any(), any(), any())).thenReturn(new BigDecimal("4.0"));
+        // A logged 3 days, 14 kg -> saved 3*8 - 14 = 10.0; B logged 1 day, 4 kg -> saved 8 - 4 = 4.0
+        when(activityRepo.sumCo2AndLoggedDaysSince(anyList(), any())).thenReturn(List.<Object[]>of(
+                new Object[]{userA, new BigDecimal("14.0"), 3L},
+                new Object[]{userB, new BigDecimal("4.0"), 1L}));
 
         GoalProgressResponse resp = service.getGoalProgress(groupId, caller);
 
@@ -287,6 +286,41 @@ class GroupServiceTest {
         assertEquals(19.6, resp.combinedGoalKg());
         assertEquals(2, resp.memberCount());
         assertTrue(resp.progressPct() > 0 && resp.progressPct() <= 100);
+    }
+
+    @Test
+    void goalProgressAddsNoSavingsForMemberWhoLoggedNothing() {
+        UUID groupId = UUID.randomUUID();
+        UUID caller = UUID.randomUUID();
+        UUID idle = UUID.randomUUID();
+        Group g = group(groupId, "Home Crew", "ABCD1234");
+
+        when(groupRepo.findByIdAndDeletedAtIsNull(groupId)).thenReturn(Optional.of(g));
+        when(memberRepo.existsByGroupIdAndUserId(groupId, caller)).thenReturn(true);
+        GroupMember m = new GroupMember(); m.setGroupId(groupId); m.setUserId(idle); m.setRole("owner");
+        when(memberRepo.findByGroupId(groupId)).thenReturn(List.of(m));
+        when(profileRepo.findByUserIdAndDeletedAtIsNull(idle)).thenReturn(Optional.empty());
+        when(activityRepo.sumCo2AndLoggedDaysSince(anyList(), any())).thenReturn(List.of());
+
+        GoalProgressResponse resp = service.getGoalProgress(groupId, caller);
+
+        assertEquals(0.0, resp.combinedCurrentKg());
+        assertEquals(0.0, resp.progressPct());
+    }
+
+    @Test
+    void joinGroupAcceptsLowercaseAndPaddedCode() {
+        UUID groupId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Group g = group(groupId, "Home Crew", "ABCD1234");
+
+        when(groupRepo.findByInviteCodeAndDeletedAtIsNull("ABCD1234")).thenReturn(Optional.of(g));
+        when(memberRepo.existsByGroupIdAndUserId(groupId, userId)).thenReturn(true);
+        when(memberRepo.findByGroupId(groupId)).thenReturn(List.of());
+
+        GroupResponse resp = service.joinGroup(userId, "  abcd1234 ");
+
+        assertEquals(groupId, resp.id());
     }
 
     @Test

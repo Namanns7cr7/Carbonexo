@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeftRight, TrendingDown, TrainFront, Salad, Snowflake, Wand2, PenLine, ListPlus } from 'lucide-react';
 import { CATEGORIES, type Category } from '@/lib/carbon';
@@ -18,6 +18,7 @@ import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
 import { deriveScenarioBaseVisual } from '@/lib/living-world/derive';
 import { LivingEarth } from '@/components/planet/LivingEarth';
 import { ProvenanceBadge } from '@/components/living-world/Provenance';
+import { useRegisterPageContext } from '@/lib/context/ecomind-context';
 
 const FREQUENCIES: { value: string; label: string }[] = [
   { value: 'per_day', label: 'day' },
@@ -80,6 +81,19 @@ export default function Simulate() {
   const [amount, setAmount] = useState(5);
   const [horizon, setHorizon] = useState<SimulationHorizon>('MONTH');
 
+  useRegisterPageContext({
+    pageTitle: 'Carbon Twin Simulator',
+    activeFeature: 'twin_simulation',
+    scenarioId: factorKey || 'custom',
+    metadata: {
+      factorKey: factorKey || 'none',
+      replacementKey: replacementFactorKey || 'none',
+      quantity,
+      frequency,
+      deltaType,
+    },
+  });
+
   // "Can't find it?" custom activity — not in the shared catalog. The user states
   // directly how much CO2 it produces each time, instead of picking a km/kWh rate.
   const [customMode, setCustomMode] = useState(false);
@@ -95,6 +109,10 @@ export default function Simulate() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulationResult | null>(null);
+  // Kept apart from result so its late arrival doesn't re-publish the scenario to the Living World.
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const latestRun = useRef(0);
   const [scenarioLabel, setScenarioLabel] = useState('');
   const { setScenario, emitPulse } = useLivingWorld();
 
@@ -162,9 +180,21 @@ export default function Simulate() {
         ? `${from} → ${change.customReplacementLabel ?? labelFor(change.replacementFactorKey ?? '')}`
         : `${from}, reduced by ${change.amount ?? 0}`,
     );
+    const runId = ++latestRun.current;
+    setInsight(null);
     try {
-      const res = await runSimulation({ horizon: forHorizon, changes: [change] });
+      const request = { horizon: forHorizon, changes: [change] };
+      const res = await runSimulation(request, { insight: false });
+      if (runId !== latestRun.current) return;
       setResult(res);
+      // The AI sentence takes seconds, so it follows the numbers instead of holding them up.
+      if (res.source === 'server') {
+        setInsightLoading(true);
+        runSimulation(request)
+          .then((full) => runId === latestRun.current && setInsight(full.aiInsight ?? null))
+          .catch(() => {})
+          .finally(() => runId === latestRun.current && setInsightLoading(false));
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : 'Could not run the simulation. Try again.');
     } finally {
@@ -579,10 +609,17 @@ export default function Simulate() {
             A simulation changes nothing: no activity is logged and no Green Points are awarded. Make the change for real, then log it — or add the matching action to your plan.
           </p>
 
-          {result.aiInsight && (
-            <div className="rounded-xl border border-border bg-lime-soft px-4 py-3">
+          {(insight || insightLoading) && (
+            <div className="rounded-xl border border-border bg-lime-soft px-4 py-3" aria-live="polite">
               <div className="text-xs font-semibold uppercase tracking-wide text-lime-deep">In short</div>
-              <p className="mt-1 text-sm">{result.aiInsight}</p>
+              {insight ? (
+                <p className="mt-1 text-sm">{insight}</p>
+              ) : (
+                <div className="mt-2 flex flex-col gap-1.5" aria-label="Writing a summary">
+                  <span className="h-3 w-11/12 animate-pulse rounded bg-border" />
+                  <span className="h-3 w-2/3 animate-pulse rounded bg-border" />
+                </div>
+              )}
             </div>
           )}
 

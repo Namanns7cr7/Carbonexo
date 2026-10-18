@@ -34,7 +34,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC = {
             "/api/auth/**",
             "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-            "/actuator/health/**", "/actuator/info", "/actuator/prometheus"
+            "/actuator/health/**", "/actuator/info"
     };
 
     private final AppProperties props;
@@ -77,7 +77,8 @@ public class SecurityConfig {
         cfg.setAllowedOrigins(props.cors().allowedOrigins());
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
-        cfg.setAllowCredentials(true);
+        // Auth is a bearer header, not cookies; credentials would also make "*" origins invalid.
+        cfg.setAllowCredentials(false);
         cfg.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);

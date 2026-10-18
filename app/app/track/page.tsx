@@ -13,6 +13,7 @@ import { CustomItemSheet } from '@/components/app/CustomItemSheet';
 import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
 import { LivingEarth } from '@/components/planet/LivingEarth';
 import { ProvenanceBadge } from '@/components/living-world/Provenance';
+import { useRegisterPageContext } from '@/lib/context/ecomind-context';
 
 const UNIT_LABEL: Record<NonNullable<TrackOption['unit']>, string> = { km: 'km', kWh: 'kWh', item: '×' };
 
@@ -37,6 +38,16 @@ export default function Track() {
   const { todayKey, todayLogs, todayTotal, addLog, removeLog } = useCarbon();
   const { world, pulse, emitPulse } = useLivingWorld();
   const [cat, setCat] = useState<Category>('travel');
+
+  useRegisterPageContext({
+    pageTitle: 'Track Activity',
+    activeFeature: 'activity_logging',
+    selectedEntityId: cat,
+    metadata: {
+      category: cat,
+      todayTotal,
+    },
+  });
 
   // Deep links from the dashboard: /app/track?cat=food opens that category.
   useEffect(() => {

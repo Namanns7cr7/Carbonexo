@@ -81,6 +81,15 @@ public class SimulationService {
 
     @Transactional(readOnly = true)
     public SimulationResponse simulate(UUID userId, SimulationRequest request) {
+        return simulate(userId, request, true);
+    }
+
+    /**
+     * @param withInsight false skips the Gemini call (seconds) so the numbers return in
+     *                    milliseconds; the client then asks again with it on and fills the text in.
+     */
+    @Transactional(readOnly = true)
+    public SimulationResponse simulate(UUID userId, SimulationRequest request, boolean withInsight) {
         if (request.changes() == null || request.changes().isEmpty()) {
             throw new BadRequestException("At least one simulated change is required");
         }
@@ -135,8 +144,9 @@ public class SimulationService {
         BigDecimal kgSavedForCredits = baselineCo2Kg.subtract(projectedCo2Kg).max(BigDecimal.ZERO);
         int projectedCreditsDelta = creditRuleEngine.creditsForKgSaved(kgSavedForCredits.doubleValue());
 
-        String aiInsight = buildInsight(deltaCo2Kg, weeklyGoalImpact.projectedProgressPct(),
-                projectedCreditsDelta, request.horizon());
+        String aiInsight = withInsight
+                ? buildInsight(deltaCo2Kg, weeklyGoalImpact.projectedProgressPct(), projectedCreditsDelta, request.horizon())
+                : null;
 
         return new SimulationResponse(
                 baselineCo2Kg, projectedCo2Kg, deltaCo2Kg,

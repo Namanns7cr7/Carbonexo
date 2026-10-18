@@ -7,7 +7,12 @@ Do not rename a field without keeping the same env var name via `alias`.
 """
 from __future__ import annotations
 
+import os
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEV_DEFAULT_JWT_SECRET = "change-me-dev-only-secret-change-me-dev-only-secret"
 
 
 class Settings(BaseSettings):
@@ -33,7 +38,7 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.CORS_ALLOWED_ORIGINS.split(",") if o.strip()]
 
     # ---- security / jwt ----
-    JWT_SECRET: str = "change-me-dev-only-secret-change-me-dev-only-secret"
+    JWT_SECRET: str = DEV_DEFAULT_JWT_SECRET
     JWT_ACCESS_TTL: int = 900
     JWT_REFRESH_TTL: int = 1209600
     JWT_ISSUER: str = "ecotrack"
@@ -78,6 +83,13 @@ class Settings(BaseSettings):
     # ---- logging ----
     LOG_LEVEL: str = "INFO"
     LOG_LEVEL_APP: str = "DEBUG"
+
+    @model_validator(mode="after")
+    def _refuse_dev_jwt_secret_in_cloud(self) -> "Settings":
+        # The default is public on GitHub; Cloud Run sets K_SERVICE.
+        if self.JWT_SECRET == DEV_DEFAULT_JWT_SECRET and os.environ.get("K_SERVICE"):
+            raise ValueError("JWT_SECRET is unset: refusing to start with the public dev default")
+        return self
 
     # ---- flyway (unused by alembic directly, kept for parity/reference) ----
     FLYWAY_LOCATIONS: str = "filesystem:../database/migrations"

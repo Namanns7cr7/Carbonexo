@@ -1,14 +1,22 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCarbon } from '@/lib/store';
-import { ACTIONS, CATEGORY_META } from '@/lib/carbon';
+import { ACTIONS, CATEGORY_META, type Category } from '@/lib/carbon';
 import { getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { CLIMATE_KNOWLEDGE_BASE, generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
-import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Sparkles, Terminal, X } from 'lucide-react';
+import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Copy, FlaskConical, ListChecks, Plus, RotateCcw, Sparkles, Terminal, X, Compass } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { useEcoMindContext, useRegisterPageContext } from '@/lib/context/ecomind-context';
+import {
+  LeafSproutThinking,
+  ResponseBloomBadge,
+  AnimatedMessageBubble,
+  LeafCopyButton,
+} from '@/components/ecomind/EcoMindLeafAnimations';
 
 interface Msg {
   id: number | string;
@@ -134,13 +142,21 @@ export default function Coach() {
   const weekTotal = Math.round(weekTotals.reduce((s, d) => s + d.total, 0));
   const bsLabel = biggestSource ? CATEGORY_META[biggestSource.category].label : 'travel';
 
+  useRegisterPageContext({
+    pageTitle: 'EcoMind Coach',
+    activeFeature: 'conversation',
+    metadata: { todayTotal, biggestCategory: bsLabel },
+  });
+  const { pageContext } = useEcoMindContext();
+
   const [showSourcesModal, setShowSourcesModal] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       id: 0,
       role: 'ai',
-      text: `Hi ${profile.name || 'there'}! I'm your Carbonexo Coach. Ask about your footprint, a swap you're considering, or the carbon maths behind an activity.\n\nIf the AI can't be reached, I answer from a built-in reference library and say so.`,
+      text: `Hi ${profile.name || 'there'}! I'm your Carbonexo Coach powered by Gemini 3 Flash. Ask about your footprint, a swap you're considering, or the carbon maths behind an activity.\n\nAll emissions answers are strictly grounded in verified climate datasets (DEFRA 2024, IPCC, EPA, CEA).`,
       kind: 'welcome',
+      model: 'Gemini 3 Flash',
     },
   ]);
   const [typing, setTyping] = useState(false);
@@ -148,8 +164,24 @@ export default function Coach() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(1);
 
-  // Load chat history on mount if authenticated
+  const STORAGE_KEY = 'carbonexo_coach_chat_history';
+
+  // Load chat history on mount (localStorage first, then sync with backend if authenticated)
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMsgs(parsed);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load local chat history', e);
+      }
+    }
+
     const loadHistory = async () => {
       if (!isAuthenticated()) return;
       try {
@@ -163,15 +195,21 @@ export default function Coach() {
             model: h.model,
             kind: h.role === 'assistant' ? ('ai' as const) : undefined,
           }));
-          setMsgs([
-            {
-              id: 'welcome',
-              role: 'ai',
-              text: `Welcome back, ${profile.name || 'there'}. Your earlier conversation is below.`,
-              kind: 'welcome',
-            },
-            ...mapped,
-          ]);
+          setMsgs((current) => {
+            if (current.length <= 1) {
+              return [
+                {
+                  id: 'welcome',
+                  role: 'ai',
+                  text: `Welcome back, ${profile.name || 'there'}. Your earlier conversation is below.`,
+                  kind: 'welcome',
+                  model: 'Gemini 3 Flash',
+                },
+                ...mapped,
+              ];
+            }
+            return current;
+          });
         }
       } catch (err) {
         console.warn('Chat history API unavailable, using verified local grounding', err);
@@ -179,6 +217,35 @@ export default function Coach() {
     };
     loadHistory();
   }, [profile.name]);
+
+  // Persist messages to localStorage on updates
+  useEffect(() => {
+    if (typeof window !== 'undefined' && msgs.length > 1) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
+      } catch (e) {
+        console.warn('Failed to save chat to localStorage', e);
+      }
+    }
+  }, [msgs]);
+
+  const clearChat = () => {
+    const freshMsg: Msg = {
+      id: 'welcome-' + Date.now(),
+      role: 'ai',
+      text: `Hi ${profile.name || 'there'}! I'm your Carbonexo Coach powered by Gemini 3 Flash. Ask about your footprint, a swap you're considering, or the carbon maths behind an activity.`,
+      kind: 'welcome',
+      model: 'Gemini 3 Flash',
+    };
+    setMsgs([freshMsg]);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.warn('Failed to remove localStorage chat', e);
+      }
+    }
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -206,12 +273,19 @@ export default function Coach() {
 
     if (isAuthenticated()) {
       try {
-        const response = await sendCoachMessage(q);
+        const response = await sendCoachMessage(q, pageContext);
         if (response.result?.trim()) {
-          // The AI's own words. No library citation is attached: the model did not necessarily use it.
           setMsgs((m) => [
             ...m,
-            { id: 'ai-' + Date.now() + '-' + idRef.current++, role: 'ai', text: response.result, prompt: response.prompt, kind: 'ai' },
+            {
+              id: 'ai-' + Date.now() + '-' + idRef.current++,
+              role: 'ai',
+              text: response.result,
+              prompt: response.prompt,
+              provider: response.provider || 'Vertex AI',
+              model: response.model || 'Gemini 3 Flash',
+              kind: 'ai',
+            },
           ]);
           setTyping(false);
           return;
@@ -242,9 +316,9 @@ export default function Coach() {
 
   return (
     <>
-      <GlassCard className="flex h-[calc(100vh-150px)] min-h-[460px] flex-col md:h-[calc(100vh-110px)] relative p-4 sm:p-6 border border-emerald-500/20 bg-slate-900/60 backdrop-blur-md shadow-lg shadow-emerald-500/5">
+      <GlassCard className="flex h-[calc(100dvh-140px)] min-h-[460px] max-h-[840px] flex-col relative p-4 sm:p-6 border border-emerald-500/20 bg-slate-900/60 backdrop-blur-md shadow-lg shadow-emerald-500/5">
         {/* header */}
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-gradient-to-br from-emerald-500 to-teal-400 text-lg shadow-md shadow-emerald-500/20">
               <Sparkles className="h-5 w-5 text-slate-950" />
@@ -252,6 +326,9 @@ export default function Coach() {
             <div>
               <div className="text-[15px] font-bold flex items-center gap-1.5 text-white">
                 Carbonexo Coach
+                <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                  Gemini 3 Flash
+                </span>
                 <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
                   Scientifically Grounded
                 </span>
@@ -261,43 +338,53 @@ export default function Coach() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
-                Live Climate Data Engine Active
+                Live Climate Data Engine Active · Page Aware
               </div>
             </div>
           </div>
 
-          {/* View Knowledge Base Button */}
-          <button
-            onClick={() => setShowSourcesModal(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-slate-800/80 hover:border-emerald-500 hover:text-emerald-300 transition-all shadow-sm text-slate-200"
-          >
-            <BookOpen className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Scientific Sources (Free/Open)</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* New Chat Button */}
+            <button
+              onClick={clearChat}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:border-emerald-500 hover:text-emerald-300 transition-all shadow-sm text-slate-300 active:scale-95"
+              title="Start a fresh conversation"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-emerald-400" />
+              <span>New Chat</span>
+            </button>
+
+            {/* View Knowledge Base Button */}
+            <button
+              onClick={() => setShowSourcesModal(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-slate-800/80 hover:border-emerald-500 hover:text-emerald-300 transition-all shadow-sm text-slate-200"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Scientific Sources</span>
+            </button>
+          </div>
         </div>
 
         {/* messages */}
-        <div ref={scrollRef} className="cx-scroll flex-1 space-y-3 overflow-y-auto pr-1">
+        <div ref={scrollRef} className="cx-scroll min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
           {msgs.map((m) =>
             m.role === 'user' ? (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
+              <AnimatedMessageBubble key={m.id} role="user">
                 <div className="max-w-[82%] rounded-[18px_18px_5px_18px] bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2.5 text-[14.5px] font-medium leading-[1.5] text-white shadow-md shadow-emerald-600/20">
                   {m.text}
                 </div>
-              </motion.div>
+              </AnimatedMessageBubble>
             ) : (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start gap-2.5">
+              <AnimatedMessageBubble key={m.id} role="ai">
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-emerald-500/15 text-emerald-400 text-sm mt-0.5 border border-emerald-500/20">
                   ✦
                 </div>
                 <div className="max-w-[84%] rounded-[18px_18px_18px_5px] border border-emerald-500/20 bg-slate-800/80 backdrop-blur-sm px-4 py-3 text-[14px] leading-[1.55] shadow-sm text-slate-100">
-                  {/* Source Badge if present */}
-                  {m.source && (
-                    <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                      <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />
-                      <span>Source: {m.source.split(';')[0]}</span>
-                    </div>
-                  )}
+                  {/* Model & Source Badges Header */}
+                  <div className="mb-2 flex items-center justify-between gap-2 border-b border-emerald-500/10 pb-1.5">
+                    <ResponseBloomBadge source={m.source} model={m.model || 'Gemini 3 Flash'} />
+                    <LeafCopyButton text={m.text} />
+                  </div>
 
                   <FormattedMessage text={m.text} />
 
@@ -311,48 +398,24 @@ export default function Coach() {
                     />
                   )}
                 </div>
-              </motion.div>
+              </AnimatedMessageBubble>
             )
           )}
 
-          {/* Animated skeleton loaders & pulse indicators for real-time streaming feedback */}
+          {/* Living Leaf Sprout Thinking Animation */}
           {typing && (
             <motion.div
-              initial={{ opacity: 0, y: 6 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start gap-2.5"
+              className="flex justify-start pt-1"
             >
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-emerald-500/20 text-emerald-400 text-sm mt-0.5 border border-emerald-500/30">
-                <Sparkles className="h-4 w-4 animate-spin text-emerald-400" />
-              </div>
-              <div className="w-full max-w-[84%] rounded-[18px_18px_18px_5px] border border-emerald-500/30 bg-slate-900/90 backdrop-blur-md p-4 shadow-lg shadow-emerald-500/5">
-                {/* Pulse and streaming feedback header */}
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    </span>
-                    <span>Gemini 2.0 Flash synthesizing response...</span>
-                  </div>
-                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400 border border-emerald-500/20 animate-pulse">
-                    Streaming Real-time
-                  </span>
-                </div>
-
-                {/* Animated skeleton lines with shimmering gradient */}
-                <div className="space-y-2.5">
-                  <div className="h-3.5 w-5/6 rounded-md bg-gradient-to-r from-emerald-500/10 via-emerald-500/25 to-emerald-500/10 animate-pulse" />
-                  <div className="h-3.5 w-full rounded-md bg-gradient-to-r from-emerald-500/15 via-emerald-500/30 to-emerald-500/15 animate-pulse [animation-delay:150ms]" />
-                  <div className="h-3.5 w-3/4 rounded-md bg-gradient-to-r from-emerald-500/10 via-emerald-500/25 to-emerald-500/10 animate-pulse [animation-delay:300ms]" />
-                </div>
-              </div>
+              <LeafSproutThinking label="Gemini 3 Flash" />
             </motion.div>
           )}
         </div>
 
         {/* suggestions */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex shrink-0 flex-wrap gap-1.5">
           {SCIENTIFIC_SUGGESTIONS.map((q) => (
             <button
               key={q}
@@ -371,7 +434,7 @@ export default function Coach() {
             e.preventDefault();
             send(input);
           }}
-          className="mt-3 flex items-center gap-2 rounded-[16px] border border-emerald-500/30 bg-slate-950/70 p-1.5 pl-4 shadow-lg focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all backdrop-blur-md"
+          className="mt-3 flex shrink-0 items-center gap-2 rounded-[16px] border border-emerald-500/30 bg-slate-950/70 p-1.5 pl-4 shadow-lg focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all backdrop-blur-md"
         >
           <input
             value={input}

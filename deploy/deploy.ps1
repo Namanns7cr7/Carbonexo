@@ -116,6 +116,7 @@ GOOGLE_CLIENT_ID: "$GOOGLE_CLIENT_ID"
 GCP_PROJECT_ID: "$PROJECT_ID"
 GCP_LOCATION: "$REGION"
 CORS_ALLOWED_ORIGINS: "*"
+API_DOCS_ENABLED: "false"
 "@ | Set-Content -Path $envFile -Encoding ascii
 
 Write-Host "==> Deploying backend to Cloud Run..." -ForegroundColor Cyan

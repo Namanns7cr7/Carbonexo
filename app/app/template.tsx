@@ -13,7 +13,7 @@ import { UI_SPRING } from '@/components/physics';
 
 export default function AppTemplate({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ opacity: { duration: 0.25 }, y: { type: 'spring', ...UI_SPRING } }}>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ opacity: { duration: 0.15 }, y: { type: 'spring', ...UI_SPRING } }}>
       {children}
     </motion.div>
   );

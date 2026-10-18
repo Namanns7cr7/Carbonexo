@@ -2,7 +2,6 @@ package com.ecotrack.social;
 
 import com.ecotrack.ai.AIProvider;
 import com.ecotrack.ai.PromptRenderer;
-import com.ecotrack.carbon.CarbonCalculationService;
 import com.ecotrack.config.AppProperties;
 import com.ecotrack.exception.BadRequestException;
 import com.ecotrack.exception.ResourceNotFoundException;
@@ -48,7 +47,6 @@ public class GroupService {
     private final UserProfileRepository profileRepo;
     private final SocialActivityLogRepository activityRepo;
     private final SocialCreditLedgerRepository creditRepo;
-    private final CarbonCalculationService carbonService;
     private final AIProvider aiProvider;
     private final PromptRenderer promptRenderer;
     private final AppProperties props;
@@ -60,7 +58,6 @@ public class GroupService {
                          UserProfileRepository profileRepo,
                          SocialActivityLogRepository activityRepo,
                          SocialCreditLedgerRepository creditRepo,
-                         CarbonCalculationService carbonService,
                          AIProvider aiProvider,
                          PromptRenderer promptRenderer,
                          AppProperties props) {
@@ -70,7 +67,6 @@ public class GroupService {
         this.profileRepo = profileRepo;
         this.activityRepo = activityRepo;
         this.creditRepo = creditRepo;
-        this.carbonService = carbonService;
         this.aiProvider = aiProvider;
         this.promptRenderer = promptRenderer;
         this.props = props;
@@ -100,8 +96,10 @@ public class GroupService {
      */
     @Transactional
     public GroupResponse joinGroup(UUID userId, String inviteCode) {
-        Group group = groupRepo.findByInviteCodeAndDeletedAtIsNull(inviteCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Group", "inviteCode", inviteCode));
+        // Codes are generated upper-case; accept one typed or pasted in any case.
+        String code = inviteCode.trim().toUpperCase(Locale.ROOT);
+        Group group = groupRepo.findByInviteCodeAndDeletedAtIsNull(code)
+                .orElseThrow(() -> new ResourceNotFoundException("Group", "inviteCode", code));
 
         if (!memberRepo.existsByGroupIdAndUserId(group.getId(), userId)) {
             GroupMember member = new GroupMember();
@@ -180,7 +178,9 @@ public class GroupService {
                     entry.getKey(), namesById.getOrDefault(entry.getKey(), "Member"), rank++, entry.getValue()));
         }
 
-        String aiSummary = buildLeaderboardSummary(group.getName(), result, metric, window, memberIds.size());
+        // Nobody has anything in this window: there is no leader to praise.
+        String aiSummary = totals.isEmpty() ? null
+                : buildLeaderboardSummary(group.getName(), result, metric, window, memberIds.size());
         return new LeaderboardResponse(result, aiSummary);
     }
 
@@ -227,15 +227,14 @@ public class GroupService {
     /**
      * Combined weekly goal progress across all members.
      *
-     * Formula per member (adapted from {@link com.ecotrack.carbon.DashboardService}'s
-     * existing "total saved" estimate, which is the only place in the codebase
-     * that derives a savings figure from a user's profile):
+     * Formula per member:
      *  - week window = today.minusDays(6)..today — the same week-to-date range
      *    DashboardService uses for its weekly chart/aggregates.
-     *  - baseline = 8.0 kg/day, the same fallback DashboardService falls back to
-     *    when estimating "total saved" for a user.
-     *  - actualSavedKg = {@link CarbonCalculationService#carbonSaved} for that
-     *    member over the week window — the exact method DashboardService calls.
+     *  - baseline = 8.0 kg/day, the same fallback DashboardService uses.
+     *  - actualSavedKg = baseline * (days the member logged anything) − what
+     *    they logged, floored at 0. Only logged days count: a day with no logs
+     *    is missing data, not a day of zero emissions (the same rule the
+     *    leaderboard follows), so an inactive member adds no invented savings.
      *  - targetKg = (baseline * 7 days) * (member's weeklyGoalPct / 100), i.e.
      *    the member's personal reduction target expressed in kg for the week
      *    (weeklyGoalPct defaults to 15, matching the DB default).
@@ -251,6 +250,14 @@ public class GroupService {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.minusDays(6);
 
+        Map<UUID, Object[]> loggedById = new HashMap<>();
+        List<UUID> memberIds = members.stream().map(GroupMember::getUserId).toList();
+        if (!memberIds.isEmpty()) {
+            for (Object[] row : activityRepo.sumCo2AndLoggedDaysSince(memberIds, weekStart)) {
+                loggedById.put((UUID) row[0], row);
+            }
+        }
+
         double combinedCurrentKg = 0;
         double combinedGoalKg = 0;
         for (GroupMember m : members) {
@@ -258,7 +265,14 @@ public class GroupService {
             int weeklyGoalPct = (profile != null && profile.getWeeklyGoalPct() != null)
                     ? profile.getWeeklyGoalPct() : DEFAULT_WEEKLY_GOAL_PCT;
 
-            BigDecimal actualSaved = carbonService.carbonSaved(m.getUserId(), weekStart, today, FALLBACK_BASELINE_DAILY_KG);
+            Object[] logged = loggedById.get(m.getUserId());
+            BigDecimal actualSaved = BigDecimal.ZERO;
+            if (logged != null) {
+                BigDecimal loggedKg = new BigDecimal(logged[1].toString());
+                long loggedDays = ((Number) logged[2]).longValue();
+                actualSaved = FALLBACK_BASELINE_DAILY_KG.multiply(BigDecimal.valueOf(loggedDays))
+                        .subtract(loggedKg).max(BigDecimal.ZERO);
+            }
             BigDecimal baselineWeekly = FALLBACK_BASELINE_DAILY_KG.multiply(BigDecimal.valueOf(7));
             BigDecimal targetKg = baselineWeekly.multiply(BigDecimal.valueOf(weeklyGoalPct)).divide(BigDecimal.valueOf(100));
 

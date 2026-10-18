@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -28,6 +29,15 @@ import java.util.UUID;
  */
 @Service
 public class AuthService {
+
+    /**
+     * How long a rotated refresh token is still honoured. A refresh whose
+     * response never reaches the browser (page reload mid-request, a second tab
+     * refreshing with the same token, a dropped mobile connection) would
+     * otherwise leave the client holding a dead token and sign the user out.
+     * Only rotation opens this window; a logged-out token never comes back.
+     */
+    static final Duration ROTATION_GRACE = Duration.ofSeconds(30);
 
     private final UserRepository users;
     private final RefreshTokenRepository refreshTokens;
@@ -121,15 +131,22 @@ public class AuthService {
         String hash = sha256(rawRefreshToken);
         RefreshToken token = refreshTokens.findByTokenHash(hash)
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
-        if (!token.isActive()) {
+        Instant now = Instant.now();
+        if (!token.getExpiresAt().isAfter(now)) {
+            throw new BadCredentialsException("Refresh token expired or revoked");
+        }
+        if (token.getRevokedAt() != null && !rotatedWithinGrace(token, now)) {
             throw new BadCredentialsException("Refresh token expired or revoked");
         }
         User user = users.findByIdAndDeletedAtIsNull(token.getUserId())
                 .orElseThrow(() -> new BadCredentialsException("Account no longer active"));
 
-        token.setRevokedAt(Instant.now());                 // rotate
-        AuthResponse response = issueTokens(user, http);
-        return response;
+        return issueTokens(user, http, token);
+    }
+
+    static boolean rotatedWithinGrace(RefreshToken token, Instant now) {
+        return token.getReplacedBy() != null
+                && token.getRevokedAt().plus(ROTATION_GRACE).isAfter(now);
     }
 
     @Transactional
@@ -140,6 +157,11 @@ public class AuthService {
     }
 
     private AuthResponse issueTokens(User user, HttpServletRequest http) {
+        return issueTokens(user, http, null);
+    }
+
+    /** @param rotatedFrom the refresh token being exchanged, revoked here and linked to its successor */
+    private AuthResponse issueTokens(User user, HttpServletRequest http, RefreshToken rotatedFrom) {
         String access = jwtService.generateAccessToken(
                 user.getId(), user.getEmail(), user.getRole().name());
 
@@ -153,6 +175,10 @@ public class AuthService {
             rt.setIpAddress(http.getRemoteAddr());
         }
         refreshTokens.save(rt);
+        if (rotatedFrom != null && rotatedFrom.getRevokedAt() == null) {
+            rotatedFrom.setRevokedAt(Instant.now());       // rotate
+            rotatedFrom.setReplacedBy(rt.getId());
+        }
 
         return new AuthResponse(access, rawRefresh, jwtService.getAccessTtlSeconds(),
                 new AuthResponse.UserSummary(user.getId(), user.getEmail(),

@@ -8,6 +8,7 @@ import { PageHead, Card } from '@/components/app/ui';
 import { useLivingWorld } from '@/lib/living-world/LivingWorldProvider';
 import { Growth } from '@/components/living-world/Growth';
 import { Celebrate, TactileCard } from '@/components/physics';
+import { useRegisterPageContext } from '@/lib/context/ecomind-context';
 
 export default function RewardsPage() {
   const [rewards, setRewards] = useState<RewardData[]>([]);
@@ -19,6 +20,18 @@ export default function RewardsPage() {
   const [loaded, setLoaded] = useState<'loading' | 'ok' | 'error'>('loading');
   const [redeemed, setRedeemed] = useState<{ id: string; n: number } | null>(null);
   const { refreshLedger } = useLivingWorld();
+
+  useRegisterPageContext({
+    pageTitle: 'Eco Rewards',
+    activeFeature: 'rewards_catalog',
+    selectedEntityId: redeemingId ?? undefined,
+    visibleMetricIds: ['balance', 'rewardsCount'],
+    metadata: {
+      balance: balance ?? 0,
+      rewardsCount: rewards.length,
+      redemptionsCount: redemptions.length,
+    },
+  });
 
   const fetchData = async () => {
     try {

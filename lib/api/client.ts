@@ -57,28 +57,59 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 'rejected'    — the server refused the refresh token: the session is over.
+ * 'unreachable' — network failure or server error: the session may be fine,
+ *                 so the caller must not sign the user out.
+ */
+type RefreshResult = 'ok' | 'rejected' | 'unreachable';
+
+/** The newest refresh token: another tab may have rotated it since this one loaded. */
+function latestRefreshToken(): string | null {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('cx-refresh');
+    if (stored) refreshToken = stored;
+  }
+  return refreshToken;
+}
+
+async function exchangeRefreshToken(token: string): Promise<RefreshResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: token }),
+    });
+  } catch {
+    return 'unreachable';
+  }
+  if (res.status >= 500) return 'unreachable';
+  if (!res.ok) return 'rejected';
+  try {
+    const data = await res.json();
+    setTokens(data.accessToken, data.refreshToken);
+    return 'ok';
+  } catch {
+    return 'unreachable';
+  }
+}
+
 // Mutex: when multiple requests get 401 simultaneously, only one refresh
 // call is made; all callers await the same promise.
-let refreshInFlight: Promise<boolean> | null = null;
+let refreshInFlight: Promise<RefreshResult> | null = null;
 
-async function refreshAccessToken(): Promise<boolean> {
+async function refreshAccessToken(): Promise<RefreshResult> {
   if (refreshInFlight) return refreshInFlight;
 
   refreshInFlight = (async () => {
-    if (!refreshToken) return false;
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      setTokens(data.accessToken, data.refreshToken);
-      return true;
-    } catch {
-      return false;
-    }
+    const sent = latestRefreshToken();
+    if (!sent) return 'rejected';
+    const result = await exchangeRefreshToken(sent);
+    if (result !== 'rejected') return result;
+    // Another tab may have rotated the token while this request was in flight.
+    const newer = latestRefreshToken();
+    return newer && newer !== sent ? exchangeRefreshToken(newer) : 'rejected';
   })();
 
   try {
@@ -86,6 +117,11 @@ async function refreshAccessToken(): Promise<boolean> {
   } finally {
     refreshInFlight = null;
   }
+}
+
+/** A refresh that failed for network reasons: keep the session, let the caller retry. */
+function serverUnreachable() {
+  return new ApiError(503, 'Could not reach Carbonexo. Check your connection and try again.', {});
 }
 
 // In-flight GET request deduplication (prevents redundant parallel requests)
@@ -158,9 +194,10 @@ export async function apiFetch<T>(
     // password is a 401 that must reach the form, not reload the page.
     if (res.status === 401 && retryCount === 0 && !path.startsWith('/api/auth/')) {
       const refreshed = await refreshAccessToken();
-      if (refreshed) {
+      if (refreshed === 'ok') {
         return apiFetch<T>(path, options, retryCount + 1);
       }
+      if (refreshed === 'unreachable') throw serverUnreachable();
       clearTokens();
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
@@ -225,9 +262,10 @@ export async function apiFetchText(
 
   if (res.status === 401 && retryCount === 0) {
     const refreshed = await refreshAccessToken();
-    if (refreshed) {
+    if (refreshed === 'ok') {
       return apiFetchText(path, options, retryCount + 1);
     }
+    if (refreshed === 'unreachable') throw serverUnreachable();
     clearTokens();
     if (typeof window !== 'undefined') {
       window.location.href = '/login';

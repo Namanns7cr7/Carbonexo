@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Google Gemini AI provider via Vertex AI SDK. Uses Application Default
- * Credentials (GOOGLE_APPLICATION_CREDENTIALS). Supports gemini-2.5-pro
- * (quality) and gemini-2.0-flash (fast).
+ * Credentials (GOOGLE_APPLICATION_CREDENTIALS). Defaults to gemini-3.1-pro-preview
+ * (quality) and gemini-3-flash-preview (fast), which are served only from location "global".
  */
 public class GeminiAIProvider implements AIProvider {
 
@@ -28,7 +28,7 @@ public class GeminiAIProvider implements AIProvider {
 
     @Override
     public String generate(String prompt, String model) {
-        try (VertexAI vertexAI = new VertexAI(projectId, location)) {
+        try (VertexAI vertexAI = VertexClients.create(projectId, location)) {
             GenerativeModel generativeModel = new GenerativeModel(model, vertexAI);
             GenerateContentResponse response = generativeModel.generateContent(prompt);
             String text = ResponseHandler.getText(response);

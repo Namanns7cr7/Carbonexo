@@ -18,7 +18,7 @@
  */
 
 import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useLoader, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Html, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { latLonToVec3, slerpLatLon, angularDistance, type LatLon } from '@/lib/experience/geo';
@@ -106,9 +106,48 @@ export default function EarthCanvas(props: EarthCanvasProps) {
 
 // ─── The globe ───────────────────────────────────────────────────────────────
 
+/**
+ * Textures decoded off the main thread. TextureLoader hands the GPU an <img>,
+ * which the browser decodes synchronously inside the upload call — measured at
+ * ~300 ms of frozen UI per globe mount. createImageBitmap decodes on a worker
+ * thread, and useLoader caches the bitmaps by URL, so a page revisited later
+ * only re-uploads them. Safari's createImageBitmap ignores imageOrientation in
+ * older versions, so it keeps the <img> path.
+ */
+const BITMAP_DECODE =
+  typeof createImageBitmap !== 'undefined' &&
+  typeof navigator !== 'undefined' &&
+  !/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+function useBitmapTextures(urls: string[]): THREE.Texture[] {
+  const bitmaps = useLoader(THREE.ImageBitmapLoader, urls, (loader) => {
+    // Flipped during decode, so the texture itself must not flip again.
+    loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none' });
+  }) as ImageBitmap[];
+  const textures = useMemo(
+    () =>
+      bitmaps.map((b) => {
+        const t = new THREE.Texture(b);
+        t.flipY = false;
+        t.needsUpdate = true;
+        return t;
+      }),
+    [bitmaps]
+  );
+  // The bitmaps stay cached for the next mount; only this mount's GPU copies go.
+  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures]);
+  return textures;
+}
+
+function useImageTextures(urls: string[]): THREE.Texture[] {
+  return useTexture(urls);
+}
+
+const useEarthTextures = BITMAP_DECODE ? useBitmapTextures : useImageTextures;
+
 function World({ quality, layer, selectedIso, onSelectCountry, route, onReady, vitalityRef }: EarthCanvasProps) {
   const tex = EARTH_TEXTURES[quality.texture];
-  const [day, night, water, clouds] = useTexture([tex.day, tex.night, EARTH_TEXTURES.water, EARTH_TEXTURES.clouds]);
+  const [day, night, water, clouds] = useEarthTextures([tex.day, tex.night, EARTH_TEXTURES.water, EARTH_TEXTURES.clouds]);
 
   useMemo(() => {
     day.colorSpace = THREE.SRGBColorSpace;

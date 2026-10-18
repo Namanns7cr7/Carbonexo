@@ -116,10 +116,10 @@ export function clamp(x: number, min: number, max: number): number {
  * as mass, never enough to wobble.
  */
 export const SPRINGS = {
-  /** Camera following a story target or flying to a region. */
-  camera: spring(9, 0.92),
-  /** Zoom distance. Slightly firmer than rotation — zoom lag feels like latency. */
-  zoom: spring(14, 0.95),
+  /** Camera following a story target or flying to a region (responsive, snappy, ~0.6s settle). */
+  camera: spring(28, 0.88),
+  /** Zoom distance. Firm and responsive without lag. */
+  zoom: spring(32, 0.90),
   /** Settling back inside a soft limit after a drag past it. */
   limit: spring(40, 1),
   /** Living World health. Critically damped: the planet must never read healthier than the data, even for a frame. */

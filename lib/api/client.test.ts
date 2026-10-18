@@ -46,7 +46,17 @@ describe('apiFetch', () => {
 });
 
 describe('apiFetch — 401 refresh and replay', () => {
-  afterEach(() => { vi.unstubAllGlobals(); clearTokens(); });
+  // A browser-like global scope, so the refresh token persists the way it does in a tab.
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('window', { location: { href: '' } });
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => { store.set(k, String(v)); },
+      removeItem: (k: string) => { store.delete(k); },
+    });
+  });
+  afterEach(() => { clearTokens(); vi.unstubAllGlobals(); });
 
   // Regression: in-flight GET deduplication used to intercept the post-refresh
   // retry, handing it the promise it was itself running inside. The request
@@ -83,6 +93,53 @@ describe('apiFetch — 401 refresh and replay', () => {
     }));
 
     await expect(api.get('/api/dashboard')).rejects.toBeInstanceOf(ApiError);
+    expect(localStorage.getItem('cx-refresh')).toBeNull();
+  });
+
+  it('keeps the session when the refresh fails for network reasons', async () => {
+    setTokens('stale-access', 'good-refresh');
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes('/api/auth/refresh')) throw new TypeError('Failed to fetch');
+      return { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+    }));
+
+    await expect(api.get('/api/dashboard')).rejects.toMatchObject({ status: 503 });
+    expect(localStorage.getItem('cx-refresh')).toBe('good-refresh');
+  });
+
+  it('keeps the session when the refresh endpoint has a server error', async () => {
+    setTokens('stale-access', 'good-refresh');
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes('/api/auth/refresh')) {
+        return { ok: false, status: 502, statusText: 'Bad Gateway', json: async () => ({}) };
+      }
+      return { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+    }));
+
+    await expect(api.get('/api/dashboard')).rejects.toMatchObject({ status: 503 });
+    expect(localStorage.getItem('cx-refresh')).toBe('good-refresh');
+  });
+
+  it('refreshes with the token another tab stored, not the one this tab loaded with', async () => {
+    setTokens('stale-access', 'old-refresh');
+    localStorage.setItem('cx-refresh', 'rotated-by-other-tab');
+    const sent: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/api/auth/refresh')) {
+        const token = JSON.parse(String(init?.body)).refreshToken;
+        sent.push(token);
+        return token === 'rotated-by-other-tab'
+          ? { ok: true, status: 200, json: async () => ({ accessToken: 'fresh', refreshToken: 'r3' }) }
+          : { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+      }
+      const authed = (init?.headers as Record<string, string>)?.Authorization === 'Bearer fresh';
+      return authed
+        ? { ok: true, status: 200, json: async () => ({ ok: 1 }) }
+        : { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+    }));
+
+    await expect(api.get('/api/dashboard')).resolves.toEqual({ ok: 1 });
+    expect(sent).toEqual(['rotated-by-other-tab']);
   });
 });
 

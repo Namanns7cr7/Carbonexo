@@ -105,9 +105,13 @@ function simulateClientSide(request: SimulationRequestBody): SimulationResult {
  * 'offline-estimate'). A server *answer* — including a 400 for an invalid
  * scenario — is returned or thrown as-is, never replaced by a local guess.
  */
-export async function runSimulation(request: SimulationRequestBody): Promise<SimulationResult> {
+export async function runSimulation(
+  request: SimulationRequestBody,
+  { insight = true }: { insight?: boolean } = {},
+): Promise<SimulationResult> {
   try {
-    const res = await api.post<SimulationResult>('/api/simulations', request);
+    // insight=false skips the server's AI sentence, which takes seconds; the numbers come back at once.
+    const res = await api.post<SimulationResult>(insight ? '/api/simulations' : '/api/simulations?insight=false', request);
     return { ...res, source: 'server' };
   } catch (err) {
     if (err instanceof ApiError) throw err;

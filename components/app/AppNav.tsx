@@ -18,8 +18,6 @@ import {
   ShoppingBag,
   Award,
   FileText,
-  BookOpen,
-  Trophy,
   LogOut,
   LayoutGrid,
   X,
@@ -46,8 +44,6 @@ export const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/app/rewards', label: 'Store', icon: ShoppingBag },
   { href: '/app/score', label: 'Score', icon: Award },
   { href: '/app/reports', label: 'Reports', icon: FileText },
-  { href: '/pitch.html', label: 'Judge Showcase', icon: Trophy },
-  { href: '/methodology.html', label: 'Architecture', icon: BookOpen },
 ];
 
 export const MOBILE_NAV: { href: string; label: string; icon: LucideIcon }[] = [
@@ -65,6 +61,9 @@ function isActive(pathname: string, href: string) {
 export function Sidebar() {
   const pathname = usePathname();
   const { profile } = useCarbon();
+  // Highlight the clicked item at once, before the route has arrived.
+  const [pending, setPending] = useState<string | null>(null);
+  useEffect(() => setPending(null), [pathname]);
   return (
     <aside
       className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r px-4 py-6 md:flex"
@@ -84,13 +83,17 @@ export function Sidebar() {
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto cx-scroll">
         {NAV.map((n) => {
-          const active = isActive(pathname, n.href);
+          const active = pending ? pending === n.href : isActive(pathname, n.href);
           const Icon = n.icon;
           return (
             <motion.div key={n.href} whileHover={{ x: 2 }} transition={{ duration: 0.15 }}>
               <Link
                 href={n.href}
-                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-semibold transition-all"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || !n.href.startsWith('/app')) return; // new tab / static page
+                  setPending(n.href);
+                }}
+                className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[14px] font-semibold transition-colors duration-100"
                 style={{
                   background: active ? 'var(--lime-soft)' : 'transparent',
                   color: active ? 'var(--lime-deep)' : 'var(--muted)',

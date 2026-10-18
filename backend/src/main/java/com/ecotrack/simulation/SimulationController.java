@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -24,8 +25,9 @@ public class SimulationController {
     }
 
     @PostMapping
-    public ResponseEntity<SimulationResponse> simulate(@Valid @RequestBody SimulationRequest request) {
+    public ResponseEntity<SimulationResponse> simulate(@Valid @RequestBody SimulationRequest request,
+                                                       @RequestParam(defaultValue = "true") boolean insight) {
         UUID userId = SecurityUtils.currentUserId();
-        return ResponseEntity.ok(simulationService.simulate(userId, request));
+        return ResponseEntity.ok(simulationService.simulate(userId, request, insight));
     }
 }

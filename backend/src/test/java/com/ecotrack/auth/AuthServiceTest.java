@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -117,5 +118,70 @@ class AuthServiceTest {
         assertNotNull(resp);
         assertEquals("user@example.com", resp.user().email());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    // --- refresh-token rotation ---
+
+    private RefreshToken storedToken(UUID userId, Instant revokedAt, UUID replacedBy) {
+        RefreshToken t = new RefreshToken();
+        t.setUserId(userId);
+        t.setTokenHash("hash");
+        t.setExpiresAt(Instant.now().plusSeconds(3600));
+        t.setRevokedAt(revokedAt);
+        t.setReplacedBy(replacedBy);
+        return t;
+    }
+
+    private UUID activeUser() {
+        UUID userId = UUID.randomUUID();
+        User user = new User();
+        user.setId(userId);
+        user.setEmail("user@example.com");
+        user.setRole(Role.USER);
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        when(jwtService.generateAccessToken(any(), anyString(), anyString())).thenReturn("access_tok");
+        return userId;
+    }
+
+    @Test
+    void refreshRotatesAnActiveToken() {
+        RefreshToken old = storedToken(activeUser(), null, null);
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var resp = authService.refresh("raw", null);
+
+        assertNotNull(resp.refreshToken());
+        assertNotNull(old.getRevokedAt(), "the used token is revoked");
+    }
+
+    @Test
+    void refreshHonoursATokenRotatedWithinTheGraceWindow() {
+        // The browser lost the response to the first refresh and retries with the same token.
+        Instant rotatedAt = Instant.now().minusSeconds(5);
+        RefreshToken old = storedToken(activeUser(), rotatedAt, UUID.randomUUID());
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+
+        var resp = authService.refresh("raw", null);
+
+        assertNotNull(resp.refreshToken());
+        assertEquals(rotatedAt, old.getRevokedAt(), "the original rotation is left as it was");
+    }
+
+    @Test
+    void refreshRejectsATokenRotatedLongerAgoThanTheGraceWindow() {
+        Instant rotatedAt = Instant.now().minus(AuthService.ROTATION_GRACE).minusSeconds(1);
+        RefreshToken old = storedToken(UUID.randomUUID(), rotatedAt, UUID.randomUUID());
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+
+        assertThrows(BadCredentialsException.class, () -> authService.refresh("raw", null));
+    }
+
+    @Test
+    void refreshRejectsALoggedOutTokenEvenWithinTheGraceWindow() {
+        RefreshToken old = storedToken(UUID.randomUUID(), Instant.now(), null); // logout: no successor
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+
+        assertThrows(BadCredentialsException.class, () -> authService.refresh("raw", null));
     }
 }

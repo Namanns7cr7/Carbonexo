@@ -215,7 +215,7 @@ export function PlanetJourney() {
         />
       </div>
 
-      <main className="pointer-events-none relative z-[1]">
+      <main id="tour" className="pointer-events-none relative z-[1]">
         <ScenePlanet ref={register('planet')} />
         <SceneWorld ref={register('world')} selection={selection} onChange={setSelection} />
         <SceneFootprint ref={register('footprint')} />

@@ -22,10 +22,31 @@ public interface SocialActivityLogRepository extends JpaRepository<ActivityLog, 
      * soft-delete convention as {@code ActivityLogRepository} (deletedAt IS
      * NULL). {@code from} is inclusive and nullable — null means no lower
      * bound (the "all" window).
+     *
+     * Two queries rather than {@code (:from IS NULL OR ...)}: PostgreSQL
+     * cannot infer the type of a parameter that is only compared with NULL,
+     * and rejects the statement.
      */
+    default List<Object[]> sumCo2ByUserIds(List<UUID> userIds, LocalDate from) {
+        return from == null ? sumCo2AllTime(userIds) : sumCo2Since(userIds, from);
+    }
+
     @Query("SELECT a.userId, COALESCE(SUM(a.co2Kg), 0) FROM ActivityLog a " +
            "WHERE a.userId IN :userIds AND a.deletedAt IS NULL " +
-           "AND (:from IS NULL OR a.activityDate >= :from) " +
            "GROUP BY a.userId")
-    List<Object[]> sumCo2ByUserIds(List<UUID> userIds, LocalDate from);
+    List<Object[]> sumCo2AllTime(List<UUID> userIds);
+
+    @Query("SELECT a.userId, COALESCE(SUM(a.co2Kg), 0) FROM ActivityLog a " +
+           "WHERE a.userId IN :userIds AND a.deletedAt IS NULL AND a.activityDate >= :from " +
+           "GROUP BY a.userId")
+    List<Object[]> sumCo2Since(List<UUID> userIds, LocalDate from);
+
+    /**
+     * Per-member [userId, CO2 total kg, distinct logged days] from {@code from}
+     * (inclusive). Members with no logs in the window are absent.
+     */
+    @Query("SELECT a.userId, COALESCE(SUM(a.co2Kg), 0), COUNT(DISTINCT a.activityDate) FROM ActivityLog a " +
+           "WHERE a.userId IN :userIds AND a.deletedAt IS NULL AND a.activityDate >= :from " +
+           "GROUP BY a.userId")
+    List<Object[]> sumCo2AndLoggedDaysSince(List<UUID> userIds, LocalDate from);
 }

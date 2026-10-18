@@ -56,3 +56,7 @@ ENV/
 
 # local storage stub (uploaded bill files)
 /backend/.local-blob/
+
+# personal note-taking vaults
+.obsidian/
+*.canvas

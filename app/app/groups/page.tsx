@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { createGroup, joinGroup, getMyGroups, type GroupSummary } from '@/lib/api/groups';
+import { ApiError } from '@/lib/api/client';
 import { PageHead, Card, EmptyState, Loading } from '@/components/app/ui';
 
 export default function GroupsPage() {
@@ -54,7 +55,11 @@ export default function GroupsPage() {
       setInviteCode('');
       await refresh();
     } catch (err) {
-      setJoinError(err instanceof Error ? err.message : 'Invite code not found');
+      setJoinError(
+        err instanceof ApiError && err.status === 404
+          ? 'No group uses that code. Check it with whoever invited you.'
+          : err instanceof Error ? err.message : 'Could not join the group'
+      );
     } finally {
       setJoining(false);
     }

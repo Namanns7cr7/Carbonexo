@@ -19,10 +19,20 @@ public interface SocialCreditLedgerRepository extends JpaRepository<CreditLedger
     /**
      * Per-member credit delta total for the given users. {@code from} is
      * inclusive and nullable — null means no lower bound (the "all" window).
+     * Split into two queries for the same PostgreSQL reason as
+     * {@link SocialActivityLogRepository#sumCo2ByUserIds}.
      */
+    default List<Object[]> sumDeltaByUserIds(List<UUID> userIds, Instant from) {
+        return from == null ? sumDeltaAllTime(userIds) : sumDeltaSince(userIds, from);
+    }
+
     @Query("SELECT c.userId, COALESCE(SUM(c.delta), 0) FROM CreditLedger c " +
            "WHERE c.userId IN :userIds " +
-           "AND (:from IS NULL OR c.createdAt >= :from) " +
            "GROUP BY c.userId")
-    List<Object[]> sumDeltaByUserIds(List<UUID> userIds, Instant from);
+    List<Object[]> sumDeltaAllTime(List<UUID> userIds);
+
+    @Query("SELECT c.userId, COALESCE(SUM(c.delta), 0) FROM CreditLedger c " +
+           "WHERE c.userId IN :userIds AND c.createdAt >= :from " +
+           "GROUP BY c.userId")
+    List<Object[]> sumDeltaSince(List<UUID> userIds, Instant from);
 }

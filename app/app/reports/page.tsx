@@ -6,6 +6,7 @@ import { FileText, Download, Printer } from 'lucide-react';
 import { getEsgSummary, getEsgSummaryCsv, downloadEsgSummaryCsv, type EsgSummaryResponse } from '@/lib/api/reports';
 import { useCarbon } from '@/lib/store';
 import { Card, PageHead, Button, EmptyState } from '@/components/app/ui';
+import { useRegisterPageContext } from '@/lib/context/ecomind-context';
 
 function formatDate(iso: string) {
   try {
@@ -20,6 +21,20 @@ export default function ReportsPage() {
   const [data, setData] = useState<EsgSummaryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
+
+  const categoryEntries = data ? Object.entries(data.categoryBreakdown).sort((a, b) => b[1] - a[1]) : [];
+
+  useRegisterPageContext({
+    pageTitle: 'Reports & Analytics',
+    activeFeature: 'esg_export',
+    visibleMetricIds: ['totalEmissionsKg', 'topCategory', 'categoriesCount'],
+    metadata: {
+      totalEmissionsKg: data?.totalEmissionsKg ?? null,
+      topCategoryName: categoryEntries[0]?.[0] ?? 'none',
+      topCategoryValue: categoryEntries[0]?.[1] ?? 0,
+      categoriesCount: categoryEntries.length,
+    },
+  });
 
   useEffect(() => {
     getEsgSummary()

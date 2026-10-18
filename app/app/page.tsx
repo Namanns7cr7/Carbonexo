@@ -32,6 +32,7 @@ import { SproutIllustration, CategoryIcon } from '@/components/app/illustrations
 import { PlanetPanel } from '@/components/living-world/PlanetPanel';
 import { ProvenanceBadge } from '@/components/living-world/Provenance';
 import { Celebrate, TactileCard, UI_SPRING } from '@/components/physics';
+import { useRegisterPageContext } from '@/lib/context/ecomind-context';
 
 function greeting() {
   const h = new Date().getHours();
@@ -60,6 +61,18 @@ export default function Dashboard() {
   const { profile, todayTotal, deltaPct, yesterdayTotal, todayBreakdown, weekTotals, todayLogs, biggestSource, addLog, removeLog, addPlan, plan, todayKey } = useCarbon();
   const { world, pulse, emitPulse } = useLivingWorld();
   const { actual, goal, milestones, ledger, visual } = world;
+
+  useRegisterPageContext({
+    pageTitle: 'Dashboard',
+    activeFeature: 'footprint_overview',
+    visibleMetricIds: ['todayTotal', 'weekTotal', 'yesterdayTotal', 'biggestSource'],
+    metadata: {
+      todayTotal,
+      yesterdayTotal,
+      biggestCategory: biggestSource?.category ?? 'travel',
+      biggestValue: biggestSource?.value ?? 0,
+    },
+  });
 
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -243,35 +256,48 @@ export default function Dashboard() {
                     {/* Score ring */}
                     <div className="flex flex-col items-center gap-3">
                       <div className="rounded-full p-1" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                        <ScoreRing value={todayTotal} fraction={fraction} size={160} color="#ffffff" track="rgba(255,255,255,0.2)" textColor="#ffffff" />
+                        <ScoreRing value={round1(todayTotal)} fraction={Math.min(1, todayTotal / BUDGET_DAY)} size={160} color="#ffffff" track="rgba(255,255,255,0.2)" textColor="#ffffff" />
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
                           {improving ? '↓' : '↑'} {Math.abs(deltaPct)}% vs yesterday
                         </span>
                       </div>
-                      <CategoryBars data={todayBreakdown} />
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-3 text-center sm:items-start sm:text-left">
-                      <SproutIllustration size={100} tone="white" />
-                      <div className="text-lg font-bold text-white">Nothing logged today</div>
-                      <p className="text-sm text-white/70">Log a commute, a meal or your electricity to see where today&apos;s kilograms come from.</p>
-                      <Link href="/app/track" className="mt-1 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-emerald-800 transition-transform hover:scale-105">
-                        + Log an activity
-                      </Link>
+
+                    {/* Category breakdown */}
+                    <div className="w-full flex-1">
+                      {todayLogs.length > 0 ? (
+                        <div className="rounded-2xl bg-white/95 p-5 shadow-lg backdrop-blur-md" style={{ '--text': '#0f172a', '--muted': '#64748b', '--surface2': '#f1f5f9', color: '#0f172a' } as React.CSSProperties}>
+                          <div className="mb-3 flex items-center justify-between">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Emission Sources</span>
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">{todayLogs.length} events</span>
+                          </div>
+                          <CategoryBars data={todayBreakdown} />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3 text-center sm:items-start sm:text-left">
+                          <SproutIllustration size={100} tone="white" />
+                          <div className="text-lg font-bold text-white">Nothing logged today</div>
+                          <p className="text-sm text-white/70">Log a commute, a meal or your electricity to see where today&apos;s kilograms come from.</p>
+                          <Link href="/app/track" className="mt-1 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-emerald-800 transition-transform hover:scale-105">
+                            + Log an activity
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-2 border-t border-white/15 pt-4 text-xs text-white/75 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      Ring and budget: {BUDGET_DAY} kg/day, the 1.5 °C lifestyle level for 2030 <span className="text-white/50">({LIFESTYLE_BUDGET_SOURCE.split(' — ')[0]})</span>
+                    </span>
+                    <Link href="/app/simulate" className="font-bold text-white underline underline-offset-2">
+                      Try a change in Carbon Twin →
+                    </Link>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-5 flex flex-col gap-2 border-t border-white/15 pt-4 text-xs text-white/75 sm:flex-row sm:items-center sm:justify-between">
-                <span>
-                  Ring and budget: {BUDGET_DAY} kg/day, the 1.5 °C lifestyle level for 2030 <span className="text-white/50">({LIFESTYLE_BUDGET_SOURCE.split(' — ')[0]})</span>
-                </span>
-                <Link href="/app/simulate" className="font-bold text-white underline underline-offset-2">
-                  Try a change in Carbon Twin →
-                </Link>
-              </div>
+              </Card>
             </div>
           </GlassCard>
 
@@ -319,13 +345,6 @@ export default function Dashboard() {
               </div>
             </div>
           </GlassCard>
-
-          {/* Hotspot Category Matrix */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-muted">Emission Hotspots</h3>
-            </div>
-          </Card>
 
           {/* Hotspots */}
           <section aria-labelledby="hotspots">
@@ -473,46 +492,40 @@ export default function Dashboard() {
             </div>
           </GlassCard>
 
-          {/* Carbon Swaps */}
+          {/* Swaps → the action plan */}
           <GlassCard delay={0.17} className="!rounded-[22px] p-5 border border-emerald-500/20 bg-slate-900/60 shadow-lg shadow-emerald-500/5">
             <div className="mb-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, var(--accent-amber), var(--accent-teal))' }}>
-                  <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
-                </span>
-                <h3 className="text-sm font-extrabold">Carbon Swaps</h3>
-              </div>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">1-Click</span>
+              <h3 className="text-sm font-extrabold">Swaps for you</h3>
+              <ProvenanceBadge provenance="estimate" />
             </div>
-
             <div className="flex flex-col gap-2.5">
-              {SWAP_RECOMMENDATIONS.map((swap) => {
-                const SwapIcon = swap.icon;
+              {swaps.map((a) => {
+                const inPlan = planIds.has(a.id);
                 return (
-                  <div key={swap.id} className="rounded-2xl border border-border bg-surface2/60 backdrop-blur-sm p-3.5 transition-all hover:border-emerald-500/40 hover:shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <SwapIcon className="h-4 w-4 text-emerald-400" />
-                        <span className="text-xs font-bold text-text">{swap.title}</span>
-                      </div>
-                      <span className="font-mono text-xs font-bold text-emerald-400">-{swap.saved} kg</span>
+                  <div key={a.id} className="rounded-2xl border border-border bg-surface2 p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-text">{a.title}</span>
+                      <span className="whitespace-nowrap font-mono text-xs font-bold text-lime-deep">~{a.saving} kg/wk</span>
                     </div>
-                    <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted">
-                      <span className="line-through opacity-60">{swap.from}</span>
-                      <span className="gradient-text font-bold">→</span>
-                      <span className="font-semibold text-text">{swap.to}</span>
+                    <p className="mt-1 text-[11px] text-muted">{a.desc}</p>
+                    <div className="mt-2.5 flex gap-2">
+                      <button
+                        onClick={() => plan1(a.id, a.title)}
+                        disabled={inPlan}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface py-2 text-xs font-bold text-text transition-all hover:border-lime hover:bg-lime hover:text-[#0c1d15] disabled:cursor-default disabled:opacity-60 disabled:hover:bg-surface disabled:hover:text-text"
+                      >
+                        {inPlan ? <Check className="h-3.5 w-3.5" /> : <ListPlus className="h-3.5 w-3.5" />}
+                        {inPlan ? 'In your plan' : 'Add to plan'}
+                      </button>
+                      <Link href="/app/simulate" className="flex items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold text-muted hover:text-text" aria-label={`Try ${a.title} in Carbon Twin`}>
+                        <FlaskConical className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
-                    <button
-                      onClick={() => handleApplySwap(swap)}
-                      disabled={loggingId === swap.id}
-                      className="mt-2.5 w-full rounded-xl border border-border bg-surface py-2 text-center text-xs font-bold text-text transition-all hover:bg-emerald-600 hover:text-white hover:border-emerald-500 hover:shadow-glow-lime disabled:opacity-50"
-                    >
-                      {loggingId === swap.id ? 'Applying...' : `Apply Swap (+${swap.credits} Credits)`}
-                    </button>
                   </div>
                 );
               })}
             </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">Typical weekly savings from the action catalog — estimates, not measurements. Completing a plan action earns Green Points once.</p>
           </GlassCard>
 
           {/* Quick logger — same catalog and factors as Track */}
