@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Size;
  * valid: a walk, a bike ride or a zero-emission custom item is still a log.
  */
 public record ActivityLogRequest(
-        @NotBlank String category,
+        @NotBlank @Pattern(regexp = "travel|food|electricity|shopping|waste") String category,
         @Size(max = 60) String factorKey,
         @NotBlank @Size(max = 120) String label,
         @Size(max = 16) String emoji,

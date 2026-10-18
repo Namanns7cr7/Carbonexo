@@ -13,7 +13,7 @@
 # =============================================================================
 set -uo pipefail
 
-PROJECT_ID="project-d1b98ab5-f061-4290-96b"
+PROJECT_ID="carbonexo"
 REGION="asia-south1"
 WEB_SVC="carbonexo-web"
 REPO="carbonexo"
