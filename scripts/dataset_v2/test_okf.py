@@ -54,7 +54,7 @@ class ConformanceTest(unittest.TestCase):
         self.assertTrue(r["okf_conformant"], r["okf_conformance_errors"])
         self.assertEqual(r["okf_spec_warnings"], [])
         self.assertTrue(r["carbonexo_policy_passed"], r["carbonexo_policy"])
-        self.assertEqual(r["concepts"], 15)
+        self.assertEqual(r["concepts"], 17)   # 15 pilot concepts + carbon-credits and green-credits-and-score (2026-10-18)
 
     def test_root_index_declares_okf_version(self):
         fm, _ = okf_producer.parse_concept((BUNDLE / "index.md").read_text(encoding="utf-8"))

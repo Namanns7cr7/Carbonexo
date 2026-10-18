@@ -7,7 +7,7 @@ tags: [india, electricity, grid]
 status: draft
 generated: {by: carbonexo-okf-producer/0.1.0, at: '2026-10-17T07:50:00Z'}
 verified:
-- {by: 'process:carbonexo-source-check', at: '2026-10-17T08:50:00Z'}
+- {by: 'process:carbonexo-source-check', at: '2026-10-18T11:36:00Z'}
 stale_after: '2026-12-31T00:00:00Z'
 sources:
 - {id: niti-2026-power, resource: /sources/niti-2026-power.md, title: 'NITI Aayog, Government of India'}
