@@ -14,7 +14,8 @@ import { forwardRef, useId, useMemo, useRef, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
 import { COUNTRY_CO2, CO2_DATA_YEAR, CO2_SOURCE, WORLD_CO2_PER_CAPITA, co2Color, co2Intensity } from '@/lib/experience/co2';
 import { GRID_INTENSITY, GRID_SOURCE, WORLD_GRID, gridColor, gridIntensity01, kgForKwh } from '@/lib/experience/grid';
-import { MODE_META, TRIPS, compareModes, tripKm, type TripMode } from '@/lib/experience/trips';
+import { JOURNEY_COUNTRIES } from '@/lib/experience/countries';
+import { MODE_META, compareModes, countryTrip, countryTripId, parseCountryTripId, tripKm, type TripMode } from '@/lib/experience/trips';
 import { UI_SPRING } from '@/components/physics';
 import s from './journey.module.css';
 
@@ -218,7 +219,40 @@ function GridDetail({ iso, onPick }: { iso: string | null; onPick: (iso: string 
 }
 
 function TripDetail({ tripId, mode, onChange }: { tripId: string; mode: TripMode; onChange: (p: { tripId?: string; mode?: TripMode }) => void }) {
-  const trip = TRIPS.find((t) => t.id === tripId) ?? TRIPS[0];
+  const { from, to } = parseCountryTripId(tripId);
+  const trip = from && to ? countryTrip(from, to) : null;
+
+  // Choosing a country keeps the other end; the trip resolves once both are picked.
+  const pick = (end: 'from' | 'to', iso: string) =>
+    onChange({ tripId: countryTripId(end === 'from' ? iso || null : from, end === 'to' ? iso || null : to) });
+
+  return (
+    <>
+      <PanelSelect label="From" value={from ?? ''} onChange={(v) => pick('from', v)}>
+        <option value="">Choose a country…</option>
+        {JOURNEY_COUNTRIES.filter((c) => c.iso !== to).map((c) => (
+          <option key={c.iso} value={c.iso}>
+            {c.name}
+          </option>
+        ))}
+      </PanelSelect>
+      <PanelSelect label="Destination" value={to ?? ''} onChange={(v) => pick('to', v)}>
+        <option value="">Choose a country…</option>
+        {JOURNEY_COUNTRIES.filter((c) => c.iso !== from).map((c) => (
+          <option key={c.iso} value={c.iso}>
+            {c.name}
+          </option>
+        ))}
+      </PanelSelect>
+
+      {trip ? <TripResult trip={trip} mode={mode} onChange={onChange} /> : (
+        <p className="text-[13.5px] leading-[1.5] text-muted">Choose where you start and where you are going to compare the emissions of each way to travel.</p>
+      )}
+    </>
+  );
+}
+
+function TripResult({ trip, mode, onChange }: { trip: NonNullable<ReturnType<typeof countryTrip>>; mode: TripMode; onChange: (p: { mode?: TripMode }) => void }) {
   const modes = compareModes(trip);
   const active = trip.modes.includes(mode) ? mode : modes[0].mode;
   const max = Math.max(...modes.map((m) => m.kg), 0.1);
@@ -226,23 +260,8 @@ function TripDetail({ tripId, mode, onChange }: { tripId: string; mode: TripMode
 
   return (
     <>
-      <PanelSelect
-        label="Route"
-        value={trip.id}
-        onChange={(id) => {
-          const next = TRIPS.find((t) => t.id === id);
-          if (next) onChange({ tripId: next.id, mode: next.modes.includes(active) ? active : compareModes(next)[0].mode });
-        }}
-      >
-        {TRIPS.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.from.name} → {t.to.name} — {tripKm(t).toLocaleString()} km
-          </option>
-        ))}
-      </PanelSelect>
-
       <div className="mb-3 text-[12px] font-semibold text-muted">
-        One way, one person · {km.toLocaleString()} km straight-line
+        {trip.from.name} → {trip.to.name} · one way, one person · {km.toLocaleString()} km capital to capital
       </div>
       <ul className="mb-4 flex flex-col gap-2">
         {modes.map((m) => {
@@ -279,7 +298,7 @@ function TripDetail({ tripId, mode, onChange }: { tripId: string; mode: TripMode
         })}
       </ul>
       <p className="text-[11.5px] leading-[1.5] text-muted">
-        Same per-km factors as the Track screen. Real roads and rails run longer than the straight line, so ground figures here are a lower bound.
+        Same per-km factors as the Track screen. Distances are straight-line between capitals; real roads and rails run longer, so ground figures are a lower bound and assume a link exists. Countries across water are flight-only.
       </p>
     </>
   );

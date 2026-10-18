@@ -21,7 +21,7 @@ import { Logo } from '@/components/Logo';
 import { useMotionTier } from '@/lib/useMotionTier';
 import { subsolarPoint } from '@/lib/experience/sun';
 import { COUNTRY_CO2 } from '@/lib/experience/co2';
-import { tripView, TRIPS } from '@/lib/experience/trips';
+import { resolveTrip, tripView } from '@/lib/experience/trips';
 import { SCENES, anchorAt, homeLongitude, keyframes, portraitScale, storyPosition, type SceneId } from '@/lib/experience/journey';
 import type { GlobeAnchor } from '@/lib/physics/globe';
 import { storyVitality } from '@/lib/living-world/derive';
@@ -47,7 +47,7 @@ export function PlanetJourney() {
   const [narrow, setNarrow] = useState(false);
   const [ctx, setCtx] = useState({ homeLon: 20, sunriseLon: -60 });
   const [scene, setScene] = useState<SceneId>('planet');
-  const [selection, setSelection] = useState<WorldSelection>({ tab: 'co2', iso: null, tripId: TRIPS[0].id, mode: 'Metro / Train' });
+  const [selection, setSelection] = useState<WorldSelection>({ tab: 'co2', iso: null, tripId: '', mode: 'Metro / Train' });
 
   // Viewer context is only knowable in the browser; read it after mount.
   useEffect(() => {
@@ -99,9 +99,11 @@ export function PlanetJourney() {
     if (at === 'world') {
       const base = frames.world;
       if (sel.tab === 'trip') {
-        const t = TRIPS.find((x) => x.id === sel.tripId) ?? TRIPS[0];
-        const v = tripView(t);
-        next = { ...base, key: `trip:${t.id}`, lat: v.at.lat, lon: v.at.lon, dist: v.distance, drift: 0 };
+        const t = resolveTrip(sel.tripId);
+        if (t) {
+          const v = tripView(t);
+          next = { ...base, key: `trip:${t.id}`, lat: v.at.lat, lon: v.at.lon, dist: v.distance, drift: 0 };
+        }
       } else if (sel.iso) {
         const c = COUNTRY_CO2.find((x) => x.iso === sel.iso);
         if (c) next = { ...base, key: `iso:${c.iso}`, lat: c.at.lat, lon: c.at.lon, dist: 2.3, drift: 0 };
@@ -164,7 +166,8 @@ export function PlanetJourney() {
   const layer: EarthLayer = scene === 'world' && selection.tab !== 'trip' ? selection.tab : 'none';
   const route: RouteArc | null = useMemo(() => {
     if (scene !== 'world' || selection.tab !== 'trip') return null;
-    const t = TRIPS.find((x) => x.id === selection.tripId) ?? TRIPS[0];
+    const t = resolveTrip(selection.tripId);
+    if (!t) return null;
     const color = selection.mode === 'Flight' ? '#f08a5d' : selection.mode === 'Car ride' ? '#f3b860' : '#4fd38a';
     return { key: `${t.id}:${selection.mode}`, from: t.from.at, to: t.to.at, color, pace: selection.mode === 'Flight' ? 0.34 : 0.22 };
   }, [scene, selection]);

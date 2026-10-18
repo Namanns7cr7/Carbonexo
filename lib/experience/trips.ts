@@ -11,6 +11,7 @@
 
 import { angularDistance, type LatLon } from './geo';
 import { factorOf } from '../story';
+import { countryByIso } from './countries';
 
 export interface City {
   name: string;
@@ -55,6 +56,49 @@ export const TRIPS: Trip[] = [
   { id: 'nyc-dc', from: C.nyc, to: C.dc, modes: ['Car ride', 'Bus', 'Metro / Train', 'Flight'] },
   { id: 'del-lon', from: C.delhi, to: C.london, modes: ['Flight'] },
 ];
+
+/** Longest trip for which a road or rail journey is offered; beyond this only a flight is. */
+const GROUND_MAX_KM = 3000;
+
+/**
+ * Id of a country-to-country trip: `FROM-TO` ISO codes, e.g. `IND-GBR`. While only one end
+ * is chosen the other part is empty (`IND-`, `-GBR`), so a half-made choice survives re-renders.
+ */
+export function countryTripId(fromIso: string | null, toIso: string | null): string {
+  return `${fromIso ?? ''}-${toIso ?? ''}`;
+}
+
+/** Splits a country trip id into its two ISO codes; example-trip ids and '' give nulls. */
+export function parseCountryTripId(id: string): { from: string | null; to: string | null } {
+  const m = /^([A-Z]{3})?-([A-Z]{3})?$/.exec(id);
+  return m ? { from: m[1] ?? null, to: m[2] ?? null } : { from: null, to: null };
+}
+
+/**
+ * A trip between two countries' capitals. Road and rail are offered only when both
+ * are on the same landmass and within GROUND_MAX_KM (the figure assumes a link
+ * exists); every trip can be flown.
+ */
+export function countryTrip(fromIso: string, toIso: string): Trip | null {
+  const a = countryByIso(fromIso);
+  const b = countryByIso(toIso);
+  if (!a || !b || a.iso === b.iso) return null;
+  const trip: Trip = {
+    id: countryTripId(a.iso, b.iso),
+    from: { name: a.name, at: a.at },
+    to: { name: b.name, at: b.at },
+    modes: ['Flight'],
+  };
+  if (a.land === b.land && tripKm(trip) <= GROUND_MAX_KM) trip.modes = ['Car ride', 'Bus', 'Metro / Train', 'Flight'];
+  return trip;
+}
+
+/** The trip for a selection id: a country pair, an example trip, or null when nothing valid is chosen. */
+export function resolveTrip(id: string): Trip | null {
+  const { from, to } = parseCountryTripId(id);
+  if (from || to || id === '-') return from && to ? countryTrip(from, to) : null;
+  return TRIPS.find((t) => t.id === id) ?? null;
+}
 
 const KM_PER_DEG = 111.195; // mean Earth radius 6371.0 km × π / 180
 
