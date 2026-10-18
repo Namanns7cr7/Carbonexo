@@ -125,8 +125,9 @@ export function GlobalEcoMindPanel() {
 
     setMsgs((prev) => [...prev, userMsg]);
     setDraftMessage('');
-    // Pure small talk: answer instantly, no model/RAG/recommendations.
-    const chat = smallTalkReply(q);
+    // Signed out: answer pure small talk locally. Signed in, the backend answers it
+    // instantly (no model/RAG) and saves it to history.
+    const chat = isAuthenticated() ? null : smallTalkReply(q);
     if (chat) {
       setMsgs((prev) => [
         ...prev,

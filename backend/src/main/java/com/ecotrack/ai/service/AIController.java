@@ -17,6 +17,8 @@ import java.util.UUID;
 @RequestMapping("/api/ai")
 public class AIController {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AIController.class);
+
     private final AIService service;
     private final AppConfigService appConfig;
     private final AgenticCoachService agenticCoach;
@@ -69,8 +71,15 @@ public class AIController {
         // Pure small talk never reaches the model, retrieval or recommendation paths.
         var smallTalk = SmallTalk.reply(message);
         if (smallTalk.isPresent()) {
-            return ResponseEntity.ok(new CoachResponse(smallTalk.get(), null, "carbonexo-smalltalk", null, null, null,
-                    null, List.of(), List.of(), Map.of()));
+            boolean persisted = true;
+            try {
+                service.saveSmallTalk(userId, message.trim(), smallTalk.get());
+            } catch (RuntimeException e) {
+                persisted = false;   // still answer, but say plainly it was not saved
+                log.warn("Coach small talk not persisted: {}", e.toString());
+            }
+            return ResponseEntity.ok(new CoachResponse(smallTalk.get(), null, AIService.SMALLTALK_PROVIDER, null, null, null,
+                    null, List.of(), List.of(), Map.of("persisted", persisted)));
         }
         // app_config ai.coach.mode: legacy (default, production) | tools | tools_rag (agentic, source-grounded)
         // | safe_limited (agentic, approved factors and reviewed evidence only; failures reported plainly)

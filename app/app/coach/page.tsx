@@ -300,8 +300,9 @@ export default function Coach() {
     setMsgs((m) => [...m, { id: userId, role: 'user', text: q }]);
     setInput('');
 
-    // Pure small talk: answer instantly, no model/RAG/recommendations.
-    const chat = smallTalkReply(q);
+    // Signed out: answer pure small talk locally. Signed in, the backend answers it
+    // instantly (no model/RAG) and saves it to history.
+    const chat = isAuthenticated() ? null : smallTalkReply(q);
     if (chat) {
       setMsgs((m) => [...m, { id: 'ai-st-' + Date.now() + '-' + idRef.current++, role: 'ai', text: chat }]);
       return;

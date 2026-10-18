@@ -136,7 +136,7 @@ class CoachSecurityIntegrationTest {
     void feedbackIsOwnerOnlyAndReviewerEndpointsRequireAdmin() throws Exception {
         Account a = register(), b = register();
         model.then(AgenticCoachServiceIntegrationTest.say("Hello."));
-        JsonNode res = coach(a, "hello");
+        JsonNode res = coach(a, "what are carbon credits?");
         String responseId = res.get("responseId").asText();
         String fb = JSON.writeValueAsString(Map.of("rating", -1, "reasons", List.of("incorrect_number"), "correction", "It is 0.710", "consentResearch", true));
         mvc.perform(post("/api/ai/responses/" + responseId + "/feedback").header("Authorization", "Bearer " + a.token())
@@ -168,11 +168,29 @@ class CoachSecurityIntegrationTest {
     }
 
     @Test
+    void smallTalkIsAnsweredWithoutTheModelAndSavedToHistory() throws Exception {
+        Account a = register(), b = register();
+        int callsBefore = model.calls;
+        JsonNode res = coach(a, "hii");
+        assertEquals("Hey! 👋 How can I help you?", res.get("result").asText());
+        assertEquals("carbonexo-smalltalk", res.get("provider").asText());
+        assertTrue(res.get("checks").get("persisted").asBoolean());
+        assertEquals(callsBefore, model.calls);   // no model call for a greeting
+        String h = mvc.perform(get("/api/ai/coach/history").header("Authorization", "Bearer " + a.token()))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(h.contains("\"content\":\"hii\""), h);
+        assertTrue(h.contains("How can I help you?"), h);
+        String hb = mvc.perform(get("/api/ai/coach/history").header("Authorization", "Bearer " + b.token()))
+                .andReturn().getResponse().getContentAsString();
+        assertFalse(hb.contains("hii"), hb);
+    }
+
+    @Test
     void legacyModeIsTheDefaultAndNeverReturnsCannedTextAsTheModel() throws Exception {
         jdbc.update("UPDATE app_config SET config_value = 'legacy' WHERE config_key = 'ai.coach.mode'");
         appConfig.invalidateAll();
         Account a = register();
-        JsonNode res = coach(a, "hello");   // provider=canned in this test: no live model exists
+        JsonNode res = coach(a, "what is my footprint this week?");   // provider=canned in this test: no live model exists
         assertEquals("", res.get("result").asText());
         assertEquals(0, model.calls);
     }
