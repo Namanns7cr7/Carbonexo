@@ -66,6 +66,12 @@ public class AIController {
     public ResponseEntity<CoachResponse> coach(@RequestBody Map<String, Object> body) {
         UUID userId = SecurityUtils.currentUserId();   // the ONLY source of identity for every coach tool
         String message = body != null && body.get("message") != null ? body.get("message").toString() : "";
+        // Pure small talk never reaches the model, retrieval or recommendation paths.
+        var smallTalk = SmallTalk.reply(message);
+        if (smallTalk.isPresent()) {
+            return ResponseEntity.ok(new CoachResponse(smallTalk.get(), null, "carbonexo-smalltalk", null, null, null,
+                    null, List.of(), List.of(), Map.of()));
+        }
         // app_config ai.coach.mode: legacy (default, production) | tools | tools_rag (agentic, source-grounded)
         // | safe_limited (agentic, approved factors and reviewed evidence only; failures reported plainly)
         AgenticCoachService.Mode mode = AgenticCoachService.Mode.fromConfig(appConfig.getOrDefault("ai.coach.mode", "legacy"));

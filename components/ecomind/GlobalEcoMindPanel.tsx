@@ -10,6 +10,7 @@ import { useCarbon } from '@/lib/store';
 import { sendCoachMessage, getCoachHistory, type CoachHistoryEntry } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
+import { smallTalkReply } from '@/lib/ai/small-talk';
 import {
   LeafSproutThinking,
   ResponseBloomBadge,
@@ -124,6 +125,16 @@ export function GlobalEcoMindPanel() {
 
     setMsgs((prev) => [...prev, userMsg]);
     setDraftMessage('');
+    // Pure small talk: answer instantly, no model/RAG/recommendations.
+    const chat = smallTalkReply(q);
+    if (chat) {
+      setMsgs((prev) => [
+        ...prev,
+        { id: 'ai-st-' + Date.now() + '-' + idCounter.current++, role: 'ai', text: chat, contextRoute: pageContext.route },
+      ]);
+      return;
+    }
+
     setTyping(true);
 
     // Call API with active pageContext
@@ -137,8 +148,8 @@ export function GlobalEcoMindPanel() {
               id: 'ai-' + Date.now() + '-' + idCounter.current++,
               role: 'ai',
               text: response.result,
-              model: response.model || 'Gemini 3 Flash',
-              provider: response.provider || 'Vertex AI',
+              model: response.model ?? undefined,
+              provider: response.provider ?? undefined,
               contextRoute: pageContext.route,
             },
           ]);
@@ -169,7 +180,7 @@ export function GlobalEcoMindPanel() {
           role: 'ai',
           text: sci.response,
           source: sci.source,
-          model: 'Gemini 3 Flash (Offline Grounding)',
+          model: 'Reference library (offline)',
           contextRoute: pageContext.route,
         },
       ]);

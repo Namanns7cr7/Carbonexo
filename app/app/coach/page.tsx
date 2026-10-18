@@ -8,6 +8,7 @@ import { ACTIONS, CATEGORY_META, type Category } from '@/lib/carbon';
 import { getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { CLIMATE_KNOWLEDGE_BASE, generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
+import { smallTalkReply } from '@/lib/ai/small-talk';
 import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Copy, FlaskConical, ListChecks, Plus, RotateCcw, Sparkles, Terminal, X, Compass } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useEcoMindContext, useRegisterPageContext } from '@/lib/context/ecomind-context';
@@ -298,6 +299,14 @@ export default function Coach() {
     const userId = 'user-' + Date.now() + '-' + idRef.current++;
     setMsgs((m) => [...m, { id: userId, role: 'user', text: q }]);
     setInput('');
+
+    // Pure small talk: answer instantly, no model/RAG/recommendations.
+    const chat = smallTalkReply(q);
+    if (chat) {
+      setMsgs((m) => [...m, { id: 'ai-st-' + Date.now() + '-' + idRef.current++, role: 'ai', text: chat }]);
+      return;
+    }
+
     setTyping(true);
 
     // Prepare verified scientific advice
@@ -322,8 +331,8 @@ export default function Coach() {
               role: 'ai',
               text: response.result,
               prompt: response.prompt,
-              provider: response.provider || 'Vertex AI',
-              model: response.model || 'Gemini 3 Flash',
+              provider: response.provider ?? undefined,
+              model: response.model ?? undefined,
               kind: 'ai',
             },
           ]);
