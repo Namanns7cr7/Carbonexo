@@ -165,6 +165,9 @@ export function useRegisterPageContext(config: {
 }) {
   const { setPageContext } = useEcoMindContext();
   const pathname = usePathname();
+  const metricsKey = JSON.stringify(config.visibleMetricIds);
+  const filtersKey = JSON.stringify(config.activeFilters);
+  const metadataKey = JSON.stringify(config.metadata);
 
   useEffect(() => {
     setPageContext({
@@ -177,15 +180,18 @@ export function useRegisterPageContext(config: {
       scenarioId: config.scenarioId,
       metadata: config.metadata,
     });
+    // Structural keys (below) stand in for the array/object config values: callers pass fresh
+    // literals every render, and depending on them by identity would re-publish the context in a loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     pathname,
     config.pageTitle,
     config.activeFeature,
     config.selectedEntityId,
     config.scenarioId,
-    JSON.stringify(config.visibleMetricIds),
-    JSON.stringify(config.activeFilters),
-    JSON.stringify(config.metadata),
+    metricsKey,
+    filtersKey,
+    metadataKey,
     setPageContext,
   ]);
 }

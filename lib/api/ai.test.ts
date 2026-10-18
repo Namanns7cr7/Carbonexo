@@ -48,16 +48,25 @@ describe('ai API helpers', () => {
     expect(opts.body).toContain('how do I save energy?');
   });
 
-  it('sendCoachMessage transmits pageContext to backend for page-aware grounding', async () => {
+  it('sendCoachMessage sends the page title and feature as a context hint', async () => {
     const fetchMock = stubFetch({ result: 'contextual answer', model: 'Gemini 3 Flash' });
-    const ctx = { route: '/app/credits', pageTitle: 'Green Credits', contextVersion: 1 };
+    const ctx = { route: '/app/credits', pageTitle: 'Green Credits', activeFeature: 'rewards', contextVersion: 1 };
     const res = await sendCoachMessage('How do I earn more?', ctx);
     expect(res.result).toBe('contextual answer');
     expect(res.model).toBe('Gemini 3 Flash');
     const opts = (fetchMock.mock.calls[0] as any)[1] as RequestInit;
-    expect(opts.body).toContain('How do I earn more?');
-    expect(opts.body).toContain('/app/credits');
-    expect(opts.body).toContain('Green Credits');
+    const body = JSON.parse(opts.body as string);
+    expect(body.message).toBe('How do I earn more?');
+    expect(body.context).toBe('Green Credits - rewards');
+    // The route is deliberately not sent; the backend coach does not read `context` yet.
+    expect(opts.body).not.toContain('/app/credits');
+  });
+
+  it('sendCoachMessage omits context when the page has no title', async () => {
+    const fetchMock = stubFetch({ result: 'ok' });
+    await sendCoachMessage('hello', { route: '/app', contextVersion: 1 } as any);
+    const body = JSON.parse(((fetchMock.mock.calls[0] as any)[1] as RequestInit).body as string);
+    expect(body).toEqual({ message: 'hello' });
   });
 
   it('getCoachHistory reads the history endpoint', async () => {
