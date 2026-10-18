@@ -1,7 +1,9 @@
 # Carbonexo EcoMind: Release & Deployment Handoff
 
 **Handoff Date:** 2026-10-18  
-**Branch:** `feat/ecomind-full-site-rag` (detached from release base `61d7837`)  
+**Branch:** `feat/ecomind-full-site-rag`  
+**Immutable Release Commit SHA:** `1415c94ab9a57c8569fd02f33c5f94502a690625`  
+**Base Release Commit:** `61d7837`  
 **Deployment Target:** Google Cloud Run (Asia South 1 / Mumbai)  
 **Safety Status:** ZERO INTERFERENCE WITH RUNNING CLAUDE DEPLOYMENT SESSION  
 
