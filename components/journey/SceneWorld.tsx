@@ -246,7 +246,7 @@ function TripDetail({ tripId, mode, onChange }: { tripId: string; mode: TripMode
       </PanelSelect>
 
       {trip ? <TripResult trip={trip} mode={mode} onChange={onChange} /> : (
-        <p className="text-[13.5px] leading-[1.5] text-muted">Choose where you start and where you are going to compare the emissions of each way to travel.</p>
+        <p className="text-[13.5px] leading-[1.5] text-muted">Choose where you start and where you are going to see the emissions of the flight.</p>
       )}
     </>
   );
@@ -298,7 +298,7 @@ function TripResult({ trip, mode, onChange }: { trip: NonNullable<ReturnType<typ
         })}
       </ul>
       <p className="text-[11.5px] leading-[1.5] text-muted">
-        Same per-km factors as the Track screen. Distances are straight-line between capitals; real roads and rails run longer, so ground figures are a lower bound and assume a link exists. Countries across water are flight-only.
+        Same per-km flight factor as the Track screen. Distance is the straight line between the two capitals.
       </p>
     </>
   );

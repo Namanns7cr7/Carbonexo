@@ -23,21 +23,13 @@ describe('journey countries', () => {
     expect(Math.abs(tripKm(frDe) - 878) / 878).toBeLessThan(0.03);
   });
 
-  it('offers road and rail only where a land link can exist and the trip is not huge', () => {
-    expect(countryTrip('FRA', 'DEU')!.modes).toContain('Metro / Train');
-    expect(countryTrip('USA', 'CAN')!.modes).toContain('Car ride');
-    expect(countryTrip('IND', 'GBR')!.modes).toEqual(['Flight']); // far apart
-    expect(countryTrip('GBR', 'FRA')!.modes).toEqual(['Flight']); // across water
+  it('is flight-only and priced with the tracker flight factor', () => {
+    const t = countryTrip('FRA', 'DEU')!;
+    expect(t.modes).toEqual(['Flight']);
     expect(countryTrip('IND', 'AUS')!.modes).toEqual(['Flight']);
-    expect(countryTrip('BRA', 'RUS')!.modes).toEqual(['Flight']); // different landmasses
-    expect(countryTrip('KOR', 'JPN')!.modes).toEqual(['Flight']);
-  });
-
-  it('prices every mode with the tracker factors, cheapest first', () => {
-    const modes = compareModes(countryTrip('FRA', 'DEU')!);
-    expect(modes.map((m) => m.kg)).toEqual([...modes.map((m) => m.kg)].sort((a, b) => a - b));
-    expect(modes[0].mode).toBe('Metro / Train');
-    expect(modes[modes.length - 1].mode).toBe('Flight');
+    const [only] = compareModes(t);
+    expect(only.mode).toBe('Flight');
+    expect(only.kg).toBeCloseTo(tripKm(t) * 0.25, 0);
   });
 
   it('rejects unknown or identical countries', () => {

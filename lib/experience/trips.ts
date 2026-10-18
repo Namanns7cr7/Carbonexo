@@ -57,9 +57,6 @@ export const TRIPS: Trip[] = [
   { id: 'del-lon', from: C.delhi, to: C.london, modes: ['Flight'] },
 ];
 
-/** Longest trip for which a road or rail journey is offered; beyond this only a flight is. */
-const GROUND_MAX_KM = 3000;
-
 /**
  * Id of a country-to-country trip: `FROM-TO` ISO codes, e.g. `IND-GBR`. While only one end
  * is chosen the other part is empty (`IND-`, `-GBR`), so a half-made choice survives re-renders.
@@ -74,23 +71,12 @@ export function parseCountryTripId(id: string): { from: string | null; to: strin
   return m ? { from: m[1] ?? null, to: m[2] ?? null } : { from: null, to: null };
 }
 
-/**
- * A trip between two countries' capitals. Road and rail are offered only when both
- * are on the same landmass and within GROUND_MAX_KM (the figure assumes a link
- * exists); every trip can be flown.
- */
+/** A flight between two countries' capitals, or null for an unknown or identical pair. */
 export function countryTrip(fromIso: string, toIso: string): Trip | null {
   const a = countryByIso(fromIso);
   const b = countryByIso(toIso);
   if (!a || !b || a.iso === b.iso) return null;
-  const trip: Trip = {
-    id: countryTripId(a.iso, b.iso),
-    from: { name: a.name, at: a.at },
-    to: { name: b.name, at: b.at },
-    modes: ['Flight'],
-  };
-  if (a.land === b.land && tripKm(trip) <= GROUND_MAX_KM) trip.modes = ['Car ride', 'Bus', 'Metro / Train', 'Flight'];
-  return trip;
+  return { id: countryTripId(a.iso, b.iso), from: { name: a.name, at: a.at }, to: { name: b.name, at: b.at }, modes: ['Flight'] };
 }
 
 /** The trip for a selection id: a country pair, an example trip, or null when nothing valid is chosen. */
