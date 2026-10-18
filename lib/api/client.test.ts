@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { setTokens, getAccessToken, clearTokens, ApiError, api } from './client';
+import { setTokens, getAccessToken, clearTokens, beginSignOut, ApiError, api } from './client';
 
 describe('api client — token management', () => {
   beforeEach(() => clearTokens());
@@ -94,6 +94,31 @@ describe('apiFetch — 401 refresh and replay', () => {
     expect(result).toEqual({ replayed: true });
     expect(getAccessToken()).toBe('fresh');
   }, 6000);
+
+  // A refresh still in flight when the user signs out must not write its new
+  // tokens back: that would silently revive the session after logout.
+  it('a refresh that completes after sign-out does not restore the session', async () => {
+    setTokens('stale-access', 'good-refresh');
+    let releaseRefresh!: () => void;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes('/api/auth/refresh')) {
+        await new Promise<void>((r) => { releaseRefresh = r; });
+        return { ok: true, status: 200, json: async () => ({ accessToken: 'fresh', refreshToken: 'r2' }) };
+      }
+      return { ok: false, status: 401, statusText: 'Unauthorized', json: async () => ({}) };
+    }));
+
+    const pending = api.get('/api/dashboard');
+    await vi.waitFor(() => expect(releaseRefresh).toBeTypeOf('function'));
+    beginSignOut();
+    releaseRefresh();
+
+    await expect(pending).rejects.toMatchObject({ status: 401 });
+    expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem('cx-refresh')).toBeNull();
+    // a deliberate sign-out is navigating home; the stray 401 must not send it to /login
+    expect(window.location.href).toBe('');
+  });
 
   // After a hard navigation only the refresh token survives. The first requests used to go out
   // without Authorization, each collecting a 401 (and a console error) before the refresh.
@@ -224,6 +249,20 @@ describe('apiFetch — GET deduplication and caching', () => {
     await api.post('/api/rewards/redeem', { id: 'r1' });
     await api.get('/api/rewards');
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('a response that arrives after sign-out is dropped, not handed to the UI', async () => {
+    setTokens('tok', 'ref');
+    let release!: () => void;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => {
+      release = () => resolve({ ok: true, status: 200, json: async () => ({ name: 'User A' }) });
+    })));
+
+    const pending = api.get('/api/profiles/me');
+    clearTokens();
+    release();
+
+    await expect(pending).rejects.toMatchObject({ status: 401 });
   });
 
   it('clearTokens drops cached responses so a new session cannot read them', async () => {

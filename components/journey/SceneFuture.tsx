@@ -110,7 +110,7 @@ export const SceneFuture = forwardRef<HTMLElement>(function SceneFuture(_, ref) 
         </motion.div>
 
         <footer className="pointer-events-auto mt-12 flex flex-col gap-4 border-t border-border py-8 sm:flex-row sm:items-start sm:justify-between">
-          <Link href="/welcome" aria-label="Carbonexo home" className="text-text">
+          <Link href="/" aria-label="Carbonexo home" className="text-text">
             <Logo size={30} />
           </Link>
           <div className="max-w-[640px] text-[12px] leading-[1.6] text-muted sm:text-right">

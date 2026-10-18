@@ -21,6 +21,27 @@ export const THEME_STORAGE_KEY = 'cx-theme';
 export const SNAPSHOT_STORAGE_KEY = 'cx-snapshot';
 /** Cached coach conversation for instant paint; the server holds the durable copy. Cleared with tokens. */
 export const COACH_CHAT_STORAGE_KEY = 'carbonexo_coach_chat_history';
+/** Unsent EcoMind message and the open thread id. Cleared with tokens. */
+export const ECOMIND_DRAFT_STORAGE_KEY = 'carbonexo_ecomind_draft_msg';
+export const ECOMIND_THREAD_STORAGE_KEY = 'carbonexo_ecomind_active_thread';
+/** Pre-API local state; still read as a fallback by score and reports. */
+export const LEGACY_STATE_STORAGE_KEY = 'carbonexo:v1';
+
+/**
+ * Everything in this browser that belongs to the signed-in user. Sign-out
+ * removes all of it so the next account on this browser starts clean; the
+ * server keeps the durable copies (profile, logs, EcoMind conversations).
+ * The theme and "My items" (cx-custom-items, browser-local by design) stay.
+ */
+export const USER_SCOPED_STORAGE_KEYS = [
+  TOKEN_REFRESH_KEY,
+  STATE_STORAGE_KEY,
+  SNAPSHOT_STORAGE_KEY,
+  COACH_CHAT_STORAGE_KEY,
+  ECOMIND_DRAFT_STORAGE_KEY,
+  ECOMIND_THREAD_STORAGE_KEY,
+  LEGACY_STATE_STORAGE_KEY,
+] as const;
 
 // ─── Local state version ─────────────────────────────────────────────────────
 

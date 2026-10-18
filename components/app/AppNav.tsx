@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { logout } from '@/lib/api/auth';
+import { signOut } from '@/lib/api/auth';
 import { useCarbon } from '@/lib/store';
 
 import { CreditBadge } from './CreditBadge';
@@ -129,11 +129,9 @@ export function Sidebar() {
           </span>
         </Link>
         <button
-          onClick={async () => {
-            await logout();
-            window.location.assign('/login');
-          }}
-          title="Sign out to Login page"
+          onClick={signOut}
+          title="Sign out"
+          aria-label="Sign out"
           className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger-soft hover:text-danger"
         >
           <LogOut className="h-4 w-4" />

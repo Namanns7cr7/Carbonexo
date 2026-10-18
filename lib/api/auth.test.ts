@@ -87,6 +87,35 @@ describe('auth API helpers', () => {
     expect(isAuthenticated()).toBe(false);
   });
 
+  it('logout revokes the stored refresh token and clears every user-scoped key, keeping the theme', async () => {
+    store = {
+      'cx-refresh': 'ref_a', 'cx-state': '{"profile":{"name":"A"}}', 'cx-snapshot': '{}',
+      carbonexo_coach_chat_history: '[]', carbonexo_ecomind_draft_msg: 'half-typed', carbonexo_ecomind_active_thread: 't1',
+      'carbonexo:v1': '{}', 'cx-theme': 'dark',
+    };
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => ({ ok: true, status: 204, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(logout()).resolves.toBe(true);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toMatch(/\/api\/auth\/logout$/);
+    expect(JSON.parse(String(init?.body))).toEqual({ refreshToken: 'ref_a' });
+    expect(Object.keys(store)).toEqual(['cx-theme']);
+    expect(isAuthenticated()).toBe(false);
+  });
+
+  it('logout retries once and reports an unconfirmed revocation, but still ends the local session', async () => {
+    store = { 'cx-refresh': 'ref_a' };
+    const fetchMock = vi.fn(async () => { throw new TypeError('Failed to fetch'); });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(logout()).resolves.toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(isAuthenticated()).toBe(false);
+  });
+
   it('isAuthenticated checks in-memory token and storage', () => {
     expect(isAuthenticated()).toBe(false);
 

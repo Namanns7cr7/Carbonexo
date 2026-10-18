@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { ECOMIND_DRAFT_STORAGE_KEY, ECOMIND_THREAD_STORAGE_KEY } from '../constants';
 
 export interface EcoMindPageContext {
   route: string;
@@ -33,8 +34,8 @@ const DEFAULT_CONTEXT: EcoMindPageContext = {
   contextVersion: 1,
 };
 
-const DRAFT_STORAGE_KEY = 'carbonexo_ecomind_draft_msg';
-const THREAD_STORAGE_KEY = 'carbonexo_ecomind_active_thread';
+const DRAFT_STORAGE_KEY = ECOMIND_DRAFT_STORAGE_KEY;
+const THREAD_STORAGE_KEY = ECOMIND_THREAD_STORAGE_KEY;
 
 const EcoMindContext = createContext<EcoMindContextValue | null>(null);
 

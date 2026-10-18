@@ -1,5 +1,5 @@
 /**
- * Carbonexo scroll story — the numbers behind Chapters 2–5 of /welcome.
+ * Carbonexo scroll story — the numbers behind Chapters 2–5 of the home page.
  *
  * Nothing in here is invented. Every kilogram is derived from the same
  * emission-factor catalog (TRACK_OPTIONS) and action catalog (ACTIONS) that

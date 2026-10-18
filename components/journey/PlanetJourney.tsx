@@ -243,7 +243,7 @@ function JourneyNav({ active, progressRef }: { active: SceneId; progressRef: Rea
         style={{ transform: 'scaleX(0)', background: 'linear-gradient(90deg,var(--lime),var(--blue))' }}
       />
       <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-5 px-5 py-3 sm:px-6">
-        <Link href="/welcome" aria-label="Carbonexo home" className="rounded-lg text-text">
+        <Link href="/" aria-label="Carbonexo home" className="rounded-lg text-text">
           <Logo size={32} />
         </Link>
         <div className="hidden items-center gap-8 lg:flex">
