@@ -243,7 +243,7 @@ export function generateScientificCoachAdvice({
         `• A 1.5-ton AC unit consumes ~1.8 kWh/hour, emitting **~0.81 kg CO₂e/hour** on standard grid electricity.\n` +
         `• **Thermostat Optimization**: Every **1°C increase** (e.g. running at 24°C instead of 20°C) cuts cooling electricity demand by **6% to 8%**.\n` +
         `• **Phantom Load**: Appliances on standby contribute 5–10% of idle electricity.\n\n` +
-        `⚡ **Quick Win**: Setting your AC to 24°C with a 4-hour shutoff timer prevents **~330 kg CO₂e** across a hot season and earns you +10 Eco Credits per day.`,
+        `⚡ **Quick Win**: Setting your AC to 24°C with a 4-hour shutoff timer prevents **~330 kg CO₂e** across a hot season.`,
       source: bm.source,
       citation: bm.citation,
       promptUsed: `Context: User ${userName}, electricity & appliance optimization. Grounding: US EPA eGRID & DOE Energy Star standards. Output requested: kWh conversion factors and thermostat optimization metrics.`,

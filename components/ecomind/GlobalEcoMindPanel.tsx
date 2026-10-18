@@ -257,9 +257,6 @@ export function GlobalEcoMindPanel() {
           <div className="flex flex-col text-left">
             <span className="text-xs font-bold leading-none text-emerald-300 flex items-center gap-1">
               EcoMind
-              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded font-mono">
-                3 Flash
-              </span>
             </span>
             <span className="text-[10px] text-slate-400 font-medium truncate max-w-[110px]">
               {pageContext.pageTitle}

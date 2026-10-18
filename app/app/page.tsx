@@ -473,7 +473,7 @@ export default function Dashboard() {
                 <p className="mt-3.5 text-[13px] leading-relaxed text-slate-300">
                   {biggestSource ? (
                     <>
-                      <strong className="text-white">{CATEGORY_META[biggestSource.category].label}</strong> is your biggest source ({biggestSource.value} kg). Switching 2 commutes could save <strong className="gradient-text">~8.4 kg CO₂</strong> and earn 40 credits.
+                      <strong className="text-white">{CATEGORY_META[biggestSource.category].label}</strong> is your biggest source ({biggestSource.value} kg). Try a change in Carbon Twin or ask the coach which swaps apply to you.
                     </>
                   ) : (
                     'Log activities to get AI-powered reduction recommendations.'

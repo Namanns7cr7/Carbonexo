@@ -393,7 +393,7 @@ export default function Coach() {
                   {headerLabel}
                 </span>
                 <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                  Scientifically Grounded
+                  Cites sources
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
