@@ -92,8 +92,48 @@ function PromptInspector({
   );
 }
 
-// Simple, safe inline markdown formatter
+// Simple, safe inline markdown formatter with structured card support
 function FormattedMessage({ text }: { text: string }) {
+  // If the backend returns a JSON array of recommendations, render them as cards
+  try {
+    let trimmed = text.trim();
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+      try {
+        const unquoted = JSON.parse(trimmed);
+        if (typeof unquoted === 'string') trimmed = unquoted.trim();
+      } catch {
+        // ignore
+      }
+    }
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].title || parsed[0].detail)) {
+        return (
+          <div className="space-y-2.5 my-1">
+            <p className="text-[13.5px] font-medium text-emerald-300">Here are high-impact swaps recommended for you:</p>
+            <div className="grid gap-2">
+              {parsed.map((item, idx) => (
+                <div key={idx} className="rounded-xl border border-emerald-500/25 bg-emerald-950/40 p-3 text-xs shadow-sm">
+                  <div className="flex items-center justify-between gap-2 font-bold text-slate-100">
+                    <span className="text-[13px]">{item.title}</span>
+                    {item.est_saving_kg !== undefined && (
+                      <span className="font-mono text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                        -{item.est_saving_kg} kg CO₂
+                      </span>
+                    )}
+                  </div>
+                  {item.detail && <p className="mt-1.5 text-slate-300 leading-relaxed text-[12px]">{item.detail}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+    }
+  } catch {
+    // Not JSON, continue with normal text rendering
+  }
+
   const paragraphs = text.split('\n\n');
 
   return (
@@ -316,9 +356,9 @@ export default function Coach() {
 
   return (
     <>
-      <GlassCard className="flex h-[calc(100dvh-140px)] min-h-[460px] max-h-[840px] flex-col relative p-4 sm:p-6 border border-emerald-500/20 bg-slate-900/60 backdrop-blur-md shadow-lg shadow-emerald-500/5">
+      <GlassCard className="flex h-[calc(100dvh-7.5rem)] min-h-[380px] max-h-[820px] flex-col relative p-3.5 sm:p-5 border border-emerald-500/20 bg-slate-900/60 backdrop-blur-md shadow-lg shadow-emerald-500/5">
         {/* header */}
-        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+        <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-gradient-to-br from-emerald-500 to-teal-400 text-lg shadow-md shadow-emerald-500/20">
               <Sparkles className="h-5 w-5 text-slate-950" />
@@ -415,7 +455,7 @@ export default function Coach() {
         </div>
 
         {/* suggestions */}
-        <div className="mt-3 flex shrink-0 flex-wrap gap-1.5">
+        <div className="mt-2 flex shrink-0 flex-wrap gap-1.5">
           {SCIENTIFIC_SUGGESTIONS.map((q) => (
             <button
               key={q}
@@ -434,7 +474,7 @@ export default function Coach() {
             e.preventDefault();
             send(input);
           }}
-          className="mt-3 flex shrink-0 items-center gap-2 rounded-[16px] border border-emerald-500/30 bg-slate-950/70 p-1.5 pl-4 shadow-lg focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all backdrop-blur-md"
+          className="mt-2 flex shrink-0 items-center gap-2 rounded-[16px] border border-emerald-500/30 bg-slate-950/70 p-1.5 pl-4 shadow-lg focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all backdrop-blur-md"
         >
           <input
             value={input}

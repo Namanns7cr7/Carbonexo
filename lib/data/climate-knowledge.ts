@@ -266,14 +266,46 @@ export function generateScientificCoachAdvice({
     };
   }
 
+  // Match: Thanks / Acknowledgments
+  if (/^(thanks?|thank\s*you|ok+|okay|got\s*it|cool|nice|great|awesome)\b/i.test(q.trim())) {
+    return {
+      response: `You're very welcome, **${userName}**! 🌱\n\n` +
+        `Every small, conscious choice counts. If you'd like to explore how a specific daily change (like a train commute or a dietary swap) impacts your personal footprint, just ask anytime!`,
+      source: 'Carbonexo Scientific Knowledge Engine',
+      citation: 'Carbonexo AI Coach',
+      promptUsed: `Context: User ${userName} sent an acknowledgment/thanks. Provided supportive confirmation.`,
+    };
+  }
+
+  // Match: Help / Capabilities / Who are you
+  if (q.includes('help') || q.includes('who are you') || q.includes('what can you do') || q.includes('capabilities')) {
+    return {
+      response: `I'm your **Carbonexo Climate Coach** powered by verified environmental datasets (DEFRA 2024, IPCC AR6, Oxford Science, US EPA).\n\n` +
+        `Here is what you can ask me:\n` +
+        `• **Transportation**: Carbon comparison between cars, trains, metro, flights, and EV charging.\n` +
+        `• **Diet & Food**: Emissions factors for meats, dairy, plant proteins, and seasonal foods.\n` +
+        `• **Home Energy**: AC thermostat tuning, appliance wattage, standby loads, and solar savings.\n` +
+        `• **Personal Tracking**: Your daily footprint analysis, 2030 Paris Climate target progress, and personalized swaps.\n\n` +
+        `Try asking: *"What is the difference between eating chicken vs beef?"* or *"How much carbon does taking the metro save?"*`,
+      source: 'Carbonexo Scientific Knowledge Engine',
+      citation: 'DEFRA 2024; Oxford Science 2018; US EPA 2024; IPCC AR6',
+      promptUsed: `Context: Capability inquiry from user ${userName}. Listed grounded domains and suggested sample queries.`,
+    };
+  }
+
   // General / Default scientific reduction strategy
+  const hotspotNote = biggestValue > 0
+    ? `Your top logged activity today is in **${biggestCategory}** (${biggestValue} kg CO₂e). You can test high-impact swaps in the **Carbon Swaps** module or test different scenarios in **Carbon Twin**!`
+    : `You can log today's activities in the **Log Activity** tab to see your exact carbon breakdown, or test high-impact swaps in the **Carbon Swaps** module!`;
+
   return {
-    response: `Great question, **${userName}**! According to the **UNEP Emissions Gap Report & UK DEFRA**, the two highest-leverage personal climate interventions are:\n\n` +
+    response: `To help lower your carbon footprint, **${userName}**, the highest-leverage personal climate actions according to the **UNEP Emissions Gap Report & UK DEFRA** are:\n\n` +
       `1. **Transport Shift**: Commuting via electric rail or cycling saves **80–100%** vs. driving solo (DEFRA 2024: 0.171 kg/km car vs. 0.035 kg/km rail).\n` +
-      `2. **Dietary Balance**: Reducing beef intake by 50% cuts meal footprint by **over 70%** (Oxford University 2018 study: beef at 60 kg CO₂e/kg).\n\n` +
-      `Your biggest current hotspot is **${biggestCategory}** (${biggestValue} kg). We recommend testing a 1-click swap in the **Carbon Swaps** module or running a simulation in the **Carbon Twin** tab!`,
+      `2. **Dietary Balance**: Reducing beef intake by 50% cuts meal footprint by **over 70%** (Oxford University 2018 study: beef at 60 kg CO₂e/kg).\n` +
+      `3. **Home Efficiency**: Adjusting your AC thermostat by +2°C cuts cooling energy by **12–16%**.\n\n` +
+      `${hotspotNote}`,
     source: 'UNEP Emissions Gap Report & UK DEFRA 2024',
-    citation: 'UNEP (2023) Emissions Gap Report - The Sound of Silence; DEFRA (2024) GHG Conversion Factors',
+    citation: 'UNEP (2023) Emissions Gap Report; DEFRA (2024) GHG Conversion Factors',
     promptUsed: `Context: General climate query from ${userName}. Grounding: Cross-cutting UNEP and DEFRA mitigation hierarchy.`,
   };
 }

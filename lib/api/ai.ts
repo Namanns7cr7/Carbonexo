@@ -73,7 +73,11 @@ export async function sendCoachMessage(
   message: string,
   pageContext?: EcoMindPageContext
 ): Promise<CoachResponse> {
-  return api.post<CoachResponse>('/api/ai/coach', { message, pageContext });
+  const payload: Record<string, unknown> = { message };
+  if (pageContext?.pageTitle) {
+    payload.context = `${pageContext.pageTitle}${pageContext.activeFeature ? ` - ${pageContext.activeFeature}` : ''}`;
+  }
+  return api.post<CoachResponse>('/api/ai/coach', payload);
 }
 
 export interface CoachHistoryEntry {

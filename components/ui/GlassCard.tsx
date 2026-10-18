@@ -6,6 +6,7 @@ import { motion, HTMLMotionProps } from 'framer-motion';
 export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
   children: ReactNode;
   className?: string;
+  contentClassName?: string;
   delay?: number;
   glow?: boolean;
   hoverEffect?: boolean;
@@ -23,6 +24,7 @@ export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'children'>
 export function GlassCard({
   children,
   className = '',
+  contentClassName = '',
   delay = 0,
   glow = true,
   hoverEffect = true,
@@ -55,7 +57,7 @@ export function GlassCard({
       )}
 
       {/* Card Content */}
-      <div className="relative z-10">{children}</div>
+      <div className={`relative z-10 ${contentClassName || (className.includes('flex') ? 'flex flex-col h-full min-h-0' : '')}`}>{children}</div>
     </motion.div>
   );
 }
