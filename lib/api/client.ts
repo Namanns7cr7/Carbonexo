@@ -48,6 +48,11 @@ export function loadStoredRefreshToken() {
 // even though a valid refresh token is sitting in localStorage.
 loadStoredRefreshToken();
 
+// A full navigation aborts this page's in-flight requests; those failures are not outages.
+let pageUnloading = false;
+if (typeof window !== 'undefined') window.addEventListener?.('pagehide', () => { pageUnloading = true; });
+export function isPageUnloading() { return pageUnloading; }
+
 export class ApiError extends Error {
   constructor(
     public status: number,

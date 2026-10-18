@@ -26,6 +26,7 @@ import {
 } from 'react';
 import type { Category, LogEntry, Profile } from './carbon';
 import { isAuthenticated } from './api/auth';
+import { isPageUnloading } from './api/client';
 import { getProfile, updateProfile, completeOnboarding as apiCompleteOnboarding } from './api/profile';
 import { getDashboard } from './api/dashboard';
 import { createActivity, deleteActivity } from './api/activities';
@@ -191,7 +192,7 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
       setApiSnapshot(snapshot);
       writeCachedSnapshot(snapshot);
     } catch (err) {
-      console.error('[Carbonexo] Failed to load server data:', err);
+      if (!isPageUnloading()) console.error('[Carbonexo] Failed to load server data:', err);
     } finally {
       setBootstrapped(true);
     }
