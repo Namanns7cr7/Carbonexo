@@ -3,7 +3,7 @@
  * and typed error handling. All API calls go through this.
  */
 
-import { SNAPSHOT_STORAGE_KEY } from '../constants';
+import { COACH_CHAT_STORAGE_KEY, SNAPSHOT_STORAGE_KEY } from '../constants';
 
 const BASE_URL =process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
@@ -29,6 +29,8 @@ export function clearTokens() {
     localStorage.removeItem('cx-refresh');
     // the cached dashboard snapshot belongs to this session's user
     localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+    // so is the cached coach conversation (the server keeps the durable copy)
+    localStorage.removeItem(COACH_CHAT_STORAGE_KEY);
   }
 }
 

@@ -11,6 +11,7 @@ import { sendCoachMessage, getCoachHistory, type CoachHistoryEntry } from '@/lib
 import { isAuthenticated } from '@/lib/api/auth';
 import { generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
 import { smallTalkReply } from '@/lib/ai/small-talk';
+import { COACH_CHAT_STORAGE_KEY } from '@/lib/constants';
 import {
   LeafSproutThinking,
   ResponseBloomBadge,
@@ -28,7 +29,7 @@ interface Msg {
   contextRoute?: string;
 }
 
-const STORAGE_KEY = 'carbonexo_coach_chat_history';
+const STORAGE_KEY = COACH_CHAT_STORAGE_KEY;
 
 export function GlobalEcoMindPanel() {
   const pathname = usePathname();

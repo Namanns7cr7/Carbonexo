@@ -9,6 +9,7 @@ import { getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { CLIMATE_KNOWLEDGE_BASE, generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
 import { smallTalkReply } from '@/lib/ai/small-talk';
+import { COACH_CHAT_STORAGE_KEY } from '@/lib/constants';
 import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Copy, FlaskConical, ListChecks, Plus, RotateCcw, Sparkles, Terminal, X, Compass } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useEcoMindContext, useRegisterPageContext } from '@/lib/context/ecomind-context';
@@ -205,7 +206,7 @@ export default function Coach() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(1);
 
-  const STORAGE_KEY = 'carbonexo_coach_chat_history';
+  const STORAGE_KEY = COACH_CHAT_STORAGE_KEY;
 
   // Load chat history on mount (localStorage first, then sync with backend if authenticated)
   useEffect(() => {
