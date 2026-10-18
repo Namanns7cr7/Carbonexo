@@ -253,6 +253,32 @@ class CoachSecurityIntegrationTest {
     }
 
     @Test
+    void regionIsConfirmedOnlyByTheUserAndOnlyToASupportedRegion() throws Exception {
+        Account a = register(), b = register();
+        jdbc.update("UPDATE user_profiles SET region='GLOBAL', region_confirmed=false, region_source='legacy_default' WHERE user_id = ?", a.id());
+        mvc.perform(post("/api/profiles/me/region").header("Authorization", "Bearer " + a.token())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"region\":\"XX\"}")).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/profiles/me/region").contentType(MediaType.APPLICATION_JSON).content("{\"region\":\"IN\"}"))
+                .andExpect(status().isUnauthorized());
+        JsonNode r = JSON.readTree(mvc.perform(post("/api/profiles/me/region").header("Authorization", "Bearer " + a.token())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"region\":\"in\",\"userId\":\"" + b.id() + "\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals("IN", r.get("region").asText());
+        assertTrue(r.get("confirmed").asBoolean());
+        assertEquals("user_changed", r.get("source").asText());
+        Map<String, Object> rowB = jdbc.queryForMap("SELECT region_confirmed FROM user_profiles WHERE user_id = ?", b.id());
+        assertEquals(Boolean.TRUE, rowB.get("region_confirmed"));   // b's own setup in register(); untouched by a's call
+        jdbc.update("UPDATE user_profiles SET region_confirmed=false WHERE user_id = ?", b.id());
+        mvc.perform(post("/api/profiles/me/region").header("Authorization", "Bearer " + a.token())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"region\":\"IN\",\"userId\":\"" + b.id() + "\"}")).andExpect(status().isOk());
+        assertEquals(Boolean.FALSE, jdbc.queryForObject("SELECT region_confirmed FROM user_profiles WHERE user_id = ?", Boolean.class, b.id()));
+        JsonNode again = JSON.readTree(mvc.perform(get("/api/profiles/me/region").header("Authorization", "Bearer " + a.token()))
+                .andReturn().getResponse().getContentAsString());
+        assertEquals("user_confirmed", again.get("source").asText());   // re-confirming the same region
+        assertTrue(again.get("supported").toString().contains("IN"));
+    }
+
+    @Test
     void smallTalkIsAnsweredWithoutTheModelAndSavedToHistory() throws Exception {
         Account a = register(), b = register();
         int callsBefore = model.calls;
