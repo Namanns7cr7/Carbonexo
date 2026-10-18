@@ -110,28 +110,37 @@ export const SceneWorld = forwardRef<HTMLElement, { selection: WorldSelection; o
 
 // ─── Layers ──────────────────────────────────────────────────────────────────
 
-function CountrySelect({ iso, onPick, rows }: { iso: string | null; onPick: (iso: string | null) => void; rows: { iso: string; label: string }[] }) {
+/** The panel's one dropdown style, shared by the Country and Route pickers. */
+function PanelSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: React.ReactNode }) {
   const id = useId();
   return (
     <div className="mb-4">
       <label htmlFor={id} className="mb-1.5 block text-[12px] font-semibold text-muted">
-        Country
+        {label}
       </label>
       <select
         id={id}
-        value={iso ?? ''}
-        onChange={(e) => onPick(e.target.value || null)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full appearance-none rounded-[12px] border border-border bg-[#0b1712] px-3.5 py-3 text-[15px] font-semibold text-text outline-none focus-visible:border-lime"
         style={{ backgroundImage: 'linear-gradient(45deg,transparent 50%,#a4b9ac 50%),linear-gradient(135deg,#a4b9ac 50%,transparent 50%)', backgroundPosition: 'calc(100% - 18px) 55%, calc(100% - 13px) 55%', backgroundSize: '5px 5px', backgroundRepeat: 'no-repeat' }}
       >
-        <option value="">Choose a country…</option>
-        {rows.map((r) => (
-          <option key={r.iso} value={r.iso}>
-            {r.label}
-          </option>
-        ))}
+        {children}
       </select>
     </div>
+  );
+}
+
+function CountrySelect({ iso, onPick, rows }: { iso: string | null; onPick: (iso: string | null) => void; rows: { iso: string; label: string }[] }) {
+  return (
+    <PanelSelect label="Country" value={iso ?? ''} onChange={(v) => onPick(v || null)}>
+      <option value="">Choose a country…</option>
+      {rows.map((r) => (
+        <option key={r.iso} value={r.iso}>
+          {r.label}
+        </option>
+      ))}
+    </PanelSelect>
   );
 }
 
@@ -217,26 +226,20 @@ function TripDetail({ tripId, mode, onChange }: { tripId: string; mode: TripMode
 
   return (
     <>
-      <fieldset className="mb-4">
-        <legend className="mb-1.5 text-[12px] font-semibold text-muted">Route</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {TRIPS.map((t) => {
-            const on = t.id === trip.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => onChange({ tripId: t.id, mode: t.modes.includes(active) ? active : compareModes(t)[0].mode })}
-                className="rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime"
-                style={on ? { background: 'var(--lime-soft)', borderColor: 'var(--lime)', color: 'var(--lime-deep)' } : { borderColor: 'var(--border)', color: 'var(--muted)' }}
-              >
-                {t.from.name} → {t.to.name}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
+      <PanelSelect
+        label="Route"
+        value={trip.id}
+        onChange={(id) => {
+          const next = TRIPS.find((t) => t.id === id);
+          if (next) onChange({ tripId: next.id, mode: next.modes.includes(active) ? active : compareModes(next)[0].mode });
+        }}
+      >
+        {TRIPS.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.from.name} → {t.to.name} — {tripKm(t).toLocaleString()} km
+          </option>
+        ))}
+      </PanelSelect>
 
       <div className="mb-3 text-[12px] font-semibold text-muted">
         One way, one person · {km.toLocaleString()} km straight-line
