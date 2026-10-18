@@ -76,6 +76,8 @@ export interface CarbonCtxValue {
   streak: number;
   totalSaved: number;
   completedCount: number;
+  /** Distinct days with at least one logged activity. */
+  daysTracked: number;
   biggestSource: { category: Category; value: number } | null;
 
   // actions

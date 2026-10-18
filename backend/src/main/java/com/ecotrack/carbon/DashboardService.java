@@ -1,6 +1,7 @@
 package com.ecotrack.carbon;
 
 import com.ecotrack.carbon.dto.*;
+import com.ecotrack.credit.CreditService;
 import com.ecotrack.exception.ResourceNotFoundException;
 import com.ecotrack.profile.UserProfile;
 import com.ecotrack.profile.UserProfileRepository;
@@ -23,13 +24,16 @@ public class DashboardService {
     private final ActivityLogRepository logRepo;
     private final CarbonCalculationService carbonService;
     private final UserProfileRepository profileRepo;
+    private final CreditService creditService;
 
     public DashboardService(ActivityLogRepository logRepo,
                              CarbonCalculationService carbonService,
-                             UserProfileRepository profileRepo) {
+                             UserProfileRepository profileRepo,
+                             CreditService creditService) {
         this.logRepo = logRepo;
         this.carbonService = carbonService;
         this.profileRepo = profileRepo;
+        this.creditService = creditService;
     }
 
     @Transactional(readOnly = true)
@@ -102,7 +106,9 @@ public class DashboardService {
                 scale1(todayTotal), scale1(yesterdayTotal), deltaPct,
                 todayBreakdown, weekBreakdown, weekTotals,
                 biggestCategory, biggestValue, streak, totalSaved,
-                todayLogResponses
+                todayLogResponses,
+                logRepo.findDistinctDatesByUser(userId).size(),
+                creditService.completedActionCount(userId)
         );
     }
 

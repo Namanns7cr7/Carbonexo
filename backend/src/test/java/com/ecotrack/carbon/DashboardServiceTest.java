@@ -19,6 +19,7 @@ class DashboardServiceTest {
     private ActivityLogRepository logRepo;
     private CarbonCalculationService carbonService;
     private UserProfileRepository profileRepo;
+    private com.ecotrack.credit.CreditService creditService;
     private DashboardService service;
 
     @BeforeEach
@@ -26,7 +27,8 @@ class DashboardServiceTest {
         logRepo = mock(ActivityLogRepository.class);
         carbonService = mock(CarbonCalculationService.class);
         profileRepo = mock(UserProfileRepository.class);
-        service = new DashboardService(logRepo, carbonService, profileRepo);
+        creditService = mock(com.ecotrack.credit.CreditService.class);
+        service = new DashboardService(logRepo, carbonService, profileRepo, creditService);
     }
 
     @Test
@@ -94,5 +96,21 @@ class DashboardServiceTest {
 
         assertEquals(3, resp.streak());
         verify(carbonService).currentStreak(userId);
+    }
+
+    @Test
+    void passportCountsComeFromTheUsersOwnHistory() {
+        UUID userId = UUID.randomUUID();
+        when(logRepo.sumCo2ByUserAndDate(any(), any(LocalDate.class))).thenReturn(BigDecimal.ZERO);
+        when(logRepo.breakdownByCategory(any(), any(), any())).thenReturn(new ArrayList<>());
+        when(logRepo.findDistinctDatesByUser(userId)).thenReturn(List.of(LocalDate.now(), LocalDate.now().minusDays(3), LocalDate.now().minusDays(9)));
+        when(profileRepo.findByUserIdAndDeletedAtIsNull(userId)).thenReturn(Optional.empty());
+        when(logRepo.findByUserIdAndActivityDateAndDeletedAtIsNull(any(), any())).thenReturn(new ArrayList<>());
+        when(creditService.completedActionCount(userId)).thenReturn(2);
+
+        DashboardResponse resp = service.getDashboard(userId);
+
+        assertEquals(3, resp.daysTracked());
+        assertEquals(2, resp.actionsCompleted());
     }
 }

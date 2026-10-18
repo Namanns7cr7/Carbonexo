@@ -83,6 +83,7 @@ export function buildLocalContextValue(
     streak: computeStreak(state.logs),
     totalSaved,
     completedCount,
+    daysTracked: new Set(state.logs.map((l) => l.date)).size,
     biggestSource,
     ...actions,
   };
@@ -163,6 +164,7 @@ export const SSR_DEFAULT_CTX: CarbonCtxValue = {
   streak: 0,
   totalSaved: 0,
   completedCount: 0,
+  daysTracked: 0,
   biggestSource: null,
   addLog: async () => {},
   removeLog: async () => {},

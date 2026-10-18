@@ -10,6 +10,8 @@ public interface CreditLedgerRepository extends JpaRepository<CreditLedger, UUID
 
     List<CreditLedger> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
+    long countByUserIdAndRuleKey(UUID userId, String ruleKey);
+
     boolean existsByUserIdAndRuleKeyAndRefId(UUID userId, String ruleKey, UUID refId);
 
     @Query("SELECT COALESCE(SUM(c.delta), 0) FROM CreditLedger c WHERE c.userId = :userId")

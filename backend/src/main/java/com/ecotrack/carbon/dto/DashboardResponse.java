@@ -14,7 +14,11 @@ public record DashboardResponse(
         double biggestValue,
         int streak,
         double totalSaved,
-        List<ActivityLogResponse> todayLogs
+        List<ActivityLogResponse> todayLogs,
+        /** Distinct days with at least one logged activity, all time. */
+        int daysTracked,
+        /** Plan actions the user has completed (one credit-ledger row each). */
+        int actionsCompleted
 ) {
     public record DayTotal(String date, double total) {}
 }

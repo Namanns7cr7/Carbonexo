@@ -77,6 +77,11 @@ public class CreditService {
         return true;
     }
 
+    /** How many plan actions this user has completed; each earns exactly one ledger row. */
+    public int completedActionCount(UUID userId) {
+        return (int) ledgerRepo.countByUserIdAndRuleKey(userId, "action_done");
+    }
+
     public CreditBalanceResponse getBalance(UUID userId) {
         int balance = ledgerRepo.sumDeltaByUserId(userId);
         return new CreditBalanceResponse(userId, balance);

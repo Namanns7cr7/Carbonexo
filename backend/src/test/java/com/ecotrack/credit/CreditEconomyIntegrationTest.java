@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /**
@@ -180,5 +181,28 @@ class CreditEconomyIntegrationTest {
                 "stock must roll back when the debit is refused");
         assertEquals(before, balance(a));
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM redemptions WHERE reward_id = ?", Integer.class, reward));
+    }
+
+    @Test
+    void dashboardReportsDaysTrackedAndSwapsCompletedForThePassport() throws Exception {
+        Account a = register();
+        for (int daysAgo : new int[] {0, 1, 5}) {
+            String body = JSON.writeValueAsString(Map.of("category", "travel", "label", "Car ride", "quantity", 10, "unit", "km",
+                    "co2Kg", 1.8, "activityDate", java.time.LocalDate.now().minusDays(daysAgo).toString()));
+            mvc.perform(post("/api/activities").header("Authorization", "Bearer " + a.token())
+                    .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
+        }
+        // Two logs on one day still count as one day tracked.
+        mvc.perform(post("/api/activities").header("Authorization", "Bearer " + a.token()).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("category", "food", "label", "Veg meal", "co2Kg", 0.6,
+                        "activityDate", java.time.LocalDate.now().toString())))).andReturn();
+        assertEquals(204, status("/api/credits/action?actionKey=metro-commute", a));
+        assertEquals(204, status("/api/credits/action?actionKey=metro-commute", a)); // repeat earns and counts once
+
+        JsonNode dash = JSON.readTree(mvc.perform(get("/api/dashboard").header("Authorization", "Bearer " + a.token()))
+                .andReturn().getResponse().getContentAsString());
+
+        assertEquals(3, dash.get("daysTracked").asInt());
+        assertEquals(1, dash.get("actionsCompleted").asInt());
     }
 }

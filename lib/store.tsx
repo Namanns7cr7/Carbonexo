@@ -64,6 +64,7 @@ interface ApiSnapshot {
   streak: number;
   totalSaved: number;
   completedCount: number;
+  daysTracked: number;
   biggestSource: { category: Category; value: number } | null;
 }
 
@@ -136,7 +137,8 @@ async function fetchApiSnapshot(): Promise<ApiSnapshot | null> {
     weekBreakdown: mappedWeekBreakdown,
     streak: dash.streak,
     totalSaved: dash.totalSaved,
-    completedCount: 0,
+    completedCount: dash.actionsCompleted ?? 0,
+    daysTracked: dash.daysTracked ?? 0,
     biggestSource,
   };
 
@@ -419,6 +421,7 @@ export function CarbonexoProvider({ children }: CarbonexoProviderProps) {
         streak: apiSnapshot.streak,
         totalSaved: apiSnapshot.totalSaved,
         completedCount: apiSnapshot.completedCount,
+        daysTracked: apiSnapshot.daysTracked,
         biggestSource: apiSnapshot.biggestSource,
         ...actionBag,
       };

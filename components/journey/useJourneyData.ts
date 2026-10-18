@@ -49,7 +49,6 @@ export function useJourneyData(): FootprintView {
         .filter((x) => x.kg > 0)
         .sort((a, b) => b.kg - a.kg);
       const big = carbon.biggestSource;
-      const days = new Set(carbon.logs.map((l) => l.date));
       return {
         mode: 'real',
         name: carbon.profile.name || null,
@@ -70,7 +69,7 @@ export function useJourneyData(): FootprintView {
           const logged = carbon.weekTotals.filter((w) => w.total > 0);
           return logged.length ? Math.round((logged.reduce((s, w) => s + w.total, 0) / logged.length) * 10) / 10 : null;
         })(),
-        daysTracked: days.size,
+        daysTracked: carbon.daysTracked,
       };
     }
 

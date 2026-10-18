@@ -12,6 +12,10 @@ export interface DashboardData {
   streak: number;
   totalSaved: number;
   todayLogs: { id: string; category: string; label: string; emoji: string; co2Kg: number; note: string }[];
+  /** Distinct days with a logged activity, all time. */
+  daysTracked?: number;
+  /** Plan actions completed (from the credit ledger). */
+  actionsCompleted?: number;
 }
 
 export async function getDashboard(): Promise<DashboardData> {
