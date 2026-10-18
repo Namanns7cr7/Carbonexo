@@ -4,6 +4,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationState;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -22,14 +23,18 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The deploy path, on its own clean database: V1..V11 (production today), legacy rows, then
- * V12..V17. History must be byte-identical afterwards (Decision 2), and the versions must be
- * unique and contiguous in the only location the image ships (database/migrations).
+ * The deploy path, on its own clean database: V1..V5, legacy rows, then V6..V17. Production
+ * (carbonexo / carbonexo-db) reports schema version 5 in its Cloud Run startup logs as of
+ * 2026-10-18, so V5 - not V11 - is the real starting point. History must be byte-identical
+ * afterwards (Decision 2), and the versions must be unique and contiguous in the only location
+ * the image ships (database/migrations).
  */
 @Testcontainers(disabledWithoutDocker = true)
 class MigrationUpgradeIntegrationTest {
 
     static final String LOCATION = "filesystem:../database/migrations";
+    /** Schema version the production backend image (built 2026-08-08) ships and runs against. */
+    static final int PRODUCTION_VERSION = 5;
 
     static final String HISTORY_ACTIVITY = "SELECT md5(string_agg(concat_ws('|', id, user_id, category, factor_key, label, quantity, unit, "
             + "co2_kg, activity_date, source, created_at), ',' ORDER BY id)) FROM activity_logs";
@@ -57,7 +62,7 @@ class MigrationUpgradeIntegrationTest {
             DriverManagerDataSource ds = new DriverManagerDataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
             JdbcTemplate jdbc = new JdbcTemplate(ds);
 
-            Flyway.configure().dataSource(ds).locations(LOCATION).target("11").load().migrate();
+            Flyway.configure().dataSource(ds).locations(LOCATION).target(String.valueOf(PRODUCTION_VERSION)).load().migrate();
             UUID u = jdbc.queryForObject("INSERT INTO users (email, password_hash) VALUES ('legacy@example.com', 'x') RETURNING id", UUID.class);
             jdbc.update("INSERT INTO user_profiles (user_id, name, region, onboarded) VALUES (?, 'L', 'GLOBAL', true)", u);
             jdbc.update("INSERT INTO activity_logs (user_id, category, factor_key, label, quantity, unit, co2_kg, activity_date) VALUES "
@@ -70,7 +75,7 @@ class MigrationUpgradeIntegrationTest {
             String r = jdbc.queryForObject(HISTORY_REGIONS, String.class);
 
             Flyway flyway = Flyway.configure().dataSource(ds).locations(LOCATION).load();
-            assertEquals(6, flyway.migrate().migrationsExecuted);
+            assertEquals(17 - PRODUCTION_VERSION, flyway.migrate().migrationsExecuted);
             flyway.validate();
 
             assertEquals(a, jdbc.queryForObject(HISTORY_ACTIVITY, String.class), "historical emissions were rewritten");
@@ -87,6 +92,41 @@ class MigrationUpgradeIntegrationTest {
             Set<String> tables = new HashSet<>(jdbc.queryForList(
                     "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'", String.class));
             assertTrue(tables.containsAll(Set.of("factor_records", "sci_chunks", "ai_responses", "ai_feedback")), tables.toString());
+        }
+    }
+
+    /**
+     * Rollback safety: after V6..V17 are applied, the previous image (which ships only V1..V5 and
+     * runs Flyway on startup with baseline-on-migrate) must still start, and its writes must work.
+     */
+    @Test
+    void previousImageStillStartsAgainstUpgradedSchema(@TempDir Path oldImageMigrations) throws Exception {
+        try (Stream<Path> files = Files.list(Path.of("../database/migrations"))) {
+            for (Path p : files.filter(p -> p.getFileName().toString().matches("V\\d+__.+\\.sql")).toList()) {
+                String n = p.getFileName().toString();
+                if (Integer.parseInt(n.substring(1, n.indexOf("__"))) <= PRODUCTION_VERSION) {
+                    Files.copy(p, oldImageMigrations.resolve(n));
+                }
+            }
+        }
+        try (PostgreSQLContainer<?> pg = new PostgreSQLContainer<>(
+                DockerImageName.parse("pgvector/pgvector:pg16").asCompatibleSubstituteFor("postgres"))) {
+            pg.start();
+            DriverManagerDataSource ds = new DriverManagerDataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+            Flyway.configure().dataSource(ds).locations(LOCATION).load().migrate();
+
+            Flyway previous = Flyway.configure().dataSource(ds).baselineOnMigrate(true)
+                    .locations("filesystem:" + oldImageMigrations.toAbsolutePath()).load();
+            assertDoesNotThrow(previous::validate, "previous image would fail Flyway validation on startup");
+            assertEquals(0, previous.migrate().migrationsExecuted);
+
+            // the previous image's insert shapes (no V13 columns) must still be accepted
+            JdbcTemplate jdbc = new JdbcTemplate(ds);
+            UUID u = jdbc.queryForObject("INSERT INTO users (email, password_hash) VALUES ('old@example.com', 'x') RETURNING id", UUID.class);
+            jdbc.update("INSERT INTO user_profiles (user_id, name, region, onboarded) VALUES (?, 'O', 'IN', true)", u);
+            jdbc.update("INSERT INTO activity_logs (user_id, category, factor_key, label, quantity, unit, co2_kg, activity_date) VALUES "
+                    + "(?, 'travel', 'bus', 'Bus', 10, 'km', 0.8, DATE '2026-10-01')", u);
+            jdbc.update("INSERT INTO credit_ledger (user_id, delta, balance_after, reason, rule_key) VALUES (?, 5, 5, 'Logged activity', 'log')", u);
         }
     }
 }

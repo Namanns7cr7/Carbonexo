@@ -16,6 +16,10 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @ConfigurationPropertiesScan("com.ecotrack.config")
 public class EcotrackApplication {
     public static void main(String[] args) {
+        if ("true".equalsIgnoreCase(System.getenv("MIGRATE_ONLY"))) {
+            MigrateOnly.run();
+            return;
+        }
         SpringApplication.run(EcotrackApplication.class, args);
     }
 }
