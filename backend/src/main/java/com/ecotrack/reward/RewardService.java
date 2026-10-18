@@ -48,17 +48,16 @@ public class RewardService {
             throw new BadRequestException("This reward is out of stock");
         }
 
+        // Take stock first, atomically; any failure below rolls the whole redemption back.
+        if (reward.getStock() != null && rewardRepo.takeOneFromStock(rewardId) == 0) {
+            throw new BadRequestException("This reward is out of stock");
+        }
+
         // Debit credits atomically
         boolean success = creditService.debitCredits(userId, reward.getCostCredits(),
                 "Redeemed: " + reward.getTitle(), "redemption", rewardId);
         if (!success) {
             throw new BadRequestException("Insufficient credits. Need " + reward.getCostCredits());
-        }
-
-        // Decrement stock
-        if (reward.getStock() != null) {
-            reward.setStock(reward.getStock() - 1);
-            rewardRepo.save(reward);
         }
 
         // Create redemption

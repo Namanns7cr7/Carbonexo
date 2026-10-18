@@ -30,8 +30,7 @@ public class CreditController {
 
     @PostMapping("/action")
     public ResponseEntity<Void> completeAction(@RequestParam String actionKey) {
-        java.util.UUID actionId = java.util.UUID.nameUUIDFromBytes(actionKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        service.onActionDone(SecurityUtils.currentUserId(), actionId);
+        service.completePlanAction(SecurityUtils.currentUserId(), actionKey);
         return ResponseEntity.noContent().build();
     }
 }

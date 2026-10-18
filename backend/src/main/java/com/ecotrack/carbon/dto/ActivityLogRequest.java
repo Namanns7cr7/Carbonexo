@@ -1,5 +1,6 @@
 package com.ecotrack.carbon.dto;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -16,9 +17,9 @@ public record ActivityLogRequest(
         @Size(max = 60) String factorKey,
         @NotBlank @Size(max = 120) String label,
         @Size(max = 16) String emoji,
-        @PositiveOrZero Double quantity,
+        @PositiveOrZero @DecimalMax("1000000") Double quantity,
         @Pattern(regexp = "km|kWh|item") String unit,
-        @NotNull @PositiveOrZero Double co2Kg,
+        @NotNull @PositiveOrZero @DecimalMax("100000") Double co2Kg,
         @Size(max = 200) String note,
         @NotBlank String activityDate  // YYYY-MM-DD
 ) {}

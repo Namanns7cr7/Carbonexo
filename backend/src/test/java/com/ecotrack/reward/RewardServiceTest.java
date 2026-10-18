@@ -47,9 +47,33 @@ class RewardServiceTest {
     }
 
     @Test
+    void redeemThrowsWhenLastUnitIsTakenConcurrently() {
+        // Stock looked available on read, but the atomic decrement lost the race.
+        Reward r = reward(100, 1, true);
+        when(rewardRepo.findById(rewardId)).thenReturn(Optional.of(r));
+        when(rewardRepo.takeOneFromStock(rewardId)).thenReturn(0);
+
+        assertThrows(BadRequestException.class, () -> svc.redeem(user, rewardId));
+        verify(credits, never()).debitCredits(any(), anyInt(), anyString(), anyString(), any());
+        verify(redemptionRepo, never()).save(any());
+    }
+
+    @Test
+    void redeemLeavesUnlimitedStockAlone() {
+        Reward r = reward(100, null, true);
+        when(rewardRepo.findById(rewardId)).thenReturn(Optional.of(r));
+        when(credits.debitCredits(eq(user), eq(100), anyString(), anyString(), any())).thenReturn(true);
+
+        svc.redeem(user, rewardId);
+
+        verify(rewardRepo, never()).takeOneFromStock(any());
+    }
+
+    @Test
     void redeemThrowsWhenInsufficientCredits() {
         Reward r = reward(500, 5, true);
         when(rewardRepo.findById(rewardId)).thenReturn(Optional.of(r));
+        when(rewardRepo.takeOneFromStock(rewardId)).thenReturn(1);
         when(credits.debitCredits(eq(user), eq(500), anyString(), anyString(), any())).thenReturn(false);
 
         assertThrows(BadRequestException.class, () -> svc.redeem(user, rewardId));
@@ -60,11 +84,13 @@ class RewardServiceTest {
     void redeemSucceedsDebitsAndRecordsRedemption() {
         Reward r = reward(100, 5, true);
         when(rewardRepo.findById(rewardId)).thenReturn(Optional.of(r));
+        when(rewardRepo.takeOneFromStock(rewardId)).thenReturn(1);
         when(credits.debitCredits(eq(user), eq(100), anyString(), anyString(), any())).thenReturn(true);
 
         var resp = svc.redeem(user, rewardId);
 
         assertNotNull(resp);
+        verify(rewardRepo).takeOneFromStock(rewardId);
         verify(credits).debitCredits(eq(user), eq(100), anyString(), eq("redemption"), eq(rewardId));
         verify(redemptionRepo).save(any(Redemption.class));
     }
