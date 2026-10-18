@@ -6,7 +6,7 @@ Only issues with an identified code path are listed.
 | Sev | Issue | Path | Fix |
 |---|---|---|---|
 | High | Business-logic abuse: unlimited credit minting, then redemption of rewards | `POST /api/credits/action?actionKey=<anything>` | Key must exist and be active in `action_templates` |
-| High | Double-spend: N parallel redemptions all succeed on a balance that covers one | `RewardService.redeem` / `CreditService.debitCredits` | Per-user `pg_advisory_xact_lock` |
+| High | Double-spend: N parallel redemptions all succeed on a balance that covers one (reproduced: 8 of 8) | `RewardService.redeem` / `CreditService.debitCredits` | Per-user `pg_advisory_xact_lock` |
 | Medium | Unbounded LLM input on legacy coach path (cost/DoS) | `POST /api/ai/coach` | 2000-char cap, blank rejected |
 | Medium | Free-text `period` interpolated into an LLM prompt (prompt-injection surface) | `POST /api/ai/monthly-report` | Must match `YYYY-MM` |
 | Low | 500s with stack-style handling for malformed JSON types / dates | `electricity-analysis`, bill correction | 400 with message |

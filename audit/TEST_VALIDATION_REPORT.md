@@ -22,7 +22,7 @@ Java and Maven are not installed on the host; backend runs used Docker. The 73 t
 - unknown action key: expected 400, got 204
 - 8 concurrent completions: expected 1 ledger row, got 8
 - 8 concurrent redemptions: expected 1 success, got 8 (`[201 x8]`)
-All 5 pass after the fix. The two-user "last unit of stock" test passed on both versions, so it is a guard, not proof of the old race.
+All pass after the fix. The limited-stock tests (2, 8 and 24 racing users) also passed on the old code, so they are guards, not proof of the old race.
 
 ## Tests added
 - `CreditEconomyIntegrationTest` (real Postgres, HTTP, concurrency)

@@ -41,6 +41,7 @@ class CreditEconomyIntegrationTest {
 
     static final ObjectMapper JSON = new ObjectMapper();
     static final int THREADS = 8;
+    static final int RACERS = 24;
 
     @DynamicPropertySource
     static void db(DynamicPropertyRegistry r) {
@@ -137,23 +138,47 @@ class CreditEconomyIntegrationTest {
     }
 
     @Test
-    void concurrentRedemptionsCannotOversellLimitedStock() throws Exception {
-        Account first = register(), second = register();
+    void manyUsersRacingForOneUnitOfStockOnlyOneWins() throws Exception {
+        List<Account> users = new ArrayList<>();
+        for (int i = 0; i < RACERS; i++) users.add(register());
         UUID reward = jdbc.queryForObject(
                 "INSERT INTO rewards (reward_key, title, cost_credits, stock) VALUES (?, 'Last unit probe', 1, 1) RETURNING id",
                 UUID.class, "last-" + UUID.randomUUID());
 
-        // Two different users race for the single remaining unit.
-        ExecutorService pool = Executors.newFixedThreadPool(2);
+        List<Integer> before = users.stream().map(this::balance).toList();
+        ExecutorService pool = Executors.newFixedThreadPool(RACERS);
         CountDownLatch go = new CountDownLatch(1);
-        Future<Integer> f1 = pool.submit(() -> { go.await(); return status("/api/rewards/" + reward + "/redeem", first); });
-        Future<Integer> f2 = pool.submit(() -> { go.await(); return status("/api/rewards/" + reward + "/redeem", second); });
+        List<Future<Integer>> futures = new ArrayList<>();
+        for (Account u : users) {
+            futures.add(pool.submit(() -> { go.await(); return status("/api/rewards/" + reward + "/redeem", u); }));
+        }
         go.countDown();
-        int c1 = f1.get(), c2 = f2.get();
+        long wins = 0;
+        for (Future<Integer> f : futures) if (f.get() < 300) wins++;
         pool.shutdown();
 
-        assertEquals(1, (c1 < 300 ? 1 : 0) + (c2 < 300 ? 1 : 0), "statuses: " + c1 + ", " + c2);
+        assertEquals(1, wins);
         assertEquals(0, jdbc.queryForObject("SELECT stock FROM rewards WHERE id = ?", Integer.class, reward));
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM redemptions WHERE reward_id = ?", Integer.class, reward));
+        // The losers were not charged.
+        long charged = 0;
+        for (int i = 0; i < users.size(); i++) if (balance(users.get(i)) != before.get(i)) charged++;
+        assertEquals(1, charged);
+    }
+
+    @Test
+    void failedRedemptionLeavesStockAndBalanceUntouched() throws Exception {
+        Account a = register();
+        UUID reward = jdbc.queryForObject(
+                "INSERT INTO rewards (reward_key, title, cost_credits, stock) VALUES (?, 'Unaffordable probe', 100000, 5) RETURNING id",
+                UUID.class, "dear-" + UUID.randomUUID());
+        int before = balance(a);
+
+        assertEquals(400, status("/api/rewards/" + reward + "/redeem", a));
+
+        assertEquals(5, jdbc.queryForObject("SELECT stock FROM rewards WHERE id = ?", Integer.class, reward),
+                "stock must roll back when the debit is refused");
+        assertEquals(before, balance(a));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM redemptions WHERE reward_id = ?", Integer.class, reward));
     }
 }

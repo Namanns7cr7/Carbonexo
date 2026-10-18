@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCarbon } from '@/lib/store';
 import { ACTIONS, CATEGORY_META, type Category } from '@/lib/carbon';
-import { getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
+import { COACH_MESSAGE_MAX_CHARS, getCoachHistory, sendCoachMessage } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { CLIMATE_KNOWLEDGE_BASE, generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
 import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Copy, FlaskConical, ListChecks, Plus, RotateCcw, Sparkles, Terminal, X, Compass } from 'lucide-react';
@@ -478,6 +478,7 @@ export default function Coach() {
         >
           <input
             value={input}
+            maxLength={COACH_MESSAGE_MAX_CHARS}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask your coach anything about carbon, diet, travel, or appliances..."
             aria-label="Ask your coach"

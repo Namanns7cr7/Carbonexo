@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Maximize2, Send, RotateCcw, Compass, ArrowUpRight } from 'lucide-react';
 import { useEcoMindContext } from '@/lib/context/ecomind-context';
 import { useCarbon } from '@/lib/store';
-import { sendCoachMessage, getCoachHistory, type CoachHistoryEntry } from '@/lib/api/ai';
+import { COACH_MESSAGE_MAX_CHARS, sendCoachMessage, getCoachHistory, type CoachHistoryEntry } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
 import {
@@ -349,6 +349,7 @@ export function GlobalEcoMindPanel() {
             >
               <input
                 value={draftMessage}
+                maxLength={COACH_MESSAGE_MAX_CHARS}
                 onChange={(e) => setDraftMessage(e.target.value)}
                 placeholder={`Ask EcoMind about ${pageContext.pageTitle}...`}
                 disabled={typing}

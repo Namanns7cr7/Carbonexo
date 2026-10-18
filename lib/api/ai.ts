@@ -35,6 +35,9 @@ export interface CoachCitation {
   review_status?: string;   // APPROVED | CANDIDATE (not yet reviewed by a person) | label text
 }
 
+/** Server limit for one coach message (AIController.MAX_COACH_MESSAGE_CHARS); longer input is rejected with a 400. */
+export const COACH_MESSAGE_MAX_CHARS = 2000;
+
 export interface CoachResponse {
   result: string;
   prompt?: string;
