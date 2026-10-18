@@ -95,6 +95,37 @@ describe('apiFetch — 401 refresh and replay', () => {
     expect(getAccessToken()).toBe('fresh');
   }, 6000);
 
+  // After a hard navigation only the refresh token survives. The first requests used to go out
+  // without Authorization, each collecting a 401 (and a console error) before the refresh.
+  it('refreshes once before the first requests of a fresh page load, never sending them unauthenticated', async () => {
+    setTokens('ignored', 'stored-refresh');
+    clearTokens();
+    localStorage.setItem('cx-refresh', 'stored-refresh');
+    const seen: { url: string; auth?: string }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      seen.push({ url: String(url), auth: (init?.headers as Record<string, string> | undefined)?.Authorization });
+      if (String(url).includes('/api/auth/refresh')) {
+        await new Promise((r) => setTimeout(r, 10));
+        return { ok: true, status: 200, json: async () => ({ accessToken: 'fresh', refreshToken: 'r2' }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    }));
+
+    await Promise.all([api.get('/api/dashboard'), api.get('/api/profiles/me'), api.get('/api/credits/balance')]);
+
+    expect(seen.filter((s) => s.url.includes('/api/auth/refresh'))).toHaveLength(1);
+    const apiCalls = seen.filter((s) => !s.url.includes('/api/auth/'));
+    expect(apiCalls).toHaveLength(3);
+    expect(apiCalls.every((s) => s.auth === 'Bearer fresh')).toBe(true);
+  });
+
+  it('does not refresh before a request when signed out', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) }));
+    vi.stubGlobal('fetch', fetchMock);
+    await api.get('/api/factors/public');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('gives up and raises ApiError when the refresh itself fails', async () => {
     setTokens('stale-access', 'bad-refresh');
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {

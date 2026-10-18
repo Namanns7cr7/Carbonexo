@@ -307,6 +307,22 @@ class CoachSecurityIntegrationTest {
     }
 
     @Test
+    void apiDocsAreOffByDefault() throws Exception {
+        Account a = register();
+        for (String path : List.of("/v3/api-docs", "/swagger-ui.html")) {
+            int anon = mvc.perform(get(path)).andReturn().getResponse().getStatus();
+            int authed = mvc.perform(get(path).header("Authorization", "Bearer " + a.token())).andReturn().getResponse().getStatus();
+            assertTrue(anon == 404 || anon == 401 || anon == 403, path + " anonymous -> " + anon);
+            assertTrue(authed == 404 || authed == 401 || authed == 403, path + " signed in -> " + authed);
+        }
+        // client errors keep their status instead of becoming 500
+        assertEquals(404, mvc.perform(get("/api/no-such-endpoint").header("Authorization", "Bearer " + a.token())).andReturn().getResponse().getStatus());
+        assertEquals(405, mvc.perform(get("/api/ai/coach").header("Authorization", "Bearer " + a.token())).andReturn().getResponse().getStatus());
+        assertEquals(400, mvc.perform(post("/api/ai/coach").header("Authorization", "Bearer " + a.token())
+                .contentType(MediaType.APPLICATION_JSON).content("{not json")).andReturn().getResponse().getStatus());
+    }
+
+    @Test
     void metricsNeedAdminOrTheScrapeTokenNeverJustALogin() throws Exception {
         Account a = register();
         for (String path : List.of("/actuator/prometheus", "/actuator/metrics")) {

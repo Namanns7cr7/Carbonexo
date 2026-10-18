@@ -67,6 +67,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(Exception ex, HttpServletRequest req) {
+        // Spring MVC's own client errors (unknown path, wrong method, unreadable body, missing
+        // parameter...) carry their status; without this they were all reported as 500.
+        if (ex instanceof org.springframework.web.ErrorResponse er && er.getStatusCode().is4xxClientError()) {
+            HttpStatus status = HttpStatus.valueOf(er.getStatusCode().value());
+            return problem(status, status.getReasonPhrase(), req, slug(status));
+        }
+        if (ex instanceof org.springframework.http.converter.HttpMessageNotReadableException) {
+            return problem(HttpStatus.BAD_REQUEST, "Malformed request body", req, "bad-request");
+        }
         log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
         return problem(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred", req, "internal-error");

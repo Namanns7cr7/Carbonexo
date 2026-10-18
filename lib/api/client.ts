@@ -183,6 +183,14 @@ export async function apiFetch<T>(
       headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     }
 
+    // After a hard navigation the access token is gone but the refresh token is in storage:
+    // refresh first (once, shared by concurrent calls) instead of sending every first request
+    // unauthenticated and collecting a 401 for each.
+    if (!accessToken && retryCount === 0 && !path.startsWith('/api/auth/') && latestRefreshToken()) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed === 'unreachable') throw serverUnreachable();
+    }
+
     if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
