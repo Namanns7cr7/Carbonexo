@@ -9,7 +9,7 @@
 set -uo pipefail
 
 # ----------------------------- CONFIG (edit me) ------------------------------
-PROJECT_ID="project-d1b98ab5-f061-4290-96b"
+PROJECT_ID="carbonexo"
 REGION="asia-south1"                         # Mumbai
 REPO="carbonexo"                             # Artifact Registry repo
 SQL_INSTANCE="carbonexo-db"
