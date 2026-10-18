@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carbonexo.app/schema/factor_record.v2.json",
+  "title": "Carbonexo Dataset V2 factor record",
+  "description": "One numeric value with full provenance. Schema validity is NOT evidence of scientific correctness; see verification_status and review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "factor_id", "record_kind", "value", "unit", "region", "applies_to_regions", "proxy_regions",
+    "applicable_year", "scope", "system_boundary", "gases", "source_id", "source_publisher",
+    "source_url", "source_locator", "publication_date", "license", "license_status",
+    "verification_status", "scientific_status", "uncertainty", "dataset_version"
+  ],
+  "properties": {
+    "factor_id": {"type": "string", "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$", "description": "Stable dotted id: <domain>.<region>.<thing>[.<variant>]. Year-specific DESNZ ids end in .yYYYY."},
+    "record_kind": {"enum": ["emission_factor", "benchmark", "equivalency", "target", "behavioural_estimate"]},
+    "value": {"type": "number", "minimum": 0},
+    "unit": {"type": "string", "pattern": "/|%", "description": "Must contain a denominator, e.g. kg/kWh, kg/pkm, kg/vkm, kg CO2e/kg product."},
+    "region": {"type": "string", "description": "Where the value was measured: ISO 3166-1 alpha-2 (IN, GB, US) or GLOBAL."},
+    "applies_to_regions": {"type": "array", "items": {"type": "string"}, "description": "Regions where this may be used as the direct default factor."},
+    "proxy_regions": {"type": "array", "items": {"type": "string"}, "description": "Regions where it may be used ONLY with an explicit uncertainty label shown to the user."},
+    "applicable_year": {"type": "string"},
+    "scope": {"type": "string"},
+    "system_boundary": {"type": "string"},
+    "gases": {"type": "string", "description": "CO2 | CO2e (state GWP basis where known)"},
+    "statistic": {"type": ["string", "null"], "description": "mean | median | weighted_average | point_estimate"},
+    "source_id": {"type": "string", "description": "Must exist in SOURCE_MANIFEST.json"},
+    "source_publisher": {"type": "string"},
+    "source_url": {"type": "string", "format": "uri"},
+    "source_locator": {"type": "string", "description": "Table / row id / section in the source."},
+    "citation_of_record": {"type": ["string", "null"], "description": "source_id of the original study when source_id is a redistributor."},
+    "publication_date": {"type": "string"},
+    "license": {"type": "string"},
+    "license_status": {"enum": ["verified", "unverified"]},
+    "verification_status": {
+      "enum": ["verified_primary", "verified_secondary", "needs_manual_review", "rejected"],
+      "description": "How the EVIDENCE was checked."
+    },
+    "scientific_status": {
+      "enum": ["supported", "provisional", "unsupported"],
+      "description": "Fitness for user-facing claims. supported: may be shown and used by tools. provisional: may be used with an uncertainty label. unsupported: production shows 'Not estimated'; demo mode only, with a warning; never passed to the AI as fact."
+    },
+    "uncertainty": {
+      "type": "object", "additionalProperties": false, "required": ["level"],
+      "properties": {
+        "level": {"enum": ["low", "medium", "high", "unknown"]},
+        "notes": {"type": ["string", "null"]}
+      }
+    },
+    "superseded_by": {"type": ["string", "null"]},
+    "valid_from": {"type": ["string", "null"], "format": "date"},
+    "valid_to": {"type": ["string", "null"], "format": "date"},
+    "notes": {"type": ["string", "null"]},
+    "dataset_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.]+)?$"}
+  }
+}

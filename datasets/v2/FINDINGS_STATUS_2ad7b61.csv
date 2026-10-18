@@ -1,0 +1,16 @@
+id,status_on_base_2ad7b61,evidence,remaining_action
+D37,partially_fixed,"lib/living-world/derive.ts: LIFESTYLE_BUDGET_KG_PER_DAY = 2500/365 (6.85, arithmetic fixed); app/app/page.tsx no longer uses 8.5","Attribution still 'UNEP (2020) 1.5-Degree Lifestyles' (should be IGES/Aalto/D-mat 2019). Dashboard still compares partial logged tracking with a whole-lifestyle budget (scope mismatch)."
+D40,fixed,app/app/page.tsx header comment: 'Removed ... the invented peer benchmark',lib/data/climate-knowledge.ts still contains the 38%/11.0 text (see D45 row)
+D41,partially_fixed,app/app/page.tsx: treesEquiv removed,public/methodology.html and public/pitch.html still show 21.77 kg 'US EPA'
+D46,partially_fixed,app/app/page.tsx no longer displays totalSaved,"Backend still computes 8.0 kg/day saved: DashboardService.java:89, ReportService.java:31 (reports page lifetime saved). GroupService no longer uses it for the leaderboard metric; goalProgress still uses FALLBACK_BASELINE_DAILY_KG."
+D47,open,lib/api/reports.ts:15 lifetimeCo2SavedKg = 42.5,
+D49,mostly_fixed,"lib/api/simulations.ts: fake 45% progress and credits removed; output tagged 'offline-estimate'; 4xx no longer replaced by a local guess","per_month = 0.25/wk vs backend 1/4.33 and silent 0.18/0.04 default factors still present"
+D51,open,CannedFallbackProvider.java:33 and :60 unchanged on base,The living-world worktree has uncommitted work adding generateLive(); not reviewed here
+D52,fixed,"app/app/coach/page.tsx: backend replies carry no library citation ('the model did not necessarily use it')",
+D53,partially_fixed,coach/page.tsx default userName 'there' (was 'Sakshi'),climate-knowledge.ts keyword routing ('car' in 'carbon') unchanged
+D54,fixed,coach/page.tsx welcome text no longer claims verified grounding; offline answers labelled 'Reference library (offline)',
+D57,fixed,coach/page.tsx uses provider/model from history; no hardcoded gemini-2.0-flash,
+D44,open,lib/data/climate-knowledge.ts unchanged on base ('The Sound of Silence'),
+D45,open,lib/data/climate-knowledge.ts unchanged on base ('IPCC AR6 ... 8.5 kg/day'),
+D62,new,"lib/living-world/derive.ts: WORLD_AVG_KG_PER_DAY = 4.7 t/yr ('OWID / Global Carbon Project, world CO2 per capita, 2024')","Not verified in Dataset V2. GCP per-capita is territorial fossil CO2, not a consumption footprint; shown next to a consumption-based lifestyle budget it mixes scopes. Add as a sourced V2 record with boundary, or remove."
+D63,new,lib/living-world/derive.ts LIFESTYLE_BUDGET_SOURCE,"Same attribution error as D37 introduced in new code."

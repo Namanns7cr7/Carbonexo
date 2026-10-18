@@ -1,0 +1,22 @@
+{
+  "corpus_version": "sci-corpus.v1-draft",
+  "embedding": {"model": "text-embedding-005", "dimensions": 768, "task_type_document": "RETRIEVAL_DOCUMENT", "task_type_query": "RETRIEVAL_QUERY"},
+  "chunking": {"strategy": "section-aware", "target_tokens": 450, "max_tokens": 700, "overlap_tokens": 60, "keep_tables_whole": true},
+  "eligibility_rule": "A document may be ingested only if its SOURCE_MANIFEST license.status is 'verified' and license.rag_allowed is not false. Enforced by tests/test_data_quality.py.",
+  "documents": [
+    {"source_id": "desnz-2025-methodology", "include": true, "sections": "all", "reason": "OGL v3.0; defines DESNZ transport and electricity boundaries (UK context, retrieved only with region filter GB or for methodology questions)"},
+    {"source_id": "epa-ghg-equivalencies-refs", "include": true, "sections": "tree seedlings; gasoline", "reason": "US public domain; equivalency caveats"},
+    {"source_id": "owid-ghg-per-kg-poore", "include": true, "sections": "chart description + methodology notes (not the CSV values; values come from factor_records)", "reason": "CC BY 4.0"}
+  ],
+  "excluded_pending_license": [
+    {"source_id": "niti-2026-power", "reason": "Government of India reuse terms unverified; numeric values are used via factor_records only"},
+    {"source_id": "cea-co2-baseline-v21", "reason": "login wall; terms unverified"},
+    {"source_id": "indiaghgp-road-2015", "reason": "copyright India GHG Program; terms unverified"},
+    {"source_id": "iges-15-lifestyles-2019", "reason": "terms unverified"},
+    {"source_id": "ipcc-ar6-wg3", "reason": "IPCC permits non-commercial reproduction; commercial use needs confirmation"},
+    {"source_id": "poore-nemecek-2018", "reason": "journal copyright (AAAS); rag_allowed=false"},
+    {"source_id": "ghg-protocol-scope2-scope3", "reason": "terms unverified"},
+    {"source_id": "unep-egr-2023", "reason": "terms unverified"}
+  ],
+  "notes": "With only 3 eligible documents the v1 corpus is deliberately thin. Expected effect: retrieval confidence 'low'/'none' for most Indian questions, so the coach must abstain from evidence claims and rely on factor_records + tool outputs. Expanding the corpus is a licensing task, not an engineering one."
+}

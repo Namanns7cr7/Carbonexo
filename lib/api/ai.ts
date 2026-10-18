@@ -25,9 +25,46 @@ export async function getMonthlyReport(period: string): Promise<string> {
   return res.result;
 }
 
+export interface CoachCitation {
+  marker: string;           // "S1" - matches [S1] in the answer text
+  kind: string;             // factor_source | knowledge
+  title: string;
+  resource?: string;
+  locator?: string;
+  review_status?: string;   // APPROVED | CANDIDATE (not yet reviewed by a person) | label text
+}
+
 export interface CoachResponse {
   result: string;
   prompt?: string;
+  /** Who actually produced `result` ("gemini", "carbonexo" for limits); absent when there is no live answer. */
+  provider?: string | null;
+  model?: string | null;
+  live?: boolean | null;
+  /** Why no live answer was produced (e.g. MODEL_NOT_FOUND, RATE_LIMITED, CIRCUIT_OPEN). */
+  failure?: string | null;
+  responseId?: string | null;
+  citations?: CoachCitation[];
+  toolsUsed?: string[];
+  checks?: Record<string, unknown>;
+}
+
+export type FeedbackReason =
+  | 'incorrect_number' | 'wrong_citation' | 'missing_citation' | 'not_relevant' | 'unsafe_advice'
+  | 'unsupported_claim' | 'ignored_my_data' | 'wrong_region' | 'too_long' | 'unclear'
+  | 'helpful' | 'accurate' | 'well_sourced';
+
+export interface CoachFeedback {
+  rating: 1 | -1;
+  reasons?: FeedbackReason[];
+  comment?: string;
+  correction?: string;
+  /** Opt-in: reviewers may use this conversation to improve the coach. Default false. */
+  consentResearch?: boolean;
+}
+
+export async function sendCoachFeedback(responseId: string, feedback: CoachFeedback): Promise<{ feedback_id: string }> {
+  return api.post<{ feedback_id: string }>(`/api/ai/responses/${encodeURIComponent(responseId)}/feedback`, feedback);
 }
 
 export async function sendCoachMessage(message: string): Promise<CoachResponse> {

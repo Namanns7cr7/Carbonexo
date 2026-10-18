@@ -1,13 +1,18 @@
 package com.ecotrack.simulation;
 
 import com.ecotrack.ai.AIProvider;
+import com.ecotrack.ai.AIResult;
 import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.carbon.ActivityLog;
 import com.ecotrack.carbon.ActivityLogRepository;
-import com.ecotrack.carbon.CarbonCalculationService;
 import com.ecotrack.config.AppProperties;
 import com.ecotrack.credit.CreditRuleEngine;
 import com.ecotrack.exception.BadRequestException;
+import com.ecotrack.factors.CarbonTwinEngine;
+import com.ecotrack.factors.CarbonTwinEngine.Side;
+import com.ecotrack.factors.CarbonTwinEngine.SideStatus;
+import com.ecotrack.factors.FactorLookup;
+import com.ecotrack.factors.FactorRegistryService;
 import com.ecotrack.profile.UserProfile;
 import com.ecotrack.profile.UserProfileRepository;
 import com.ecotrack.simulation.dto.SimulationRequest;
@@ -26,15 +31,20 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * "Carbon twin" simulation engine. Given a set of hypothetical habit changes,
- * projects their CO2 impact over a horizon (month/year) using the SAME
- * emission-factor lookup and CO2 math real activity logging uses
- * ({@link CarbonCalculationService#calculateCo2}), so simulated and real
- * numbers never drift.
+ * "Carbon twin" simulation engine for the Simulate screen. The arithmetic is
+ * {@link CarbonTwinEngine}'s, the same code the AI coach's Carbon Twin tool uses, over the
+ * Dataset V2 registry ({@link FactorRegistryService}), so the screen and the coach always agree.
  *
- * Pure computation: reads the user's recent {@code activity_logs} and the
- * {@code emission_factors} table, and never writes anything — no activity
- * log is created, no credits are actually awarded.
+ * <ul>
+ *   <li>An activity with no factor for the user's region is NOT_ESTIMATED and left out of the
+ *       totals, never counted as zero (replacing a car with the metro used to show the whole car
+ *       figure as a reduction).</li>
+ *   <li>An unstated type (car without fuel/engine) gives a min-max range over the region's types.</li>
+ *   <li>A custom rate the user typed is used as stated and labelled "user_supplied".</li>
+ *   <li>Projected credits are shown only for exact results from an APPROVED dataset with no
+ *       user-supplied rates; they are projections, never awarded.</li>
+ * </ul>
+ * Pure computation: never writes anything.
  */
 @Service
 public class SimulationService {
@@ -44,19 +54,9 @@ public class SimulationService {
     /** Default weekly reduction target when the user has no profile goal set yet. */
     private static final int DEFAULT_WEEKLY_GOAL_PCT = 15;
 
-    /**
-     * Horizon-scaling convention: reused from the ratio the rest of the app
-     * already uses when turning a weekly figure into a longer one (the
-     * dashboard's week window is 7 days; there a month ~ 4.33 weeks and a
-     * year is exactly 52 weeks). No such constant existed yet in the
-     * codebase, so this is the one judgment call in this feature — documented
-     * here rather than invented silently.
-     */
-    private static final BigDecimal WEEKS_PER_MONTH = new BigDecimal("4.33");
-    private static final BigDecimal WEEKS_PER_YEAR = new BigDecimal("52");
-
     private final ActivityLogRepository logRepo;
-    private final CarbonCalculationService carbonService;
+    private final CarbonTwinEngine engine;
+    private final FactorRegistryService registry;
     private final CreditRuleEngine creditRuleEngine;
     private final UserProfileRepository profileRepo;
     private final AIProvider aiProvider;
@@ -64,20 +64,25 @@ public class SimulationService {
     private final AppProperties props;
 
     public SimulationService(ActivityLogRepository logRepo,
-                              CarbonCalculationService carbonService,
-                              CreditRuleEngine creditRuleEngine,
-                              UserProfileRepository profileRepo,
-                              AIProvider aiProvider,
-                              PromptRenderer promptRenderer,
-                              AppProperties props) {
+                             CarbonTwinEngine engine,
+                             FactorRegistryService registry,
+                             CreditRuleEngine creditRuleEngine,
+                             UserProfileRepository profileRepo,
+                             AIProvider aiProvider,
+                             PromptRenderer promptRenderer,
+                             AppProperties props) {
         this.logRepo = logRepo;
-        this.carbonService = carbonService;
+        this.engine = engine;
+        this.registry = registry;
         this.creditRuleEngine = creditRuleEngine;
         this.profileRepo = profileRepo;
         this.aiProvider = aiProvider;
         this.promptRenderer = promptRenderer;
         this.props = props;
     }
+
+    /** One change's two sides, each from the registry or a user-supplied rate. */
+    private record ItemResult(String key, Side baseline, Side projected, boolean userSupplied) {}
 
     @Transactional(readOnly = true)
     public SimulationResponse simulate(UUID userId, SimulationRequest request) {
@@ -89,120 +94,151 @@ public class SimulationService {
         String region = profile != null && profile.getRegion() != null ? profile.getRegion() : "GLOBAL";
         int weeklyGoalPct = profile != null && profile.getWeeklyGoalPct() != null
                 ? profile.getWeeklyGoalPct() : DEFAULT_WEEKLY_GOAL_PCT;
+        CarbonTwinEngine.Horizon horizon = CarbonTwinEngine.Horizon.valueOf(request.horizon().name());
+        BigDecimal horizonWeeks = CarbonTwinEngine.horizonWeeks(horizon);
 
-        BigDecimal horizonWeeks = horizonWeeks(request.horizon());
-
-        // Real weekly footprint, derived from the same 7-day window DashboardService
-        // uses for its week chart — read-only, used ONLY as context for the goal-bar
-        // target denominator below. It must NOT be mixed into baselineCo2Kg/
-        // projectedCo2Kg: those represent the simulated items themselves (what the
-        // user describes as their current rate for each change), which is a
-        // different, unrelated number from their actual historical logs — a new
-        // user with zero logged history can still run a meaningful simulation.
+        // Real weekly footprint (the dashboard's 7-day window), used ONLY as the goal-bar denominator.
         LocalDate today = LocalDate.now();
-        LocalDate weekStart = today.minusDays(6);
-        BigDecimal weeklyActualCo2 = logRepo.findByUserIdAndDateRange(userId, weekStart, today).stream()
+        BigDecimal weeklyActualCo2 = logRepo.findByUserIdAndDateRange(userId, today.minusDays(6), today).stream()
                 .map(ActivityLog::getCo2Kg)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        List<SimulationResponse.BreakdownItem> breakdown = new ArrayList<>();
-        BigDecimal baselineChangesKg = BigDecimal.ZERO;
-        BigDecimal projectedChangesKg = BigDecimal.ZERO;
-
+        List<ItemResult> items = new ArrayList<>();
         for (SimulationRequest.SimulationItem item : request.changes()) {
             validateItemHasAFactor(item);
-            BigDecimal weeklyOccurrences = weeklyOccurrences(item.frequency());
-            BigDecimal horizonQuantity = item.quantity()
-                    .multiply(weeklyOccurrences)
-                    .multiply(horizonWeeks);
-
-            BigDecimal itemBaselineKg = resolveCo2(item.factorKey(), item.customFactorKgPerUnit(), horizonQuantity, region);
-            BigDecimal itemProjectedKg = projectedKgForItem(item, weeklyOccurrences, horizonWeeks, region);
-
-            baselineChangesKg = baselineChangesKg.add(itemBaselineKg);
-            projectedChangesKg = projectedChangesKg.add(itemProjectedKg);
-            String breakdownKey = item.factorKey() != null ? item.factorKey() : item.customLabel();
-            breakdown.add(new SimulationResponse.BreakdownItem(breakdownKey, itemBaselineKg, itemProjectedKg));
+            items.add(evaluate(item, horizon, region));
         }
 
-        BigDecimal baselineCo2Kg = baselineChangesKg.setScale(3, RoundingMode.HALF_UP);
-        BigDecimal projectedCo2Kg = projectedChangesKg.max(BigDecimal.ZERO).setScale(3, RoundingMode.HALF_UP);
-        BigDecimal deltaCo2Kg = projectedCo2Kg.subtract(baselineCo2Kg).setScale(3, RoundingMode.HALF_UP);
+        List<SimulationResponse.BreakdownItem> breakdown = new ArrayList<>();
+        BigDecimal deltaMin = BigDecimal.ZERO, deltaMax = BigDecimal.ZERO, baseSum = BigDecimal.ZERO, projSum = BigDecimal.ZERO;
+        int estimated = 0;
+        boolean ranges = false, userSupplied = false;
+        for (ItemResult r : items) {
+            CarbonTwinEngine.Delta d = CarbonTwinEngine.delta(r.baseline(), r.projected());
+            boolean exact = d.status() == SideStatus.ESTIMATED;
+            String missing = d.status() == SideStatus.NOT_ESTIMATED ? d.missingInformation() : null;
+            breakdown.add(new SimulationResponse.BreakdownItem(r.key(),
+                    exact ? r.baseline().kgMin() : null, exact ? r.projected().kgMin() : null, d.status().name(),
+                    r.baseline().kgMin(), r.baseline().kgMax(), r.projected().kgMin(), r.projected().kgMax(),
+                    missing, r.userSupplied() ? "user_supplied" : "registry"));
+            if (d.status() == SideStatus.NOT_ESTIMATED) continue;
+            estimated++;
+            ranges |= !exact;
+            userSupplied |= r.userSupplied();
+            deltaMin = deltaMin.add(d.min());
+            deltaMax = deltaMax.add(d.max());
+            if (exact) {
+                baseSum = baseSum.add(r.baseline().kgMin());
+                projSum = projSum.add(r.projected().kgMin());
+            }
+        }
 
-        SimulationResponse.WeeklyGoalImpact weeklyGoalImpact =
-                weeklyGoalImpact(weeklyActualCo2, weeklyGoalPct, deltaCo2Kg, horizonWeeks);
+        String status = estimated == 0 ? "NOT_ESTIMATED" : estimated < items.size() ? "PARTIAL" : ranges ? "ESTIMATED_RANGE" : "ESTIMATED";
+        boolean allExact = "ESTIMATED".equals(status);
+        BigDecimal baselineCo2Kg = allExact ? scale(baseSum) : null;
+        BigDecimal projectedCo2Kg = allExact ? scale(projSum) : null;
+        BigDecimal deltaCo2Kg = allExact ? scale(projSum.subtract(baseSum)) : null;
+        String authority = registry.authority().map(Enum::name).orElse("NONE");
 
-        BigDecimal kgSavedForCredits = baselineCo2Kg.subtract(projectedCo2Kg).max(BigDecimal.ZERO);
-        int projectedCreditsDelta = creditRuleEngine.creditsForKgSaved(kgSavedForCredits.doubleValue());
+        SimulationResponse.WeeklyGoalImpact goal = allExact
+                ? weeklyGoalImpact(weeklyActualCo2, weeklyGoalPct, deltaCo2Kg, horizonWeeks)
+                : new SimulationResponse.WeeklyGoalImpact(0, 0);
+        int credits = 0;
+        if (allExact && !userSupplied && FactorLookup.Authority.APPROVED.name().equals(authority)) {
+            credits = creditRuleEngine.creditsForKgSaved(baseSum.subtract(projSum).max(BigDecimal.ZERO).doubleValue());
+        }
 
-        String aiInsight = buildInsight(deltaCo2Kg, weeklyGoalImpact.projectedProgressPct(),
-                projectedCreditsDelta, request.horizon());
+        String insight = insight(status, deltaCo2Kg, deltaMin, deltaMax, goal.projectedProgressPct(), credits, request.horizon(),
+                breakdown);
+        return new SimulationResponse(baselineCo2Kg, projectedCo2Kg, deltaCo2Kg, goal, credits, breakdown, insight, status,
+                estimated == 0 ? null : scale(deltaMin), estimated == 0 ? null : scale(deltaMax), registry.datasetVersion(), authority);
+    }
 
-        return new SimulationResponse(
-                baselineCo2Kg, projectedCo2Kg, deltaCo2Kg,
-                weeklyGoalImpact, projectedCreditsDelta, breakdown, aiInsight
-        );
+    private ItemResult evaluate(SimulationRequest.SimulationItem item, CarbonTwinEngine.Horizon horizon, String region) {
+        BigDecimal weekly = weeklyOccurrences(item.frequency());
+        BigDecimal qty = item.quantity().multiply(weekly).multiply(CarbonTwinEngine.horizonWeeks(horizon));
+        boolean custom = item.factorKey() == null || item.factorKey().isBlank();
+        Side baseline = custom ? userSupplied(item.customLabel(), qty, item.customFactorKgPerUnit())
+                : side(item.factorKey(), item.variant(), qty, region);
+        Side projected;
+        boolean customReplacement = false;
+        if (item.deltaType() == SimulationRequest.DeltaType.REPLACE_WITH) {
+            boolean hasCatalog = item.replacementFactorKey() != null && !item.replacementFactorKey().isBlank();
+            boolean hasCustom = item.customReplacementLabel() != null && !item.customReplacementLabel().isBlank()
+                    && item.customReplacementFactorKgPerUnit() != null && item.customReplacementFactorKgPerUnit().signum() >= 0;
+            if (hasCatalog) {
+                projected = side(item.replacementFactorKey(), item.replacementVariant(), qty, region);
+            } else if (hasCustom) {
+                projected = userSupplied(item.customReplacementLabel(), qty, item.customReplacementFactorKgPerUnit());
+                customReplacement = true;
+            } else {
+                throw new BadRequestException(
+                        "REPLACE_WITH needs replacementFactorKey or both customReplacementLabel and customReplacementFactorKgPerUnit");
+            }
+        } else {
+            // REDUCE_BY: cut the per-occurrence quantity by `amount` (never below zero), same factor.
+            BigDecimal amount = item.amount() != null ? item.amount() : BigDecimal.ZERO;
+            BigDecimal reduced = item.quantity().subtract(amount).max(BigDecimal.ZERO)
+                    .multiply(weekly).multiply(CarbonTwinEngine.horizonWeeks(horizon));
+            projected = custom ? userSupplied(item.customLabel(), reduced, item.customFactorKgPerUnit())
+                    : side(item.factorKey(), item.variant(), reduced, region);
+        }
+        String key = custom ? item.customLabel() : item.factorKey();
+        return new ItemResult(key, baseline, projected, custom || customReplacement);
+    }
+
+    private Side side(String activity, String variant, BigDecimal qty, String region) {
+        try {
+            return engine.side(activity, variant, qty, null, region, false);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+    }
+
+    /** A rate the user typed for something not in the dataset: used as stated, read-only, labelled. */
+    private static Side userSupplied(String label, BigDecimal qty, BigDecimal kgPerUnit) {
+        if (kgPerUnit == null || kgPerUnit.signum() < 0) throw new BadRequestException("customFactorKgPerUnit must be >= 0");
+        BigDecimal kg = qty.multiply(kgPerUnit).setScale(3, RoundingMode.HALF_UP);
+        return new Side(SideStatus.ESTIMATED, label, null, qty, kg, kg, null, null, List.of(), FactorLookup.Reason.OK, null);
     }
 
     /**
-     * AI-generated 1-2 sentence motivational/explanatory insight layered on
-     * top of the deterministic numbers computed above — never the numbers
-     * themselves. Same try/catch-and-static-fallback shape as
-     * {@code EmbodiedCarbonService.buildAiSuggestion()}, so a Gemini outage
-     * never blocks a simulation result.
+     * Wording is deterministic unless the result is exact and a live model answers; fallback text is
+     * never presented as AI output, and a not-estimated result is never described with numbers.
      */
-    private String buildInsight(BigDecimal deltaCo2Kg, int projectedProgressPct,
-                                 int projectedCreditsDelta, SimulationRequest.Horizon horizon) {
+    private String insight(String status, BigDecimal delta, BigDecimal min, BigDecimal max, int progressPct, int credits,
+                           SimulationRequest.Horizon horizon, List<SimulationResponse.BreakdownItem> breakdown) {
+        String period = horizon.name().toLowerCase();
+        String missing = breakdown.stream().filter(b -> "NOT_ESTIMATED".equals(b.status()))
+                .map(b -> b.factorKey() + ": " + b.missingInformation()).reduce((a, b) -> a + "; " + b).orElse("");
+        switch (status) {
+            case "NOT_ESTIMATED":
+                return "Not estimated: " + missing + ".";
+            case "PARTIAL":
+                return "Partly estimated. Over one " + period + " the estimated changes would shift emissions by " + scale(min)
+                        + (min.compareTo(max) == 0 ? "" : " to " + scale(max)) + " kg CO2e. Not estimated: " + missing + ".";
+            case "ESTIMATED_RANGE":
+                return "Over one " + period + " this would shift emissions by " + scale(min) + " to " + scale(max)
+                        + " kg CO2e, depending on the vehicle or product type. Choose the type to narrow the range.";
+            default:
+                break;
+        }
         try {
             String prompt = promptRenderer.render("simulation_insight", Map.of(
-                    "delta_kg", deltaCo2Kg.toString(),
-                    "projected_progress_pct", String.valueOf(projectedProgressPct),
-                    "projected_credits", String.valueOf(projectedCreditsDelta),
-                    "horizon", horizon.name().toLowerCase()
-            ));
-            return aiProvider.generate(prompt, props.ai().fastModel());
+                    "delta_kg", delta.toString(),
+                    "projected_progress_pct", String.valueOf(progressPct),
+                    "projected_credits", String.valueOf(credits),
+                    "horizon", period));
+            AIResult r = aiProvider.generateResult(prompt, props.ai().fastModel());
+            if (r.live() && r.text() != null && !r.text().isBlank()) return r.text();
         } catch (Exception e) {
             log.warn("AI simulation-insight generation failed: {}", e.toString());
-            return "Over the next " + horizon.name().toLowerCase() + ", this change projects to a "
-                    + deltaCo2Kg + " kg CO2e shift — putting you at " + projectedProgressPct
-                    + "% of your weekly goal and worth about " + projectedCreditsDelta + " credits.";
         }
+        return "Over the next " + period + ", this change would shift emissions by " + delta + " kg CO2e (hypothetical)"
+                + (progressPct > 0 ? ", about " + progressPct + "% of your weekly goal" : "") + ".";
     }
 
-    private BigDecimal projectedKgForItem(SimulationRequest.SimulationItem item,
-                                           BigDecimal weeklyOccurrences,
-                                           BigDecimal horizonWeeks,
-                                           String region) {
-        if (item.deltaType() == SimulationRequest.DeltaType.REPLACE_WITH) {
-            String replacementKey = item.replacementFactorKey();
-            BigDecimal horizonQuantity = item.quantity().multiply(weeklyOccurrences).multiply(horizonWeeks);
-            boolean hasCatalogReplacement = replacementKey != null && !replacementKey.isBlank();
-            boolean hasCustomReplacement = item.customReplacementLabel() != null && !item.customReplacementLabel().isBlank()
-                    && item.customReplacementFactorKgPerUnit() != null
-                    && item.customReplacementFactorKgPerUnit().signum() >= 0;
-            if (hasCatalogReplacement) {
-                return carbonService.calculateCo2(replacementKey, horizonQuantity, region);
-            }
-            if (hasCustomReplacement) {
-                // Same read-only, never-persisted treatment as a custom baseline activity.
-                return horizonQuantity.multiply(item.customReplacementFactorKgPerUnit()).setScale(3, RoundingMode.HALF_UP);
-            }
-            throw new BadRequestException(
-                    "REPLACE_WITH needs replacementFactorKey or both customReplacementLabel and customReplacementFactorKgPerUnit");
-        }
-
-        // REDUCE_BY: cut the per-occurrence quantity by `amount` (never below zero).
-        BigDecimal amount = item.amount() != null ? item.amount() : BigDecimal.ZERO;
-        BigDecimal reducedQuantity = item.quantity().subtract(amount).max(BigDecimal.ZERO);
-        BigDecimal reducedHorizonQuantity = reducedQuantity.multiply(weeklyOccurrences).multiply(horizonWeeks);
-        return resolveCo2(item.factorKey(), item.customFactorKgPerUnit(), reducedHorizonQuantity, region);
-    }
-
-    /**
-     * A custom activity must supply both a label and a rate — reject anything
-     * half-specified early rather than silently falling through to a zero
-     * result later.
-     */
+    /** A custom activity must supply both a label and a rate. */
     private void validateItemHasAFactor(SimulationRequest.SimulationItem item) {
         boolean hasCatalogFactor = item.factorKey() != null && !item.factorKey().isBlank();
         boolean hasCustomFactor = item.customLabel() != null && !item.customLabel().isBlank()
@@ -214,41 +250,18 @@ public class SimulationService {
     }
 
     /**
-     * Resolves CO2 for one item: a catalog lookup via {@link CarbonCalculationService}
-     * when a factorKey is given, or a direct rate multiply for a custom,
-     * not-in-the-catalog activity (never persisted — read-only for this
-     * computation only, same 3dp rounding as the catalog path).
+     * Goal-bar target = weekly CO2 x goal % (as on the action-plan screen); projected progress is how
+     * much of that weekly target the simulated weekly change would cover.
      */
-    private BigDecimal resolveCo2(String factorKey, BigDecimal customFactorKgPerUnit, BigDecimal horizonQuantity, String region) {
-        if (factorKey != null && !factorKey.isBlank()) {
-            return carbonService.calculateCo2(factorKey, horizonQuantity, region);
-        }
-        return horizonQuantity.multiply(customFactorKgPerUnit).setScale(3, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Judgment call: the goal-bar target is the same "weekly CO2 * goal %"
-     * figure the frontend action-plan screen already uses
-     * (app/app/actions/page.tsx: {@code goalKg = weekTotal * weeklyGoalPct / 100}).
-     * "currentProgressPct" is 0 because the simulation only evaluates
-     * hypothetical, not-yet-adopted changes; "projectedProgressPct" is how
-     * much of that weekly target the simulated weekly saving would cover.
-     */
-    private SimulationResponse.WeeklyGoalImpact weeklyGoalImpact(BigDecimal weeklyActualCo2,
-                                                                   int weeklyGoalPct,
-                                                                   BigDecimal deltaCo2Kg,
-                                                                   BigDecimal horizonWeeks) {
+    private SimulationResponse.WeeklyGoalImpact weeklyGoalImpact(BigDecimal weeklyActualCo2, int weeklyGoalPct,
+                                                                 BigDecimal deltaCo2Kg, BigDecimal horizonWeeks) {
         BigDecimal weeklyGoalTargetKg = weeklyActualCo2
                 .multiply(BigDecimal.valueOf(weeklyGoalPct))
                 .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
-
-        BigDecimal weeklySavingFromChange = deltaCo2Kg.negate()
-                .divide(horizonWeeks, 4, RoundingMode.HALF_UP)
-                .max(BigDecimal.ZERO);
-
+        BigDecimal weeklyChange = deltaCo2Kg.negate().divide(horizonWeeks, 4, RoundingMode.HALF_UP).max(BigDecimal.ZERO);
         int projectedProgressPct = 0;
         if (weeklyGoalTargetKg.compareTo(BigDecimal.ZERO) > 0) {
-            projectedProgressPct = weeklySavingFromChange
+            projectedProgressPct = weeklyChange
                     .divide(weeklyGoalTargetKg, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100))
                     .min(BigDecimal.valueOf(100))
@@ -258,18 +271,15 @@ public class SimulationService {
         return new SimulationResponse.WeeklyGoalImpact(0, projectedProgressPct);
     }
 
-    private BigDecimal horizonWeeks(SimulationRequest.Horizon horizon) {
-        return horizon == SimulationRequest.Horizon.YEAR ? WEEKS_PER_YEAR : WEEKS_PER_MONTH;
+    private static BigDecimal weeklyOccurrences(String frequency) {
+        try {
+            return CarbonTwinEngine.weeklyOccurrences(frequency);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
     }
 
-    /** Normalizes a change's frequency string to an equivalent weekly occurrence count. */
-    private BigDecimal weeklyOccurrences(String frequency) {
-        if (frequency == null) return BigDecimal.ONE;
-        return switch (frequency) {
-            case "per_day" -> BigDecimal.valueOf(7);
-            case "per_week" -> BigDecimal.ONE;
-            case "per_month" -> BigDecimal.ONE.divide(WEEKS_PER_MONTH, 6, RoundingMode.HALF_UP);
-            default -> BigDecimal.ONE;
-        };
+    private static BigDecimal scale(BigDecimal v) {
+        return v.setScale(3, RoundingMode.HALF_UP);
     }
 }

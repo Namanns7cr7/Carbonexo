@@ -1,0 +1,21 @@
+NOTICE:  PASS  registry seed loaded 80 factors
+NOTICE:  PASS  no seeded GB/US factor applies to IN
+NOTICE:  PASS  Decision 1: GB factor cannot be an IN proxy (rejected: new row for relation "factor_records" violates check constraint "no_uk_us_for_india")
+NOTICE:  PASS  GLOBAL proxy needs medium/high uncertainty (rejected: new row for relation "factor_records" violates check constraint "proxy_needs_uncertainty")
+NOTICE:  PASS  unit must carry a denominator (rejected: new row for relation "factor_records" violates check constraint "factor_records_unit_check")
+NOTICE:  PASS  dataset version cannot be activated without an approver (rejected: new row for relation "factor_dataset_versions" violates check constraint "approved_needs_approver")
+NOTICE:  PASS  records of an active version are immutable (UPDATE) (rejected: factor_records of active dataset version 2.0.0-candidate.2 are immutable; publish a new version)
+NOTICE:  PASS  records of an active version are immutable (DELETE) (rejected: factor_records of active dataset version 2.0.0-candidate.2 are immutable; publish a new version)
+NOTICE:  PASS  only one active dataset version (rejected: duplicate key value violates unique constraint "ux_factor_dataset_single_active")
+NOTICE:  PASS  not_estimated mapping must name missing information (rejected: new row for relation "activity_factor_map" violates check constraint "not_estimated_explains")
+NOTICE:  PASS  estimated mapping must reference an existing factor (rejected: insert or update on table "activity_factor_map" violates foreign key constraint "fk_activity_factor")
+NOTICE:  PASS  valid IN electricity mapping accepted
+NOTICE:  PASS  legacy logs surface as legacy_unverified, untouched
+NOTICE:  PASS  existing profiles keep region and are NOT marked confirmed
+NOTICE:  PASS  appliance attribution and not_estimated logs excluded from totals
+NOTICE:  PASS  personal baseline needs >= 14 logged days (rejected: new row for relation "personal_baselines" violates check constraint "baseline_needs_coverage")
+NOTICE:  PASS  feedback reasons restricted to the label set (rejected: new row for relation "ai_feedback" violates check constraint "ai_feedback_reasons_check")
+NOTICE:  PASS  eval-linked review pairs can never be exported (rejected: new row for relation "ai_review_pairs" violates check constraint "eval_pairs_never_exported")
+NOTICE:  PASS  exported pairs need a reviewer and a strict preference (rejected: new row for relation "ai_review_pairs" violates check constraint "exported_needs_review")
+NOTICE:  PASS  sci_* tables have no user_id column
+NOTICE:  PASS  hybrid indexes exist (HNSW + GIN)

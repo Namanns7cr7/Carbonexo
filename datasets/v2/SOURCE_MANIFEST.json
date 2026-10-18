@@ -1,0 +1,386 @@
+{
+  "manifest_version": "2.0.0-candidate.2",
+  "generated": "2026-10-17",
+  "notes": [
+    "Every numeric factor in Dataset V2 must reference one source_id below.",
+    "fetch.method=http sources are downloaded and checked against sha256 by scripts/dataset_v2/pipeline.py fetch. A hash mismatch fails the build; the publisher may have revised the file and the change must be reviewed.",
+    "fetch.method=manual sources could not be downloaded automatically (login wall or HTML-only). Their values stay at needs_manual_review until a reviewer records the primary document hash.",
+    "license.status=unverified means the reuse terms were not confirmed. Facts (numbers) may be cited. Do NOT put the source's text into the RAG corpus until the terms are confirmed."
+  ],
+  "sources": [
+    {
+      "source_id": "desnz-2026-flat",
+      "publisher": "UK Department for Energy Security and Net Zero (DESNZ)",
+      "title": "Greenhouse gas reporting: conversion factors 2026 - flat file (revised)",
+      "landing_url": "https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2026",
+      "fetch": {
+        "method": "http",
+        "url": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+        "filename": "desnz-2026-flat.xlsx",
+        "sha256": "a9a455ab396dae226d510c7be6233748416d490c41a5d20f3dc7a0c45feecd5e"
+      },
+      "publication_date": "2026-06-11",
+      "revision_note": "Flat file republished 2026-07-31 to correct values incorrectly reported as 0.",
+      "region": "GB",
+      "license": {
+        "name": "Open Government Licence v3.0",
+        "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+        "status": "verified"
+      },
+      "locator_scheme": "Sheet 'Factors by Category', column 'ID' (stable DESNZ row ID)",
+      "verification_status": "verified_primary",
+      "retrieved": "2026-10-17"
+    },
+    {
+      "source_id": "desnz-2025-flat",
+      "publisher": "UK Department for Energy Security and Net Zero (DESNZ)",
+      "title": "Greenhouse gas reporting: conversion factors 2025 - flat file",
+      "landing_url": "https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2025",
+      "fetch": {
+        "method": "http",
+        "url": "https://assets.publishing.service.gov.uk/media/6846b6ea57f3515d9611f0dd/ghg-conversion-factors-2025-flat-format.xlsx",
+        "filename": "desnz-2025-flat.xlsx",
+        "sha256": "8bfdb45b81ec4a88e3bdf4584637330f62e6bd09ce1940e654c5d7b7f736de94"
+      },
+      "publication_date": "2025-06-10",
+      "region": "GB",
+      "license": {
+        "name": "Open Government Licence v3.0",
+        "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+        "status": "verified"
+      },
+      "locator_scheme": "Sheet 'Factors by Category', column 'ID'",
+      "verification_status": "verified_primary",
+      "retrieved": "2026-10-17",
+      "role": "comparison only (year-over-year drift); superseded by desnz-2026-flat"
+    },
+    {
+      "source_id": "desnz-2025-methodology",
+      "publisher": "DESNZ",
+      "title": "2025 Government greenhouse gas conversion factors for company reporting: methodology paper",
+      "landing_url": "https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2025",
+      "fetch": {
+        "method": "http",
+        "url": "https://assets.publishing.service.gov.uk/media/6846b0870392ed9b784c0187/2025-GHG-CF-methodology-paper.pdf",
+        "filename": "desnz-2025-methodology.pdf",
+        "sha256": "62774f77c18ba93f6464b8777f44ad74989de43b1f49e087380a38101bd880b1"
+      },
+      "publication_date": "2025-06-10",
+      "region": "GB",
+      "license": {
+        "name": "Open Government Licence v3.0",
+        "status": "verified"
+      },
+      "verification_status": "verified_primary",
+      "role": "RAG corpus candidate (OGL permits reuse with attribution); system-boundary definitions for transport factors",
+      "retrieved": "2026-10-17"
+    },
+    {
+      "source_id": "cea-co2-baseline-v21",
+      "publisher": "Central Electricity Authority (CEA), Ministry of Power, Government of India",
+      "title": "CO2 Baseline Database for the Indian Power Sector - User Guide Version 21.0",
+      "landing_url": "https://cea.nic.in/cdm-co2-baseline-database/?lang=en",
+      "fetch": {
+        "method": "manual",
+        "url": "https://cea.nic.in/wp-content/uploads/baseline/2025/12/User_Guide_V_21.0.pdf",
+        "filename": "cea-v21-user-guide.pdf",
+        "sha256": null,
+        "blocker": "Automated requests (curl and WebFetch) return the CEA portal login page instead of the PDF (checked 2026-10-17)."
+      },
+      "publication_date": "2025-11",
+      "region": "IN",
+      "license": {
+        "name": "Government of India publication - reuse terms not confirmed",
+        "status": "unverified"
+      },
+      "locator_scheme": "Results summary / Table S-1 (to be confirmed against the downloaded PDF)",
+      "verification_status": "verified_secondary",
+      "secondary_evidence": [
+        "niti-2026-power Annexure E reproduces the v21.0 series and gives FY2024-25 total CO2 1234.19 Mt / net generation 1739.06 BU = 0.710 tCO2/MWh (arithmetic check passes).",
+        "Search-indexed text of the v21.0 user guide: weighted average 0.710 tCO2/MWh for FY 2024-25 (BM 0.512, OM 0.961).",
+        "https://batchwise.ai/methodology/cea-grid-emission-factors/all-india/ (reports 0.7117, i.e. 0.710 with a different rounding or import treatment)"
+      ],
+      "retrieved": "2026-10-17",
+      "review": {
+        "reviewer": "claude-audit (machine review; human sign-off pending)",
+        "date": "2026-10-17",
+        "status_reason": "Value independently reproduced by a second Government of India publication with consistent arithmetic; primary CEA PDF still not hashed because of the login wall."
+      }
+    },
+    {
+      "source_id": "niti-2026-power",
+      "publisher": "NITI Aayog, Government of India",
+      "title": "Scenarios Towards Viksit Bharat and Net Zero - Sectoral Insights: Power (2026), Annexure E: Weighted Average Emissions Factor of Grid Electricity",
+      "landing_url": "https://www.niti.gov.in/",
+      "fetch": {
+        "method": "http",
+        "url": "https://www.niti.gov.in/sites/default/files/2026-02/Scenarios-Towards-Viksit-Bharat-and-Net-Zero-Sectoral-Insights-Power.pdf",
+        "filename": "niti-2026-power.pdf",
+        "sha256": "1f4e6799bc8e79435540e2a578506c9f0a61ecc772e52d157a5ca647abb3db00"
+      },
+      "publication_date": "2026-02",
+      "region": "IN",
+      "license": {
+        "name": "Government of India publication - reuse terms not confirmed",
+        "status": "unverified"
+      },
+      "locator_scheme": "Annexure E table (PDF p.87-88), footnote 14 (p.55); Section 4.4.6",
+      "verification_status": "verified_primary",
+      "role": "Government reproduction of CEA's CO2 Baseline Database v21.0 series FY2013-14..FY2024-25. Cites https://cea.nic.in/wp-content/uploads/baseline/2025/12/User_Guide_V_21.0.pdf as its source.",
+      "review": {
+        "reviewer": "claude-audit (machine review; human sign-off pending)",
+        "date": "2026-10-17",
+        "checks": [
+          "Text extraction shifts the factor column down by one row (stray 0.774 above FY2013-14; FY2024-25 row appears blank). Correct mapping confirmed arithmetically: factor = total CO2 / total net generation incl. RE.",
+          "FY2024-25: 1234.19 Mt / 1739.06 BU = 0.7097 -> 0.710; FY2023-24: 1203.36/1654.54 = 0.7273 -> 0.727; FY2022-23: 1108.11/1547.80 = 0.7159 -> 0.716; FY2013-14: 727.4/939.83 = 0.774.",
+          "Internal inconsistency inside the NITI report: the summary table (p.~10) lists 'Grid Emission Factor 0.727' for the current year, which is the FY2023-24 value; Section 4.4.6 and Annexure E give 0.71 for 2025 (FY2024-25)."
+        ]
+      },
+      "retrieved": "2026-10-17"
+    },
+    {
+      "source_id": "cea-co2-baseline-v22",
+      "publisher": "Central Electricity Authority (CEA)",
+      "title": "CO2 Baseline Database for the Indian Power Sector - User Guide Version 22.0",
+      "fetch": {
+        "method": "manual",
+        "url": "https://cea.nic.in/wp-content/uploads/baseline/2026/09/User_Guide__Version_22.0.pdf",
+        "filename": "cea-v22-user-guide.pdf",
+        "sha256": null,
+        "blocker": "Login wall, as for v21."
+      },
+      "publication_date": "2026-08",
+      "region": "IN",
+      "license": {
+        "status": "unverified"
+      },
+      "verification_status": "pending_fetch",
+      "notes": "The newest CEA release (FY 2025-26 data expected). Values were NOT retrieved. When a reviewer downloads it, it supersedes v21.",
+      "supersession_check": {
+        "date": "2026-10-17",
+        "result": "inconclusive",
+        "detail": "v22.0 is listed by CEA (user guide dated Aug 2026, expected FY2025-26 data) but neither the PDF nor the landing page is retrievable without login. No FY2025-26 value is recorded. A third-party blog projection of ~0.685-0.695 is NOT a CEA publication and is not used."
+      }
+    },
+    {
+      "source_id": "cea-co2-baseline-v20",
+      "publisher": "Central Electricity Authority (CEA)",
+      "title": "CO2 Baseline Database for the Indian Power Sector - User Guide Version 20.0 (Dec 2024)",
+      "fetch": {
+        "method": "manual",
+        "url": "https://cea.nic.in/wp-content/uploads/2021/03/User_Guide_Version_20.0.pdf",
+        "filename": "cea-v20-user-guide.pdf",
+        "sha256": null,
+        "blocker": "Login wall."
+      },
+      "publication_date": "2024-12",
+      "region": "IN",
+      "license": {
+        "status": "unverified"
+      },
+      "verification_status": "needs_manual_review",
+      "secondary_evidence": [
+        "https://www.climatiq.io/data/emission-factor/fdbf66d3-bc22-8f90-a711-799352cec2bb (0.727 for FY 2023-24, CO2 only)"
+      ],
+      "role": "comparison only"
+    },
+    {
+      "source_id": "indiaghgp-road-2015",
+      "publisher": "India GHG Program (WRI India, CII, TERI)",
+      "title": "India Specific Road Transport Emission Factors, Version 1.0 (2015)",
+      "landing_url": "https://indiaghgp.org/node/234",
+      "fetch": {
+        "method": "http",
+        "url": "https://indiaghgp.org/sites/default/files/Road%20Transport%20Technical%20Paper.pdf",
+        "filename": "indiaghgp-road-2015.pdf",
+        "sha256": "82c52c2be6349b3119d3cfbe274c22f26dc6bfcacc2e3f02f13d338d59a04b67"
+      },
+      "publication_date": "2015",
+      "region": "IN",
+      "license": {
+        "name": "Copyright 2015 India GHG Program - reuse terms not confirmed",
+        "status": "unverified"
+      },
+      "locator_scheme": "'Summary of Emission Factors' tables (PDF p. 8-9)",
+      "verification_status": "verified_primary",
+      "caveats": [
+        "Tank-to-wheel CO2 only (not CO2e, no upstream fuel).",
+        "Based on rated fuel efficiency data, ~2015 fleet. Likely understates real-world on-road consumption.",
+        "The two-wheeler table text-extracts with misaligned columns. Those rows stay needs_manual_review until checked against the rendered PDF."
+      ],
+      "retrieved": "2026-10-17"
+    },
+    {
+      "source_id": "poore-nemecek-2018",
+      "publisher": "Science (AAAS)",
+      "title": "Poore, J. & Nemecek, T. (2018). Reducing food's environmental impacts through producers and consumers. Science 360(6392), 987-992.",
+      "doi": "10.1126/science.aaq0216",
+      "fetch": {
+        "method": "manual",
+        "url": "https://doi.org/10.1126/science.aaq0216",
+        "sha256": null
+      },
+      "publication_date": "2018-06-01",
+      "region": "GLOBAL",
+      "license": {
+        "name": "Journal copyright (AAAS)",
+        "status": "verified",
+        "rag_allowed": false
+      },
+      "verification_status": "verified_primary",
+      "role": "Citation of record. Numeric values come from the OWID redistribution (owid-ghg-per-kg-poore)."
+    },
+    {
+      "source_id": "owid-ghg-per-kg-poore",
+      "publisher": "Our World in Data (redistributing Poore & Nemecek 2018)",
+      "title": "Greenhouse gas emissions per kilogram of food product",
+      "landing_url": "https://ourworldindata.org/grapher/ghg-per-kg-poore",
+      "fetch": {
+        "method": "http",
+        "url": "https://ourworldindata.org/grapher/ghg-per-kg-poore.csv?v=1&csvType=full&useColumnShortNames=false",
+        "filename": "owid-ghg-per-kg-poore.csv",
+        "sha256": "4c44efb5691f50dae1577a3a774178db119c77e661daea47ac3a7472b828fd41"
+      },
+      "publication_date": "2019-10-08",
+      "region": "GLOBAL",
+      "license": {
+        "name": "CC BY 4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/",
+        "status": "verified"
+      },
+      "locator_scheme": "CSV column 'Entity'",
+      "statistic": "Global mean across studies (OWID: 'based on the global mean value per food product across all studies')",
+      "verification_status": "verified_secondary",
+      "retrieved": "2026-10-17"
+    },
+    {
+      "source_id": "epa-ghg-equivalencies-refs",
+      "publisher": "US Environmental Protection Agency",
+      "title": "Greenhouse Gas Equivalencies Calculator - Calculations and References",
+      "landing_url": "https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references",
+      "fetch": {
+        "method": "manual",
+        "url": "https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references",
+        "sha256": null,
+        "blocker": "HTML page; snapshot it to PDF and hash it during review."
+      },
+      "publication_date": "2026-08-04",
+      "region": "US",
+      "license": {
+        "name": "US federal government work (public domain)",
+        "status": "verified"
+      },
+      "verification_status": "verified_primary",
+      "retrieved": "2026-10-17"
+    },
+    {
+      "source_id": "iges-15-lifestyles-2019",
+      "publisher": "IGES, Aalto University, D-mat (with Sitra and KR Foundation)",
+      "title": "1.5-Degree Lifestyles: Targets and options for reducing lifestyle carbon footprints (2019)",
+      "landing_url": "https://www.iges.or.jp/en/pub/15-degrees-lifestyles-2019/en",
+      "fetch": {
+        "method": "manual",
+        "url": "https://www.iges.or.jp/en/pub/15-degrees-lifestyles-2019/en",
+        "sha256": null
+      },
+      "press_release": "https://www.iges.or.jp/en/news/20190225",
+      "publication_date": "2019-02-25",
+      "region": "GLOBAL",
+      "license": {
+        "status": "unverified"
+      },
+      "verification_status": "verified_primary",
+      "verified_via": "Publisher's own press release (2019-02-25). The full report PDF was not yet hashed."
+    },
+    {
+      "source_id": "bee-ac-24c-advisory-2018",
+      "publisher": "Bureau of Energy Efficiency / Ministry of Power, Government of India",
+      "title": "Advisory on default temperature setting of room air conditioners (24 C), 2018; made mandatory 2020",
+      "fetch": {
+        "method": "manual",
+        "url": null,
+        "sha256": null,
+        "blocker": "Primary BEE/MoP document not located. Only press coverage was found."
+      },
+      "publication_date": "2018-06",
+      "region": "IN",
+      "license": {
+        "status": "unverified"
+      },
+      "verification_status": "needs_manual_review",
+      "secondary_evidence": [
+        "https://www.businesstoday.in/amp/bt-newsflicks/photo/ac-temperature-24-degrees-save-energy-budget-govt-5647-2018-06-25",
+        "https://powerline.net.in/2018/07/06/mop-proposes-change-default-temperature-setting-acs/"
+      ]
+    },
+    {
+      "source_id": "unep-egr-2023",
+      "publisher": "UNEP",
+      "title": "Emissions Gap Report 2023: Broken Record - Temperatures hit new highs, yet world fails to cut emissions (again)",
+      "landing_url": "https://www.unep.org/resources/emissions-gap-report-2023",
+      "fetch": {
+        "method": "manual",
+        "sha256": null
+      },
+      "publication_date": "2023-11-20",
+      "region": "GLOBAL",
+      "license": {
+        "status": "unverified"
+      },
+      "verification_status": "verified_secondary",
+      "role": "Corrects the fabricated title 'The Sound of Silence' in lib/data/climate-knowledge.ts. No numeric factor is taken from it."
+    },
+    {
+      "source_id": "ghg-protocol-scope2-scope3",
+      "publisher": "GHG Protocol (WRI/WBCSD)",
+      "title": "Scope 2 Guidance (2015); Corporate Value Chain (Scope 3) Standard (2011)",
+      "landing_url": "https://ghgprotocol.org/standards",
+      "fetch": {
+        "method": "manual",
+        "sha256": null
+      },
+      "region": "GLOBAL",
+      "license": {
+        "status": "unverified"
+      },
+      "verification_status": "pending_fetch",
+      "role": "Methodology only: location-based electricity accounting, double-counting rules. No numeric factors."
+    },
+    {
+      "source_id": "ipcc-ar6-wg3",
+      "publisher": "IPCC",
+      "title": "AR6 Working Group III: Mitigation of Climate Change (2022)",
+      "landing_url": "https://www.ipcc.ch/report/ar6/wg3/",
+      "fetch": {
+        "method": "manual",
+        "sha256": null
+      },
+      "region": "GLOBAL",
+      "license": {
+        "status": "unverified",
+        "note": "IPCC permits non-commercial reproduction with attribution. Confirm before commercial RAG use."
+      },
+      "verification_status": "pending_fetch",
+      "role": "RAG corpus candidate (Ch.5 demand-side, Ch.10 transport). Note: IPCC does NOT publish per-person daily budgets; the app's '8.5 kg/day IPCC AR6' claim has no IPCC basis."
+    },
+    {
+      "source_id": "legacy-dataset-export-2026-10",
+      "publisher": "Carbonexo team (internal)",
+      "title": "Carbonexo - Dataset Export (Carbonexo_Dataset_Export.md and data.docx, identical content)",
+      "fetch": {
+        "method": "manual",
+        "filename": "legacy/Carbonexo_Dataset_Export.md",
+        "sha256": "1b461ef8f0ab3c81890a03441d7010896631d92c806782cf1ee470e399b18021",
+        "docx_sha256": "a609c473326a24b1c79d53d430b12ccb19861ebb927f98b2fbff059d8d8e0825"
+      },
+      "publication_date": "2026-10-17",
+      "region": "n/a",
+      "license": {
+        "name": "internal",
+        "status": "verified"
+      },
+      "verification_status": "rejected",
+      "role": "Legacy snapshot being audited. NOT a source of truth for any V2 factor. Values match the code; several claims are inaccurate (D58-D61)."
+    }
+  ]
+}

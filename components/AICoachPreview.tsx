@@ -45,7 +45,7 @@ export function AICoachPreview() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
-                Online now · Gemini 2.0 Flash
+                Example conversation (illustrative)
               </div>
             </div>
           </div>
@@ -78,9 +78,9 @@ export function AICoachPreview() {
             <div className="flex justify-start gap-2.5">
               <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[13px]">✦</div>
               <div className="max-w-[80%] rounded-[18px_18px_18px_5px] border border-emerald-500/20 bg-slate-800/80 backdrop-blur-sm px-[17px] py-3.5 text-[14.5px] leading-[1.55] text-slate-100 shadow-sm">
-                Your <strong className="text-white">travel footprint</strong> is your largest source this week. Try replacing two car/bike
-                trips with public transport — you could save around <strong className="text-emerald-400">8 kg CO₂</strong> and
-                lift your weekly score by <strong className="text-emerald-400">14%</strong>.
+                Your <strong className="text-white">travel</strong> is your largest logged source this week. Tell me your car type and
+                I can estimate what replacing two trips with a bus would change, using the{' '}
+                <strong className="text-emerald-400">same factors as your dashboard</strong>.
               </div>
             </div>
           )}

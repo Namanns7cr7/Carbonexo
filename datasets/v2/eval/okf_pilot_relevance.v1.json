@@ -1,0 +1,651 @@
+{
+  "labels_version": "okf-pilot-relevance.v1",
+  "rule_based": true,
+  "human_review": "pending",
+  "cases": {
+    "TRN-001": {
+      "question": "I'm in India. How much CO2 do I avoid per trip if I take a city bus instead of driving my petrol hatchback (<1400cc) for 12 km?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TRN-002": {
+      "question": "I'm in India. How much CO2 do I avoid per trip if I take a city bus instead of driving my petrol sedan (<1400cc) for 20 km?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TRN-003": {
+      "question": "I'm in India. How much CO2 do I avoid per trip if I take a small CNG car instead of driving my diesel hatchback (<1400cc) for 15 km?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TRN-004": {
+      "question": "I'm in India. How much CO2 do I avoid per trip if I take a CNG auto-rickshaw instead of driving my small petrol hatchback (<1000cc) for 10 km?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TRN-005": {
+      "question": "I'm in India. How much CO2 do I avoid per trip if I take a petrol hatchback (<1400cc) instead of driving my petrol compact SUV for 25 km?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TRN-006": {
+      "question": "Per km, is an auto-rickshaw (CNG) cleaner than a petrol auto-rickshaw in India?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TRN-011": {
+      "question": "I live in the UK. 10 km by average petrol car vs local bus - what's the difference?",
+      "region": "GB",
+      "category": "transport_comparison",
+      "relevant": [
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "TRN-012": {
+      "question": "I live in the UK. 30 km by average petrol car vs national rail - what's the difference?",
+      "region": "GB",
+      "category": "transport_comparison",
+      "relevant": [
+        "factors/gb/rail-national-2026",
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "TRN-013": {
+      "question": "UK: my car vs the London Underground for a 8 km commute, both ways, 5 days a week. Weekly difference?",
+      "region": "GB",
+      "category": "transport_comparison",
+      "relevant": [
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "TRN-014": {
+      "question": "Does carpooling with 3 people really cut my car emissions per person?",
+      "region": "IN",
+      "category": "transport_comparison",
+      "relevant": [
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "GRD-001": {
+      "question": "My electricity bill in India says 100 kWh this month. What are the emissions?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-002": {
+      "question": "My electricity bill in India says 250 kWh this month. What are the emissions?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-003": {
+      "question": "My electricity bill in India says 300 kWh this month. What are the emissions?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-004": {
+      "question": "My electricity bill in India says 450 kWh this month. What are the emissions?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-005": {
+      "question": "My electricity bill in India says 1000 kWh this month. What are the emissions?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-006": {
+      "question": "What grid emission factor should I use for India and where does it come from?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "methodology/in-grid-electricity",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-007": {
+      "question": "Is 0.45 kg/kWh right for India? Your old app used it.",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-008": {
+      "question": "How has India's grid emission factor changed from FY2022-23 to FY2024-25?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "methodology/in-grid-electricity",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-009": {
+      "question": "Does the 0.710 factor include transmission losses? Should my bill's kWh be grossed up?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "methodology/in-grid-electricity",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-010": {
+      "question": "My AC used 180 kWh last month in Chennai. Emissions?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-011": {
+      "question": "I have rooftop solar. Does the 0.710 factor apply to the electricity I generate?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "methodology/in-grid-electricity",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-012": {
+      "question": "What's India's grid factor for 2025-26?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "methodology/in-grid-electricity"
+      ]
+    },
+    "GRD-013": {
+      "question": "A UK site says electricity is 0.131 kg/kWh. Why is mine so much higher?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/desnz-2026-flat",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-014": {
+      "question": "Convert 2.5 MWh of factory electricity in India to tonnes of CO2.",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "methodology/in-grid-electricity",
+        "sources/niti-2026-power"
+      ]
+    },
+    "GRD-015": {
+      "question": "If I cut my home use from 250 to 200 kWh a month, what's the yearly difference?",
+      "region": "IN",
+      "category": "indian_grid_electricity",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "SHP-001": {
+      "question": "What's the carbon footprint of a new cotton T-shirt?",
+      "region": "IN",
+      "category": "shopping_embodied",
+      "relevant": [
+        "policies/verification-policy"
+      ]
+    },
+    "SHP-008": {
+      "question": "Clothing is 10 kg on the tracker but 22 kg on the scanner. Which is right?",
+      "region": "IN",
+      "category": "shopping_embodied",
+      "relevant": [
+        "policies/verification-policy"
+      ]
+    },
+    "FPI-004": {
+      "question": "I logged 37.9 kg this week. Am I Paris-aligned?",
+      "region": "IN",
+      "category": "footprint_interpretation",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "FPI-010": {
+      "question": "Did my emissions go up or down this week?",
+      "region": "IN",
+      "category": "footprint_interpretation",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "TWN-001": {
+      "question": "Simulate replacing 10 km per day of my car (hatch_lt1400cc) with intracity stu over a month.",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TWN-002": {
+      "question": "Simulate replacing 12 km per day of my car (hatch_lt1400cc) with intracity stu over a year.",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TWN-003": {
+      "question": "Simulate replacing 40 km per week of my car (sedan_lt1400cc) with cng over a month.",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TWN-004": {
+      "question": "Simulate replacing 20 km per week of my car (hatch_lt1400cc) with small lt800cc over a year.",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TWN-005": {
+      "question": "What if I cut 30 kWh a month from my AC for a year?",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "TWN-006": {
+      "question": "What if I cut 60 kWh a month from my AC for a year?",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "TWN-007": {
+      "question": "Simulate me buying second-hand clothes instead of new for a year.",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "policies/verification-policy"
+      ]
+    },
+    "TWN-010": {
+      "question": "Simulate replacing my 12 km car commute with a bus, but I don't know what car I have.",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "factors/in/bus-intracity-stu",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "TWN-012": {
+      "question": "What would happen if I stopped using my car entirely for a month?",
+      "region": "IN",
+      "category": "carbon_twin",
+      "relevant": [
+        "computations/carbon-twin-scenario",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "DSH-001": {
+      "question": "What's my total this week?",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "DSH-002": {
+      "question": "What's my biggest source this week?",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "DSH-003": {
+      "question": "How much did travel contribute this week?",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc"
+      ]
+    },
+    "DSH-004": {
+      "question": "My AC entries say 14 kWh. Is that on top of my home electricity?",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "accounting/meter-vs-appliance",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "DSH-007": {
+      "question": "Show me my electricity trend over the last two weeks.",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "DSH-011": {
+      "question": "What was my footprint on day 3?",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "DSH-012": {
+      "question": "Am I on track for my 15% weekly goal?",
+      "region": "IN",
+      "category": "dashboard",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "MST-001": {
+      "question": "Based on my logs, if I switched my weekday car trips to the bus for a month, what changes, and what's your source?",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "MST-003": {
+      "question": "Compare my electricity this week with last week and tell me how many kWh that is.",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "MST-004": {
+      "question": "Find a scientific explanation for why India's grid is carbon-intensive and tell me what it means for my bill.",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "sources/niti-2026-power"
+      ]
+    },
+    "MST-005": {
+      "question": "What's my weekly travel, and what would it be if half of my car km were by CNG auto instead?",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "MST-007": {
+      "question": "Use my data to estimate my yearly electricity emissions.",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "MST-008": {
+      "question": "List the sources behind every number you've given me in this answer about my travel.",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "MST-009": {
+      "question": "How do my weekday car emissions compare with my whole week's electricity?",
+      "region": "IN",
+      "category": "multi_step_tools",
+      "relevant": [
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "factors/in/elec-grid-fy2024-25"
+      ]
+    },
+    "CON-002": {
+      "question": "NITI Aayog's summary table says 0.727 but you say 0.710. Who's right?",
+      "region": "IN",
+      "category": "contradictory_sources",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "CON-004": {
+      "question": "DESNZ says UK rail is 0.031 and the old app said 0.035. Explain.",
+      "region": "GB",
+      "category": "contradictory_sources",
+      "relevant": [
+        "factors/gb/rail-national-2026",
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "CON-005": {
+      "question": "Bus emissions: India GHG Program says 0.015 per passenger-km but the UK says 0.10. Why so different?",
+      "region": "IN",
+      "category": "contradictory_sources",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "sources/desnz-2026-flat",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "CON-008": {
+      "question": "Two car factors for India: 0.117 and 0.130. Which applies to me?",
+      "region": "IN",
+      "category": "contradictory_sources",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "OLD-001": {
+      "question": "Use DEFRA 2024: petrol car 0.171 kg/km. Calculate 100 km.",
+      "region": "GB",
+      "category": "outdated_factors",
+      "relevant": [
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "OLD-002": {
+      "question": "UK electricity is 0.177 kg/kWh, right?",
+      "region": "GB",
+      "category": "outdated_factors",
+      "relevant": [
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "OLD-003": {
+      "question": "Use the FY2022-23 Indian grid factor for my current bill of 200 kWh.",
+      "region": "IN",
+      "category": "outdated_factors",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "OLD-004": {
+      "question": "Is the 2015 India GHG Program car data still good?",
+      "region": "IN",
+      "category": "outdated_factors",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "OLD-005": {
+      "question": "When was the electricity factor you're using last updated?",
+      "region": "IN",
+      "category": "outdated_factors",
+      "relevant": [
+        "sources/niti-2026-power"
+      ]
+    },
+    "OLD-006": {
+      "question": "Use the DESNZ 2025 underground factor, it's what my company uses.",
+      "region": "GB",
+      "category": "outdated_factors",
+      "relevant": [
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "UNI-001": {
+      "question": "Convert 0.710 t CO2/MWh to kg/kWh.",
+      "region": "IN",
+      "category": "unit_conversion",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "UNI-003": {
+      "question": "I drove 20 miles in the UK in an average petrol car. Emissions?",
+      "region": "GB",
+      "category": "unit_conversion",
+      "relevant": [
+        "sources/desnz-2026-flat"
+      ]
+    },
+    "UNI-004": {
+      "question": "My bill shows 1.2 MWh for the quarter. Monthly emissions?",
+      "region": "IN",
+      "category": "unit_conversion",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "UNI-006": {
+      "question": "My car factor is per vehicle-km. Four of us shared 40 km. Per person?",
+      "region": "IN",
+      "category": "unit_conversion",
+      "relevant": [
+        "factors/in/car-petrol-hatch-lt1400cc",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "UNI-007": {
+      "question": "Bus factor is per passenger-km. If 40 people ride 10 km, what's the whole bus?",
+      "region": "IN",
+      "category": "unit_conversion",
+      "relevant": [
+        "factors/in/bus-intracity-stu",
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "UNI-010": {
+      "question": "How many kWh is 3 hours of a 1.5 kW AC, and the emissions?",
+      "region": "IN",
+      "category": "unit_conversion",
+      "relevant": [
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "DBL-001": {
+      "question": "I uploaded my 250 kWh bill and also logged 60 kWh of AC. What's my electricity total?",
+      "region": "IN",
+      "category": "double_counting",
+      "relevant": [
+        "accounting/meter-vs-appliance",
+        "factors/in/elec-grid-fy2024-25",
+        "sources/niti-2026-power"
+      ]
+    },
+    "DBL-005": {
+      "question": "My geyser, AC and laundry are logged separately plus my meter reading. Add them up?",
+      "region": "IN",
+      "category": "double_counting",
+      "relevant": [
+        "accounting/meter-vs-appliance"
+      ]
+    },
+    "DBL-006": {
+      "question": "I carpooled and each of us logged the full car trip. Problem?",
+      "region": "IN",
+      "category": "double_counting",
+      "relevant": [
+        "sources/indiaghgp-road-2015"
+      ]
+    },
+    "DBL-007": {
+      "question": "Should my EV charging kWh be logged as electricity and also as car km?",
+      "region": "IN",
+      "category": "double_counting",
+      "relevant": [
+        "accounting/meter-vs-appliance"
+      ]
+    }
+  }
+}

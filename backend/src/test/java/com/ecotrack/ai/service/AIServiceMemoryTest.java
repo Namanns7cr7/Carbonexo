@@ -43,7 +43,7 @@ class AIServiceMemoryTest {
                 new AppProperties.Ai("gemini", "gemini-2.5-pro", "gemini-2.0-flash", 30, true, null));
         when(coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(USER)).thenReturn(new ArrayList<>());
         when(renderer.render(eq("coach_system"), anyMap())).thenReturn("System Prompt");
-        when(aiProvider.generate(anyString(), anyString())).thenReturn("Try the metro twice a week.");
+        when(aiProvider.generateLive(anyString(), anyString())).thenReturn("Try the metro twice a week.");
         when(aiProvider.providerName()).thenReturn("gemini");
     }
 
@@ -68,7 +68,7 @@ class AIServiceMemoryTest {
         when(memory.recall(any(), any(), any())).thenReturn(Optional.empty());
         CoachResponse res = service(memory).chat(USER, "How can I cut my footprint?");
         assertEquals(LEGACY_PROMPT, res.prompt());
-        verify(aiProvider).generate(LEGACY_PROMPT, "gemini-2.0-flash");
+        verify(aiProvider).generateLive(LEGACY_PROMPT, "gemini-2.0-flash");
     }
 
     @Test
@@ -76,7 +76,7 @@ class AIServiceMemoryTest {
         when(memory.recall(any(), any(), any())).thenReturn(Optional.of("MEMORY+METRICS"));
         CoachResponse res = service(memory).chat(USER, "How can I cut my footprint?");
         assertEquals("System Prompt\n\nMEMORY+METRICS\n\nUser: How can I cut my footprint?", res.prompt());
-        verify(aiProvider).generate(res.prompt(), "gemini-2.0-flash");
+        verify(aiProvider).generateLive(res.prompt(), "gemini-2.0-flash");
     }
 
     @Test

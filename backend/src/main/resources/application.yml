@@ -43,6 +43,7 @@ ecotrack:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3002}
   security:
+    metrics-scrape-token: ${METRICS_SCRAPE_TOKEN:}      # >= 32 chars, from Secret Manager; unset = admin-only metrics
     jwt:
       secret: ${JWT_SECRET:change-me-dev-only-secret-change-me-dev-only-secret}   # >= 256 bits in prod
       access-token-ttl-seconds: ${JWT_ACCESS_TTL:900}        # 15 min
@@ -69,8 +70,10 @@ ecotrack:
     electricity-factor-default: ${CARBON_ELECTRICITY_FACTOR:0.45}  # kg CO2 / kWh fallback
   ai:
     provider: ${AI_PROVIDER:gemini}                # gemini | canned
-    default-model: ${AI_DEFAULT_MODEL:gemini-2.5-pro}
-    fast-model: ${AI_FAST_MODEL:gemini-2.0-flash}
+    # Explicit, verified 2026-10-17 against project carbonexo: gemini-2.0-flash and gemini-2.5-pro return 404
+    # in asia-south1; gemini-2.5-flash is served in asia-south1 and us-central1.
+    default-model: ${AI_DEFAULT_MODEL:gemini-2.5-flash}
+    fast-model: ${AI_FAST_MODEL:gemini-2.5-flash}
     timeout-seconds: ${AI_TIMEOUT:30}
     fallback-to-canned: ${AI_FALLBACK:true}
     gemini:
@@ -89,6 +92,17 @@ ecotrack:
       min-similarity: ${AI_MEMORY_MIN_SIMILARITY:0.55}
       embedding-timeout-ms: ${AI_MEMORY_EMBEDDING_TIMEOUT_MS:2000}
       max-content-chars: ${AI_MEMORY_MAX_CONTENT_CHARS:2000}
+
+  # Agentic, tool-using coach (enabled per environment by app_config ai.coach.mode; see V16).
+  agent:
+    model: ${AGENT_MODEL:gemini-2.5-flash}              # gemini-3-flash-preview needs AGENT_LOCATION=global
+    location: ${AGENT_LOCATION:asia-south1}
+    embedding-model: ${AGENT_EMBEDDING_MODEL:text-embedding-005}
+    embedding-location: ${AGENT_EMBEDDING_LOCATION:asia-south1}
+    embedding-timeout-ms: ${AGENT_EMBEDDING_TIMEOUT_MS:3000}
+    embeddings-enabled: ${AGENT_EMBEDDINGS_ENABLED:true}
+  ai-probe:
+    enabled: ${AI_PROBE_ON_STARTUP:false}                 # one tiny live call per model at startup (staging)
 
 # ---- observability (Phase 12) ----
 management:

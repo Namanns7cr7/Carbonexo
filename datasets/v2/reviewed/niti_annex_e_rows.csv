@@ -1,0 +1,13 @@
+fiscal_year,total_co2_mt,net_generation_conventional_bu,re_generation_bu,total_net_generation_bu,adjusted_cross_border_and_captive,source_id,source_locator
+2013-14,727.4,886.77,53.06,939.83,false,niti-2026-power,Annexure E p.87
+2014-15,805.4,972.04,61.72,1033.76,false,niti-2026-power,Annexure E p.87
+2015-16,846.3,1027.03,65.78,1092.81,false,niti-2026-power,Annexure E p.87
+2016-17,888.34,1072.84,81.55,1154.39,false,niti-2026-power,Annexure E p.87
+2017-18,922.18,1121.57,101.84,1223.41,false,niti-2026-power,Annexure E p.87
+2018-19,960.9,1165.16,126.76,1291.92,false,niti-2026-power,Annexure E p.87
+2019-20,928.14,1162.97,138.34,1301.31,false,niti-2026-power,Annexure E p.87
+2020-21,910.02,1147.52,147.25,1294.77,false,niti-2026-power,Annexure E p.87
+2021-22,1002.01,1230.09,170.91,1401.01,false,niti-2026-power,Annexure E p.87
+2022-23,1108.11,1320.18,203.55,1547.80,true,niti-2026-power,Annexure E p.87
+2023-24,1203.36,1408.45,225.83,1654.54,true,niti-2026-power,Annexure E p.87
+2024-25,1234.19,1461.85,255.01,1739.06,true,niti-2026-power,Annexure E p.87

@@ -62,7 +62,8 @@ class AIServiceTest {
         UUID userId = UUID.randomUUID();
         when(logRepo.breakdownByCategory(any(), any(), any())).thenReturn(new ArrayList<>());
         when(renderer.render(eq("reduction_recs"), anyMap())).thenReturn("Rendered Prompt");
-        when(aiProvider.generate(eq("Rendered Prompt"), anyString())).thenReturn("AI Recommendations");
+        when(aiProvider.generateResult(eq("Rendered Prompt"), anyString()))
+                .thenReturn(com.ecotrack.ai.AIResult.live("AI Recommendations", "gemini", "gemini-2.5-flash", 10, 20, 5));
 
         String res = service.getRecommendations(userId);
 
@@ -77,7 +78,7 @@ class AIServiceTest {
         
         when(coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId)).thenReturn(new ArrayList<>());
         when(renderer.render(eq("coach_system"), anyMap())).thenReturn("System Prompt");
-        when(aiProvider.generate(anyString(), anyString())).thenReturn("Hello human");
+        when(aiProvider.generateLive(anyString(), anyString())).thenReturn("Hello human");
 
         var response = service.chat(userId, userMsg);
 
@@ -85,6 +86,20 @@ class AIServiceTest {
         assertEquals("Hello human", response.result());
         assertTrue(response.prompt().contains("System Prompt"));
         verify(coachRepo, times(2)).save(any(CoachMessage.class));
+    }
+
+    @Test
+    void chatWithoutLiveAiReturnsEmptyAndStoresNothing() {
+        UUID userId = UUID.randomUUID();
+
+        when(coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId)).thenReturn(new ArrayList<>());
+        when(renderer.render(eq("coach_system"), anyMap())).thenReturn("System Prompt");
+        when(aiProvider.generateLive(anyString(), anyString())).thenThrow(new IllegalStateException("no live AI"));
+
+        var response = service.chat(userId, "Is a vegan meal better than chicken?");
+
+        assertEquals("", response.result());
+        verify(coachRepo, never()).save(any(CoachMessage.class));
     }
 
     @Test
@@ -97,7 +112,8 @@ class AIServiceTest {
         when(profileRepo.findByUserIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(profile));
         when(logRepo.breakdownByCategory(any(), any(), any())).thenReturn(new ArrayList<>());
         when(renderer.render(eq("sustainability_tip"), anyMap())).thenReturn("Tip Prompt");
-        when(aiProvider.generate(anyString(), anyString())).thenReturn("Eat more greens");
+        when(aiProvider.generateResult(anyString(), anyString()))
+                .thenReturn(com.ecotrack.ai.AIResult.live("Eat more greens", "gemini", "gemini-2.5-flash", 10, 20, 5));
 
         String tip = service.getDailyTip(userId);
 
@@ -110,14 +126,15 @@ class AIServiceTest {
         UUID userId = UUID.randomUUID();
         when(coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId)).thenReturn(new ArrayList<>());
         when(renderer.render(eq("coach_system"), anyMap())).thenReturn("System Prompt");
-        when(aiProvider.generate(anyString(), anyString())).thenThrow(new RuntimeException("Vertex AI timeout"));
+        when(aiProvider.generateLive(anyString(), anyString())).thenThrow(new RuntimeException("Vertex AI timeout"));
 
         var response = service.chat(userId, "What should I eat?");
 
+        // No live model: an empty reply (the client answers from its labelled offline library)
+        // and nothing is stored as if the coach had said it.
         assertNotNull(response);
-        assertNotNull(response.result());
-        assertTrue(response.result().contains("optimizing my climate intelligence"));
-        verify(coachRepo, times(2)).save(any(CoachMessage.class));
+        assertEquals("", response.result());
+        verify(coachRepo, never()).save(any(CoachMessage.class));
     }
 
     @Test

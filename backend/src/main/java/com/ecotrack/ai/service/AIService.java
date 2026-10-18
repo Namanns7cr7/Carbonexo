@@ -1,6 +1,7 @@
 package com.ecotrack.ai.service;
 
 import com.ecotrack.ai.AIProvider;
+import com.ecotrack.ai.AIResult;
 import com.ecotrack.ai.PromptRenderer;
 import com.ecotrack.ai.memory.CoachMemory;
 import com.ecotrack.ai.service.dto.CursorPage;
@@ -80,8 +81,9 @@ public class AIService {
                 "biggest_source", biggest
         ));
 
-        String response = aiProvider.generate(prompt, props.ai().defaultModel());
-        persist(userId, "reduction", "Carbon reduction recommendations", response);
+        AIResult result = aiProvider.generateResult(prompt, props.ai().defaultModel());
+        String response = result.text();
+        persist(result, userId, "reduction", "Carbon reduction recommendations", response);
         return response;
     }
 
@@ -95,8 +97,9 @@ public class AIService {
                 "factor", String.valueOf(props.carbon().electricityFactorDefault())
         ));
 
-        String response = aiProvider.generate(prompt, props.ai().fastModel());
-        persist(userId, "electricity", "Electricity analysis", response);
+        AIResult result = aiProvider.generateResult(prompt, props.ai().fastModel());
+        String response = result.text();
+        persist(result, userId, "electricity", "Electricity analysis", response);
         return response;
     }
 
@@ -114,8 +117,9 @@ public class AIService {
                 "daily_distance", String.valueOf(distance)
         ));
 
-        String response = aiProvider.generate(prompt, props.ai().fastModel());
-        persist(userId, "transport", "Transport insights", response);
+        AIResult result = aiProvider.generateResult(prompt, props.ai().fastModel());
+        String response = result.text();
+        persist(result, userId, "transport", "Transport insights", response);
         return response;
     }
 
@@ -134,8 +138,9 @@ public class AIService {
                 "biggest_source", biggest
         ));
 
-        String response = aiProvider.generate(prompt, props.ai().fastModel());
-        persist(userId, "tip", "Daily tip", response);
+        AIResult result = aiProvider.generateResult(prompt, props.ai().fastModel());
+        String response = result.text();
+        persist(result, userId, "tip", "Daily tip", response);
         return response;
     }
 
@@ -145,39 +150,46 @@ public class AIService {
         UserProfile profile = profileRepo.findByUserIdAndDeletedAtIsNull(userId).orElse(null);
         String name = profile != null && profile.getName() != null ? profile.getName() : "User";
 
+        // Real figures only (previously hardcoded 45.2 kg / -8% / 150 credits / 5 actions for every user).
+        LocalDate today = LocalDate.now();
+        LocalDate monthStart = today.withDayOfMonth(1);
+        LocalDate prevStart = monthStart.minusMonths(1);
+        double monthKg = sumKg(userId, monthStart, today);
+        double prevKg = sumKg(userId, prevStart, monthStart.minusDays(1));
+        String delta = prevKg > 0 ? String.valueOf(Math.round((monthKg - prevKg) / prevKg * 1000) / 10.0) : "not available (no logs last month)";
         String prompt = renderer.render("monthly_report", Map.of(
                 "name", name,
                 "period", period,
-                "monthly_total", "45.2",
-                "delta_pct", "-8",
-                "credits", "150",
-                "actions", "5"
+                "monthly_total", String.valueOf(Math.round(monthKg * 10) / 10.0),
+                "delta_pct", delta,
+                "credits", String.valueOf(creditLedgerRepo != null ? creditLedgerRepo.sumDeltaByUserId(userId) : 0),
+                "actions", "not tracked in this report"
         ));
 
-        String response = aiProvider.generate(prompt, props.ai().defaultModel());
+        AIResult result = aiProvider.generateResult(prompt, props.ai().defaultModel());
+        String response = result.text();
         Recommendation rec = new Recommendation();
         rec.setUserId(userId);
         rec.setType("monthly_report");
         rec.setTitle("Monthly report — " + period);
         rec.setBody(response);
-        rec.setProvider(aiProvider.providerName());
-        rec.setModel(props.ai().defaultModel());
+        rec.setProvider(result.provider());
+        rec.setModel(result.model());
         rec.setPeriod(period);
         recRepo.save(rec);
         return response;
     }
 
-    /** AI coach chat — context-aware, multi-turn. */
+    /**
+     * AI coach chat — context-aware, multi-turn.
+     *
+     * Only a live model answers here. If none does, the reply is empty and nothing is
+     * stored: the client then answers from its cited reference library, instead of a
+     * keyword-matched canned stub being shown (and remembered) as the coach's words.
+     */
     @Transactional
     public CoachResponse chat(UUID userId, String userMessage) {
-        // Save user message
-        CoachMessage userMsg = new CoachMessage();
-        userMsg.setUserId(userId);
-        userMsg.setRole("user");
-        userMsg.setContent(userMessage);
-        coachRepo.save(userMsg);
-
-        // Build context from recent messages
+        // Context from earlier messages only — the new one is appended once, below.
         List<CoachMessage> history = coachRepo.findTop20ByUserIdOrderByCreatedAtDesc(userId);
         Collections.reverse(history);
         StringBuilder contextBuilder = new StringBuilder();
@@ -197,15 +209,24 @@ public class AIService {
         String fullPrompt = memoryBlock == null
                 ? systemPrompt + "\n\nUser: " + userMessage
                 : systemPrompt + "\n\n" + memoryBlock + "\n\nUser: " + userMessage;
+
         String response;
         try {
-            response = aiProvider.generate(fullPrompt, props.ai().fastModel());
-        } catch (Exception e) {
-            log.error("AI provider error during coach chat: {}", e.getMessage(), e);
-            response = "I'm currently optimizing my climate intelligence models. Based on your footprint and goals, swapping one car commute for transit or opting for a plant-forward lunch this week will save ~2.1 kg CO₂!";
+            response = aiProvider.generateLive(fullPrompt, props.ai().fastModel());
+        } catch (RuntimeException e) {
+            log.warn("Coach: no live AI reply — client will use its reference library: {}", e.toString());
+            return new CoachResponse("", null);
+        }
+        if (response == null || response.isBlank()) {
+            return new CoachResponse("", null);
         }
 
-        // Save assistant message
+        CoachMessage userMsg = new CoachMessage();
+        userMsg.setUserId(userId);
+        userMsg.setRole("user");
+        userMsg.setContent(userMessage);
+        coachRepo.save(userMsg);
+
         CoachMessage assistantMsg = new CoachMessage();
         assistantMsg.setUserId(userId);
         assistantMsg.setRole("assistant");
@@ -268,15 +289,21 @@ public class AIService {
         return new CursorPage<>(messages != null ? messages : List.of(), nextCursorCreatedAt, nextCursorId, hasMore);
     }
 
-    private void persist(UUID userId, String type, String title, String body) {
+    private void persist(AIResult result, UUID userId, String type, String title, String body) {
         Recommendation rec = new Recommendation();
         rec.setUserId(userId);
         rec.setType(type);
         rec.setTitle(title);
         rec.setBody(body);
-        rec.setProvider(aiProvider.providerName());
-        rec.setModel(props.ai().defaultModel());
+        rec.setProvider(result.provider());   // "canned-fallback" when the model did not answer
+        rec.setModel(result.model());         // the model that actually answered, or "none"
         recRepo.save(rec);
+    }
+
+    private double sumKg(UUID userId, LocalDate from, LocalDate to) {
+        return logRepo.findByUserIdAndDateRange(userId, from, to).stream()
+                .map(com.ecotrack.carbon.ActivityLog::getCo2Kg).filter(Objects::nonNull)
+                .mapToDouble(BigDecimal::doubleValue).sum();
     }
 
     private Map<String, Double> getWeekBreakdown(UUID userId) {

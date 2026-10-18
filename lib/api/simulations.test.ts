@@ -59,13 +59,19 @@ describe('simulations API helpers', () => {
     await expect(runSimulation({ changes: [change], horizon: 'MONTH' })).rejects.toThrow(/replacementFactorKey/);
   });
 
-  it('an unreachable server falls back to a labelled offline estimate with no invented goal or credits', async () => {
+  it('an unreachable server is an error, never a browser estimate with stand-in factors', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    await expect(runSimulation({ changes: [change], horizon: 'MONTH' })).rejects.toThrow();
+  });
+
+  it('passes through not-estimated results without inventing totals', async () => {
+    stubFetch({
+      baselineCo2Kg: null, projectedCo2Kg: null, deltaCo2Kg: null, status: 'NOT_ESTIMATED',
+      weeklyGoalImpact: { currentProgressPct: 0, projectedProgressPct: 0 }, projectedCreditsDelta: 0, aiInsight: 'Not estimated: metro',
+      breakdown: [{ factorKey: 'car_ride', baselineKg: null, projectedKg: null, status: 'NOT_ESTIMATED', missingInformation: 'a verified Indian metro factor' }],
+    });
     const res = await runSimulation({ changes: [change], horizon: 'MONTH' });
-    expect(res.source).toBe('offline-estimate');
-    expect(res.deltaCo2Kg).toBeLessThan(0);
-    expect(res.weeklyGoalImpact).toEqual({ currentProgressPct: 0, projectedProgressPct: 0 });
-    expect(res.projectedCreditsDelta).toBe(0);
-    expect(res.aiInsight).toBeNull();
+    expect(res.status).toBe('NOT_ESTIMATED');
+    expect(res.deltaCo2Kg).toBeNull();
   });
 });

@@ -4,70 +4,73 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Canned/fallback AI provider for development without GCP credentials.
- * Returns static, helpful responses.
+ * Static fallback used when no live model answers (or for development without GCP credentials).
+ *
+ * <p>Rules for every text here: generic guidance only; no statements about the user ("you
+ * primarily use a car", "your footprint decreased by 8%"); no invented numbers. Each text says it
+ * is offline guidance. Callers receive {@link AIResult#live()} = false and must label it.
  */
 public class CannedFallbackProvider implements AIProvider {
+
+    public static final String PROVIDER_NAME = "canned-fallback";
+    static final String OFFLINE_NOTE = " (Offline guidance: the AI coach is unavailable right now, so this is not personalised.)";
 
     private static final Logger log = LoggerFactory.getLogger(CannedFallbackProvider.class);
 
     @Override
     public String generate(String prompt, String model) {
-        log.info("CannedFallbackProvider — returning static response (model={})", model);
+        log.info("CannedFallbackProvider — returning static, non-personalised text (requested model={})", model);
 
         if (prompt.contains("reduction") || prompt.contains("recommend")) {
             return """
-                [{"title":"Switch to metro for short commutes","detail":"Taking the metro instead of driving for trips under 10km can save significant emissions.","est_saving_kg":4.2},
-                 {"title":"Try two meat-free dinners this week","detail":"Plant-based meals have a much lower carbon footprint than meat-based ones.","est_saving_kg":3.1},
-                 {"title":"Unplug devices when not in use","detail":"Standby power consumption adds up. Use power strips for easy switching.","est_saving_kg":1.5}]
+                [{"title":"Look at your most frequent car trips","detail":"Shared or public transport for regular trips is usually the largest single lever. The AI coach can estimate it once it is available.","est_saving_kg":null},
+                 {"title":"Check your electricity bill","detail":"Your bill's kWh is the most reliable electricity number you have; log it rather than individual appliances.","est_saving_kg":null},
+                 {"title":"Log meals by ingredient","detail":"Meal footprints depend on what is in them; ingredient weights allow an estimate.","est_saving_kg":null}]
                 """;
         }
-
         if (prompt.contains("electricity") || prompt.contains("kWh")) {
-            return "Your electricity usage is moderate. Consider using energy-efficient appliances and " +
-                   "turning off lights when leaving rooms. Setting your AC to 24°C instead of 22°C can " +
-                   "reduce consumption by 15%. Your usage trend shows a slight increase — monitor peak hours.";
+            return "Log your bill's kWh so emissions can be estimated from your actual use. Raising the AC set-point "
+                    + "and switching off standby loads are common ways to reduce electricity use." + OFFLINE_NOTE;
         }
-
         if (prompt.contains("transport") || prompt.contains("travel")) {
-            return "You primarily use a car for commuting. Consider carpooling for longer trips — this can " +
-                   "halve your per-person emissions. The metro is great for distances under 15km. " +
-                   "Potential saving: ~5 kg CO₂/week by switching 2 car trips to metro.";
+            return "For regular trips, public or shared transport usually has lower emissions per person than "
+                    + "driving alone. Log your trips with distance to get an estimate." + OFFLINE_NOTE;
         }
-
         if (prompt.contains("scenario") || prompt.contains("hypothetical")) {
-            return "Nice test run! A change like this could meaningfully shift your footprint over the " +
-                   "horizon you picked and nudge you closer to your weekly goal — plus a few bonus credits " +
-                   "for sticking with it. 🌍";
+            return "This is a what-if result, not a measured change. The numbers above come from the simulation "
+                    + "itself." + OFFLINE_NOTE;
         }
-
         if (prompt.contains("persuasive")) {
-            return "Switching to the greener pick here is an easy win — it meaningfully cuts the embodied " +
-                   "carbon baked into this purchase without changing what you actually need it for.";
+            return "A second-hand or refurbished option can avoid making a new product; how much depends on the "
+                    + "product." + OFFLINE_NOTE;
         }
-
         if (prompt.contains("leaderboard")) {
-            return "This group is on a roll — the leader is setting the pace, and every member chipping in " +
-                   "gets the whole crew closer to its goal. 🏆";
+            return "Group totals reflect what members have logged; members who have not logged are missing "
+                    + "data, not zero." + OFFLINE_NOTE;
         }
-
         if (prompt.contains("tip") || prompt.contains("sustainability")) {
-            return "Small daily choices add up! Try bringing a reusable bag and water bottle today — " +
-                   "it's an easy win that reduces plastic waste and feels great. 🌱";
+            return "Carry a reusable bottle and bag today to cut single-use plastic." + OFFLINE_NOTE;
         }
-
         if (prompt.contains("report") || prompt.contains("monthly")) {
-            return "Great month! You tracked consistently and your carbon footprint decreased by 8% " +
-                   "compared to last month. Your biggest win was switching to metro on 3 days. " +
-                   "Focus area: food emissions increased slightly — try one more veggie day next month!";
+            return "Your monthly report needs the AI coach, which is unavailable right now. Your logged totals on "
+                    + "the dashboard are unaffected." + OFFLINE_NOTE;
         }
+        return "The AI coach is unavailable right now. You can still log activities and see your logged totals." + OFFLINE_NOTE;
+    }
 
-        return "I'm your sustainability coach! I can help with carbon reduction tips, " +
-               "electricity analysis, transport insights, and more. What would you like to know?";
+    @Override
+    public AIResult generateResult(String prompt, String model) {
+        return AIResult.fallback(generate(prompt, model), AIFailureKind.NOT_CONFIGURED, 0);
+    }
+
+    /** Canned text is not a live answer. */
+    @Override
+    public String generateLive(String prompt, String model) {
+        throw new IllegalStateException("No live AI provider available (canned fallback only)");
     }
 
     @Override
     public String providerName() {
-        return "canned";
+        return PROVIDER_NAME;
     }
 }
