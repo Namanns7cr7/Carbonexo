@@ -20,6 +20,7 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -135,7 +136,7 @@ public class AuthService {
         if (!token.getExpiresAt().isAfter(now)) {
             throw new BadCredentialsException("Refresh token expired or revoked");
         }
-        if (token.getRevokedAt() != null && !rotatedWithinGrace(token, now)) {
+        if (token.getRevokedAt() != null && !(rotatedWithinGrace(token, now) && sessionStillOpen(token))) {
             throw new BadCredentialsException("Refresh token expired or revoked");
         }
         User user = users.findByIdAndDeletedAtIsNull(token.getUserId())
@@ -147,6 +148,22 @@ public class AuthService {
     static boolean rotatedWithinGrace(RefreshToken token, Instant now) {
         return token.getReplacedBy() != null
                 && token.getRevokedAt().plus(ROTATION_GRACE).isAfter(now);
+    }
+
+    /**
+     * Follows the rotation chain from a rotated token to the newest one. The
+     * session is open only while that newest token is unrevoked: once it is
+     * logged out, the grace window can't revive the session through an older
+     * token (a stale tab, or a copy taken before sign-out).
+     */
+    private boolean sessionStillOpen(RefreshToken token) {
+        RefreshToken current = token;
+        for (int hops = 0; hops < 20 && current.getReplacedBy() != null; hops++) {
+            Optional<RefreshToken> next = refreshTokens.findById(current.getReplacedBy());
+            if (next.isEmpty()) return false;
+            current = next.get();
+        }
+        return current.getReplacedBy() == null && current.getRevokedAt() == null;
     }
 
     @Transactional

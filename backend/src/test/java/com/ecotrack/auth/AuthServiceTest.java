@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -159,13 +160,46 @@ class AuthServiceTest {
     void refreshHonoursATokenRotatedWithinTheGraceWindow() {
         // The browser lost the response to the first refresh and retries with the same token.
         Instant rotatedAt = Instant.now().minusSeconds(5);
-        RefreshToken old = storedToken(activeUser(), rotatedAt, UUID.randomUUID());
+        UUID userId = activeUser();
+        RefreshToken successor = storedToken(userId, null, null);
+        ReflectionTestUtils.setField(successor, "id", UUID.randomUUID());
+        RefreshToken old = storedToken(userId, rotatedAt, successor.getId());
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+        when(refreshTokenRepository.findById(successor.getId())).thenReturn(Optional.of(successor));
 
         var resp = authService.refresh("raw", null);
 
         assertNotNull(resp.refreshToken());
         assertEquals(rotatedAt, old.getRevokedAt(), "the original rotation is left as it was");
+    }
+
+    @Test
+    void refreshRejectsARotatedTokenOnceItsSuccessorIsLoggedOut() {
+        // Rotate, then sign out within the grace window: the old token must not revive the session.
+        UUID userId = activeUser();
+        RefreshToken loggedOut = storedToken(userId, Instant.now(), null);
+        ReflectionTestUtils.setField(loggedOut, "id", UUID.randomUUID());
+        RefreshToken old = storedToken(userId, Instant.now().minusSeconds(5), loggedOut.getId());
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+        when(refreshTokenRepository.findById(loggedOut.getId())).thenReturn(Optional.of(loggedOut));
+
+        assertThrows(BadCredentialsException.class, () -> authService.refresh("raw", null));
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void refreshRejectsARotatedTokenWhenALaterLinkInTheChainIsLoggedOut() {
+        UUID userId = activeUser();
+        RefreshToken loggedOut = storedToken(userId, Instant.now(), null);
+        ReflectionTestUtils.setField(loggedOut, "id", UUID.randomUUID());
+        RefreshToken middle = storedToken(userId, Instant.now().minusSeconds(2), loggedOut.getId());
+        ReflectionTestUtils.setField(middle, "id", UUID.randomUUID());
+        RefreshToken old = storedToken(userId, Instant.now().minusSeconds(5), middle.getId());
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(old));
+        when(refreshTokenRepository.findById(middle.getId())).thenReturn(Optional.of(middle));
+        when(refreshTokenRepository.findById(loggedOut.getId())).thenReturn(Optional.of(loggedOut));
+
+        assertThrows(BadCredentialsException.class, () -> authService.refresh("raw", null));
     }
 
     @Test
