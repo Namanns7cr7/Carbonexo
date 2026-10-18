@@ -123,11 +123,13 @@ management:
       application: ecotrack-backend
 
 # ---- OpenAPI / Swagger ----
-springdoc:
+springdoc:                                             # off unless API_DOCS_ENABLED=true (keep it off in production)
   swagger-ui:
     path: /swagger-ui.html
+    enabled: ${API_DOCS_ENABLED:false}
   api-docs:
     path: /v3/api-docs
+    enabled: ${API_DOCS_ENABLED:false}
 
 logging:
   level:
