@@ -28,6 +28,14 @@ class ActivityLogRequestValidationTest {
     }
 
     @Test
+    void rejectsCategoriesTheDatabaseWouldRefuse() {
+        var bad = new ActivityLogRequest("transport", null, "Drive", null, 10.0, "km", 2.0, null, "2026-10-18");
+        var violations = validator.validate(bad);
+        assertEquals(1, violations.size());
+        assertEquals("category", violations.iterator().next().getPropertyPath().toString());
+    }
+
+    @Test
     void rejectsAbsurdQuantities() {
         assertFalse(validator.validate(req(5_000_000, 2.1)).isEmpty());
     }
