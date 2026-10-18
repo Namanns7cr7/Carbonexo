@@ -96,7 +96,7 @@ export default function LoginPage() {
           </div>
 
           <Link
-            href="/welcome"
+            href="/"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/10 py-3 text-center text-sm font-bold text-emerald-600 transition-all hover:border-emerald-500 hover:bg-emerald-500/20 dark:text-emerald-400"
           >
             <span>Take the tour first &rarr;</span>

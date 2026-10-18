@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useCarbon } from '@/lib/store';
-import { logout } from '@/lib/api/auth';
+import { signOut } from '@/lib/api/auth';
 import { round1 } from '@/lib/carbon';
 import { Card, PageHead, Button } from '@/components/app/ui';
 import { usePwaInstall } from '@/lib/usePwaInstall';
@@ -50,11 +50,6 @@ export default function Profile() {
       resetAll();
       router.replace('/onboarding');
     }
-  };
-
-  const onLogout = async () => {
-    await logout();                       // revoke refresh token + clear tokens
-    window.location.assign('/login');     // full reload so the store resets cleanly
   };
 
   return (
@@ -142,7 +137,7 @@ export default function Profile() {
 
       {/* account actions */}
       <div className="flex flex-wrap items-center gap-4 pt-1">
-        <Button variant="secondary" onClick={onLogout}>
+        <Button variant="secondary" onClick={signOut}>
           Log out
         </Button>
         <button onClick={onReset} className="text-sm font-semibold text-muted underline-offset-2 transition-colors hover:text-text hover:underline">

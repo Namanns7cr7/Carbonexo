@@ -3,16 +3,24 @@
  * and typed error handling. All API calls go through this.
  */
 
-import { COACH_CHAT_STORAGE_KEY, SNAPSHOT_STORAGE_KEY } from '../constants';
+import { USER_SCOPED_STORAGE_KEYS } from '../constants';
 
 const BASE_URL =process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
+// Bumped by clearTokens(): a response to a request sent under an earlier
+// session is dropped, so a slow dashboard or coach call cannot repopulate
+// the UI (or the caches) after sign-out.
+let sessionEpoch = 0;
+// Set while a deliberate sign-out navigates away: a stray 401 must not
+// redirect to /login and override that navigation.
+let signingOut = false;
 
 export function setTokens(access: string, refresh: string) {
   accessToken = access;
   refreshToken = refresh;
+  signingOut = false;
   if (typeof window !== 'undefined') {
     localStorage.setItem('cx-refresh', refresh);
   }
@@ -23,14 +31,27 @@ export function getAccessToken() { return accessToken; }
 export function clearTokens() {
   accessToken = null;
   refreshToken = null;
+  sessionEpoch++;
   cache.clear();
   inFlight.clear();
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('cx-refresh');
-    // the cached dashboard snapshot belongs to this session's user
-    localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
-    // so is the cached coach conversation (the server keeps the durable copy)
-    localStorage.removeItem(COACH_CHAT_STORAGE_KEY);
+    // the refresh token, cached snapshot, local state and coach cache all
+    // belong to this session's user (the server keeps the durable copies)
+    for (const key of USER_SCOPED_STORAGE_KEYS) localStorage.removeItem(key);
+  }
+}
+
+/** Ends the session in this tab: clears credentials and caches, and keeps
+ *  late 401s from redirecting while the caller navigates away. */
+export function beginSignOut() {
+  signingOut = true;
+  clearTokens();
+}
+
+/** Sends the browser to the sign-in page after the session was refused, unless a sign-out is already navigating. */
+function toLogin() {
+  if (typeof window !== 'undefined' && !signingOut) {
+    window.location.href = '/login';
   }
 }
 
@@ -76,6 +97,7 @@ function latestRefreshToken(): string | null {
 }
 
 async function exchangeRefreshToken(token: string): Promise<RefreshResult> {
+  const epoch = sessionEpoch;
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/api/auth/refresh`, {
@@ -90,6 +112,8 @@ async function exchangeRefreshToken(token: string): Promise<RefreshResult> {
   if (!res.ok) return 'rejected';
   try {
     const data = await res.json();
+    // signed out while the refresh was in flight: storing these would revive the session
+    if (epoch !== sessionEpoch) return 'rejected';
     setTokens(data.accessToken, data.refreshToken);
     return 'ok';
   } catch {
@@ -174,6 +198,7 @@ export async function apiFetch<T>(
   }
 
   const fetchPromise = (async () => {
+    const epoch = sessionEpoch;
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string> || {}),
     };
@@ -209,10 +234,13 @@ export async function apiFetch<T>(
       }
       if (refreshed === 'unreachable') throw serverUnreachable();
       clearTokens();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      toLogin();
       throw new ApiError(401, 'Session expired', {});
+    }
+
+    // Signed out (here or in another tab) while this request was in flight.
+    if (epoch !== sessionEpoch && !path.startsWith('/api/auth/')) {
+      throw new ApiError(401, 'Signed out', {});
     }
 
     if (!res.ok) {
@@ -277,9 +305,7 @@ export async function apiFetchText(
     }
     if (refreshed === 'unreachable') throw serverUnreachable();
     clearTokens();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
+    toLogin();
     throw new ApiError(401, 'Session expired', {});
   }
 

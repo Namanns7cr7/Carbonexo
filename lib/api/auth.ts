@@ -1,4 +1,4 @@
-import { api, ApiError, setTokens, clearTokens, loadStoredRefreshToken, getAccessToken } from './client';
+import { api, ApiError, setTokens, clearTokens, beginSignOut, loadStoredRefreshToken, getAccessToken } from './client';
 
 export interface AuthResponse {
   accessToken: string;
@@ -58,13 +58,38 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   }
 }
 
-export async function logout(): Promise<void> {
-  try {
-    await api.post('/api/auth/logout', { refreshToken: localStorage.getItem('cx-refresh') });
-  } catch {
-    // Ignore errors on logout — tokens are cleared regardless.
+/**
+ * Ends the session: this browser's credentials and user data are cleared
+ * first, so nothing in flight can use or repopulate them, then the server
+ * revokes the refresh token. The access token is a stateless JWT and stays
+ * valid until it expires (JWT_ACCESS_TTL, 15 min), but no copy of it is
+ * left in this browser.
+ *
+ * Resolves true when the server confirmed the revocation; false when it
+ * could not be reached twice (the local session is gone either way).
+ */
+export async function logout(): Promise<boolean> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('cx-refresh') : null;
+  beginSignOut();
+  if (!token) return true;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await api.post('/api/auth/logout', { refreshToken: token });
+      return true;
+    } catch (err) {
+      // a 4xx means the server already considers the token unusable
+      if (err instanceof ApiError && err.status < 500) return true;
+    }
   }
-  clearTokens();
+  console.warn('[Carbonexo] Signed out here, but the server could not confirm the refresh token was revoked.');
+  return false;
+}
+
+/** The one sign-out action every button uses: end the session, then land on the home page. */
+export async function signOut(): Promise<void> {
+  await logout();
+  // replace: Back must not return to the signed-in page that was just left
+  window.location.replace('/');
 }
 
 /**
