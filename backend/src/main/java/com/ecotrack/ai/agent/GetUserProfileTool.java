@@ -50,7 +50,7 @@ public class GetUserProfileTool implements CoachTool {
         m.put("weekly_goal_pct", r.get("weekly_goal_pct"));
         m.put("onboarded", r.get("onboarded"));
         if (!Boolean.TRUE.equals(r.get("region_confirmed"))) {
-            m.put("note", "region not confirmed by the user: ask them to confirm before estimating");
+            m.put("note", "region not confirmed by the user: ask them to confirm it under Profile > Region for emission estimates before estimating");
         }
         return m;
     }

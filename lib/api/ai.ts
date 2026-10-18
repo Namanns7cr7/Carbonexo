@@ -77,8 +77,10 @@ export async function sendCoachMessage(
   pageContext?: EcoMindPageContext
 ): Promise<CoachResponse> {
   const payload: Record<string, unknown> = { message };
-  if (pageContext?.pageTitle) {
-    payload.context = `${pageContext.pageTitle}${pageContext.activeFeature ? ` - ${pageContext.activeFeature}` : ''}`;
+  // Only where the user is: the server validates these and ignores everything else.
+  // Page metrics are never sent; the coach reads the user's data through its own tools.
+  if (pageContext?.route && pageContext.pageTitle) {
+    payload.pageContext = { route: pageContext.route, pageTitle: pageContext.pageTitle };
   }
   return api.post<CoachResponse>('/api/ai/coach', payload);
 }

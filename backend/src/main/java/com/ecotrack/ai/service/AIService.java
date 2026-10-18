@@ -255,6 +255,24 @@ public class AIService {
     }
 
     /** Get chat history for a user (legacy unpaged). */
+    /** Persists a deterministic small-talk exchange so it appears in history like any other turn. */
+    @Transactional
+    public void saveSmallTalk(UUID userId, String userMessage, String reply) {
+        CoachMessage u = new CoachMessage();
+        u.setUserId(userId);
+        u.setRole("user");
+        u.setContent(userMessage);
+        coachRepo.save(u);
+        CoachMessage a = new CoachMessage();
+        a.setUserId(userId);
+        a.setRole("assistant");
+        a.setContent(reply);
+        a.setProvider(SMALLTALK_PROVIDER);
+        coachRepo.save(a);
+    }
+
+    public static final String SMALLTALK_PROVIDER = "carbonexo-smalltalk";
+
     public List<CoachMessage> getChatHistory(UUID userId) {
         return coachRepo.findByUserIdOrderByCreatedAtAsc(userId);
     }

@@ -41,7 +41,9 @@
     "accounting/meter-vs-appliance.md",
     "computations/activity-emissions.md",
     "computations/carbon-twin-scenario.md",
-    "policies/verification-policy.md"
+    "policies/verification-policy.md",
+    "accounting/carbon-credits.md",
+    "policies/green-credits-and-score.md"
   ],
   "measures": {
     "in.grid.weighted_average.FY2024-25": ["elec.grid.in.niti_annex_e.fy2024_25", "elec.grid.in.cea_v21.weighted_avg"]

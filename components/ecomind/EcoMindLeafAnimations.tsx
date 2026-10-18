@@ -40,7 +40,7 @@ export function LeafSproutThinking({ label }: { label?: string }) {
 
       <div className="flex flex-col">
         <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-300">
-          <span>{label || 'Gemini 3 Flash'}</span>
+          <span>{label || 'EcoMind'}</span>
           {/* Bouncing spore dots */}
           <span className="inline-flex items-center gap-1 ml-0.5">
             <span
@@ -57,7 +57,7 @@ export function LeafSproutThinking({ label }: { label?: string }) {
             />
           </span>
         </div>
-        <span className="text-[10px] text-slate-400 font-medium">Grounding with verified climate science...</span>
+        <span className="text-[10px] text-slate-400 font-medium">Thinking…</span>
       </div>
     </div>
   );
@@ -75,7 +75,7 @@ export function ResponseBloomBadge({ source, model }: { source?: string; model?:
       className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-300/90 bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-500/25"
     >
       <Sparkles className="h-3 w-3 text-emerald-400" />
-      <span>{model || 'Gemini 3 Flash'}</span>
+      <span>{model || 'EcoMind'}</span>
       {source && (
         <>
           <span className="text-emerald-500/50">·</span>
@@ -103,6 +103,8 @@ export function AnimatedMessageBubble({
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+      data-testid="chat-msg"
+      data-role={role}
       className={`flex ${role === 'user' ? 'justify-end' : 'justify-start gap-2.5'}`}
     >
       {children}

@@ -10,6 +10,11 @@ import { useCarbon } from '@/lib/store';
 import { COACH_MESSAGE_MAX_CHARS, sendCoachMessage, getCoachHistory, type CoachHistoryEntry } from '@/lib/api/ai';
 import { isAuthenticated } from '@/lib/api/auth';
 import { generateScientificCoachAdvice } from '@/lib/data/climate-knowledge';
+import { smallTalkReply } from '@/lib/ai/small-talk';
+import { COACH_CHAT_STORAGE_KEY } from '@/lib/constants';
+import { modelLabel, OFFLINE_LIBRARY_PROVIDER } from '@/lib/ai/model-label';
+import type { CoachCitation } from '@/lib/api/ai';
+import { CoachCitations, CoachFeedbackButtons } from './CoachReplyMeta';
 import {
   LeafSproutThinking,
   ResponseBloomBadge,
@@ -25,9 +30,11 @@ interface Msg {
   model?: string;
   provider?: string;
   contextRoute?: string;
+  citations?: CoachCitation[];
+  responseId?: string | null;
 }
 
-const STORAGE_KEY = 'carbonexo_coach_chat_history';
+const STORAGE_KEY = COACH_CHAT_STORAGE_KEY;
 
 export function GlobalEcoMindPanel() {
   const pathname = usePathname();
@@ -45,6 +52,9 @@ export function GlobalEcoMindPanel() {
 
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
+  // The model of the latest real reply; neutral "EcoMind" until one exists.
+  const lastAnswered = [...msgs].reverse().find((m) => m.role === 'ai' && !String(m.id).startsWith('welcome'));
+  const headerLabel = lastAnswered ? modelLabel(lastAnswered.provider, lastAnswered.model) : 'EcoMind';
   const scrollRef = useRef<HTMLDivElement>(null);
   const idCounter = useRef(1);
 
@@ -71,10 +81,40 @@ export function GlobalEcoMindPanel() {
         id: 'welcome-global',
         role: 'ai',
         text: `Hi ${profile.name || 'there'}! I'm EcoMind, your climate intelligence copilot. I'm aware you're currently on the **${pageContext.pageTitle}** page. Ask me anything about your footprint or activities!`,
-        model: 'Gemini 3 Flash',
       },
     ]);
   }, [profile.name, pageContext.pageTitle]);
+
+  // No local cache (new device, or after sign-out): restore this user's conversation from the server once.
+  const historyLoaded = useRef(false);
+  useEffect(() => {
+    if (historyLoaded.current || !isAuthenticated()) return;
+    historyLoaded.current = true;
+    try {
+      if (typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY)) return;
+    } catch {
+      // storage unavailable: fall through to the server copy
+    }
+    getCoachHistory()
+      .then((history: CoachHistoryEntry[]) => {
+        if (!history.length) return;
+        setMsgs((current) =>
+          current.length > 1
+            ? current
+            : [
+                ...current,
+                ...history.map((h) => ({
+                  id: h.id,
+                  role: h.role === 'assistant' ? ('ai' as const) : ('user' as const),
+                  text: h.content,
+                  provider: h.provider,
+                  model: h.model,
+                })),
+              ]
+        );
+      })
+      .catch((err) => console.warn('Coach history unavailable', err));
+  }, []);
 
   // Save to localStorage whenever msgs change
   useEffect(() => {
@@ -99,7 +139,6 @@ export function GlobalEcoMindPanel() {
       id: 'welcome-' + Date.now(),
       role: 'ai',
       text: `Chat reset. I'm ready to assist with **${pageContext.pageTitle}** or any sustainability question!`,
-      model: 'Gemini 3 Flash',
     };
     setMsgs([fresh]);
     if (typeof window !== 'undefined') {
@@ -124,6 +163,17 @@ export function GlobalEcoMindPanel() {
 
     setMsgs((prev) => [...prev, userMsg]);
     setDraftMessage('');
+    // Signed out: answer pure small talk locally. Signed in, the backend answers it
+    // instantly (no model/RAG) and saves it to history.
+    const chat = isAuthenticated() ? null : smallTalkReply(q);
+    if (chat) {
+      setMsgs((prev) => [
+        ...prev,
+        { id: 'ai-st-' + Date.now() + '-' + idCounter.current++, role: 'ai', text: chat, contextRoute: pageContext.route },
+      ]);
+      return;
+    }
+
     setTyping(true);
 
     // Call API with active pageContext
@@ -137,9 +187,11 @@ export function GlobalEcoMindPanel() {
               id: 'ai-' + Date.now() + '-' + idCounter.current++,
               role: 'ai',
               text: response.result,
-              model: response.model || 'Gemini 3 Flash',
-              provider: response.provider || 'Vertex AI',
+              model: response.model ?? undefined,
+              provider: response.provider ?? undefined,
               contextRoute: pageContext.route,
+              citations: response.citations,
+              responseId: response.responseId,
             },
           ]);
           setTyping(false);
@@ -169,7 +221,7 @@ export function GlobalEcoMindPanel() {
           role: 'ai',
           text: sci.response,
           source: sci.source,
-          model: 'Gemini 3 Flash (Offline Grounding)',
+          provider: OFFLINE_LIBRARY_PROVIDER,
           contextRoute: pageContext.route,
         },
       ]);
@@ -235,8 +287,8 @@ export function GlobalEcoMindPanel() {
                 <div>
                   <div className="flex items-center gap-1.5 text-sm font-bold text-white">
                     <span>EcoMind AI</span>
-                    <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">
-                      Gemini 3 Flash
+                    <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded" data-testid="panel-model-label">
+                      {headerLabel}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 text-[11px] text-emerald-400/90 font-medium">
@@ -299,9 +351,13 @@ export function GlobalEcoMindPanel() {
                         ✦
                       </div>
                       <div className="max-w-[85%] rounded-[16px_16px_16px_4px] border border-emerald-500/20 bg-slate-900/80 px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-100 shadow-sm space-y-2">
-                        {m.source && <ResponseBloomBadge source={m.source} model={m.model} />}
+                        {!String(m.id).startsWith('welcome') && (
+                          <ResponseBloomBadge source={m.source} model={modelLabel(m.provider, m.model)} />
+                        )}
                         <p className="whitespace-pre-wrap">{m.text}</p>
-                        <div className="flex justify-end pt-1">
+                        <CoachCitations citations={m.citations} />
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <CoachFeedbackButtons responseId={m.responseId} />
                           <LeafCopyButton text={m.text} />
                         </div>
                       </div>
@@ -316,7 +372,7 @@ export function GlobalEcoMindPanel() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <LeafSproutThinking label="Gemini 3 Flash" />
+                  <LeafSproutThinking label="EcoMind" />
                 </motion.div>
               )}
             </div>

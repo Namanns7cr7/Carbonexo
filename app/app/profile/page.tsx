@@ -8,6 +8,7 @@ import { logout } from '@/lib/api/auth';
 import { round1 } from '@/lib/carbon';
 import { Card, PageHead, Button } from '@/components/app/ui';
 import { usePwaInstall } from '@/lib/usePwaInstall';
+import { RegionConfirmCard } from '@/components/app/RegionConfirmCard';
 
 const gridVariants = {
   hidden: {},
@@ -125,6 +126,8 @@ export default function Profile() {
           ))}
         </div>
       </Card>
+
+      <RegionConfirmCard />
 
       {/* PWA install */}
       <Card className="flex flex-wrap items-center justify-between gap-3 !bg-lime-soft">

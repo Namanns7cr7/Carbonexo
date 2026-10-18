@@ -12,7 +12,10 @@ public interface AgentModelClient {
 
     enum Role { USER, MODEL, TOOL }
 
-    record FunctionCall(String name, Map<String, Object> args) {}
+    /** {@code thoughtSignature}: opaque Gemini 3 token that must be sent back unchanged with this call; null otherwise. */
+    record FunctionCall(String name, Map<String, Object> args, String thoughtSignature) {
+        public FunctionCall(String name, Map<String, Object> args) { this(name, args, null); }
+    }
 
     record FunctionResult(String name, Map<String, Object> response) {}
 

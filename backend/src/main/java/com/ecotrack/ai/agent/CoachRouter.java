@@ -21,7 +21,7 @@ public final class CoachRouter {
     static final int MAX_FORCED = 2;
 
     public enum Intent {
-        OTHER_PEOPLE, SAVINGS_CLAIM, DOUBLE_COUNTING, SCENARIO, COMPARISON, QUANTITY_ESTIMATE, UNIT_CONVERSION,
+        OTHER_PEOPLE, CREDIT_SCORE, GREEN_CREDITS, CREDIT_RULES, CARBON_CREDIT_CONCEPT, SAVINGS_CLAIM, DOUBLE_COUNTING, SCENARIO, COMPARISON, QUANTITY_ESTIMATE, UNIT_CONVERSION,
         TARGET, FACTOR, PERSONAL_TREND, PERSONAL, RECOMMENDATION, EXPLANATION, GENERAL
     }
 
@@ -38,6 +38,17 @@ public final class CoachRouter {
     private static final Pattern SAVINGS = p("\\b(saved|saving|savings|avoided|offset|carbon.?neutral|net.?zero|certif|verified|"
             + "congratulat|credits? (mean|=|are)|reduction is|lifetime co2)");
     private static final Pattern FIRST_PERSON = p("\\b(i|i'm|i've|me|my|mine)\\b");
+    // Carbonexo credits: the in-app balance, the 300-850 score and the earning/redeeming rules.
+    private static final Pattern SCORE = p("\\b((carbon )?credit score|my score|the score|score (change|changed|drop|dropped|went|mean|work)|"
+            + "improve (my |the )?score|raise (my |the )?score|explain (my |the )?score|score\\?)");
+    private static final Pattern BALANCE = p("\\b(how (many|much) (green |carbonexo |reward )?(credits?|points)(?! score)|"
+            + "my (green |carbonexo |reward )?(credits?|points)(?! score)|(credit|points) balance|"
+            + "(green|carbonexo|reward) (credits?|points) (do|have) i)");
+    private static final Pattern CREDIT_RULES = p("\\b((earn|get|gain|collect|win)( more)? (green |carbonexo |reward )?(credits?|points|rewards?)|"
+            + "(redeem|spend|use|sell|trade|cash ?out|transfer)\\b.{0,30}\\b(credits?|points|them)|tradable|tradeable|rewards?)\\b");
+    private static final Pattern CREDIT_CONCEPT = p("\\b(carbon credits?|carbon offsets?|offsets?|offsetting|additionality|additional|"
+            + "retire(d|ment)?|allowances?|cap.and.trade|carbon markets?|emissions? trading)\\b");
+    private static final Pattern CARBONEXO_CREDITS = p("\\b(green|carbonexo|reward) (credits?|points)\\b");
     private static final Pattern DOUBLE = p("\\b(twice|double|counted? (both|again)|both|also (logged|scanned|log)|and also|"
             + "separately|add (them|it) up|plus my meter|each of us logged|same (dinner|meal|trip|item))\\b");
     private static final Pattern SCENARIO = p("\\b(what if|carbon twin|scenario|simulat|over a (month|year)|per (month|year)|a year|"
@@ -76,6 +87,40 @@ public final class CoachRouter {
             rules.add("The question involves other people's data. You can only see the signed-in user. Say you cannot access other "
                     + "people's data; for comparisons with others, say it is not estimated because no data about other people is available. "
                     + "Never guess or describe anyone else's activity.");
+        }
+        boolean score = SCORE.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE);
+        if (score) {
+            intents.add(Intent.CREDIT_SCORE);
+            tools.add(GetCarbonCreditScoreTool.NAME);
+            rules.add("The Carbon Credit Score. Use getCarbonCreditScore: give the score, the 300-850 scale and the tier. For how to "
+                    + "improve it, name only the components in can_still_improve with their rules. For why it changed, say score history "
+                    + "is not stored and explain the current components. It is an in-app engagement score, not a financial credit score "
+                    + "and not a rating of carbon credits. Do not call factor or emissions tools.");
+        }
+        if (BALANCE.matcher(q).find() && !score && !intents.contains(Intent.OTHER_PEOPLE)) {
+            intents.add(Intent.GREEN_CREDITS);
+            tools.add(GetGreenCreditBalanceTool.NAME);
+            rules.add("The user's green-credit balance. Use getGreenCreditBalance and answer directly, for example 'You currently have "
+                    + "N Carbonexo green credits.' Green credits are Carbonexo in-app reward points, not certified carbon credits. "
+                    + "Do not call factor or emissions tools.");
+        }
+        if (CREDIT_RULES.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
+            intents.add(Intent.CREDIT_RULES);
+            tools.add(GetGreenCreditRulesTool.NAME);
+            rules.add("Earning or redeeming Carbonexo green credits. Use getGreenCreditRules. Mention only earning rules with "
+                    + "awarded_by_app_today=true and say where in the app. Green credits can be redeemed only for items in the rewards "
+                    + "catalogue on the Rewards page; they cannot be sold, traded, transferred or cashed out, and they are not carbon "
+                    + "credits. Do not promise rewards or rules that are not in the tool result.");
+        }
+        if (CREDIT_CONCEPT.matcher(q).find() && !CARBONEXO_CREDITS.matcher(q).find() && !q.contains("my credit")) {
+            intents.add(Intent.CARBON_CREDIT_CONCEPT);
+            if (knowledgeAvailable) tools.add(RetrieveScientificKnowledgeTool.NAME);
+            rules.add("A carbon-market concept question. Answer exactly what was asked in two to four plain sentences, from the "
+                    + "retrieved Carbonexo guidance. A carbon credit represents a quantified emission reduction or removal, usually one "
+                    + "tonne of CO2e, issued under a crediting programme; an allowance is a permit to emit under a cap-and-trade system; "
+                    + "an offset is retiring credits to compensate for one's own emissions. If relevant, say Carbonexo green credits are "
+                    + "in-app reward points, not carbon credits. Give more detail only if the user asks. Do not call factor or "
+                    + "emissions tools.");
         }
         if (SAVINGS.matcher(q).find() && (firstPerson || q.contains("carbonexo"))) {
             intents.add(Intent.SAVINGS_CLAIM);
@@ -126,7 +171,7 @@ public final class CoachRouter {
             intents.add(Intent.FACTOR);
             tools.add(GetEmissionFactorsTool.NAME);
         }
-        if (firstPerson && PERSONAL_DATA.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE)) {
+        if (firstPerson && PERSONAL_DATA.matcher(q).find() && !intents.contains(Intent.OTHER_PEOPLE) && !score) {
             if (TREND.matcher(q).find()) {
                 intents.add(Intent.PERSONAL_TREND);
                 tools.add(GetCarbonTrendsTool.NAME);

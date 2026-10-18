@@ -19,6 +19,8 @@ export const THEME_STORAGE_KEY = 'cx-theme';
 
 /** Last server snapshot (profile + dashboard) — painted instantly on reload. Cleared with tokens. */
 export const SNAPSHOT_STORAGE_KEY = 'cx-snapshot';
+/** Cached coach conversation for instant paint; the server holds the durable copy. Cleared with tokens. */
+export const COACH_CHAT_STORAGE_KEY = 'carbonexo_coach_chat_history';
 
 // ─── Local state version ─────────────────────────────────────────────────────
 

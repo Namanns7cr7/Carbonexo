@@ -1,7 +1,7 @@
 {
   "bundle": "datasets/v2/okf/bundle/ecomind",
-  "validated_at": "2026-10-17T09:01:38Z",
-  "concepts": 15,
+  "validated_at": "2026-10-18T11:36:18Z",
+  "concepts": 17,
   "types": [
     "Accounting Rule",
     "Attested Computation",
@@ -16,11 +16,11 @@
   "okf_conformance_errors": [],
   "okf_spec_warnings": [],
   "trust_tiers": {
-    "unverified": 8,
+    "unverified": 10,
     "machine-confirmed": 7
   },
   "statuses": {
-    "draft": 14,
+    "draft": 16,
     "deprecated": 1
   },
   "carbonexo_policy_passed": true,

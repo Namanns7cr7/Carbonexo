@@ -127,10 +127,10 @@ describe('regions and quality', () => {
     const desk = earthQuality('full');
     const touch = earthQuality('full', { coarsePointer: true });
     expect(touch.texture).toBe('2k');
-    // Both tiers cap DPR at 1.5; the touch saving is in geometry and particle count.
-    expect(touch.dpr[1]).toBeLessThanOrEqual(desk.dpr[1]);
+    expect(touch.dpr[1]).toBeLessThan(desk.dpr[1]);
     expect(touch.segments).toBeLessThan(desk.segments);
     expect(touch.stars).toBeLessThan(desk.stars);
+    expect(earthQuality('full', { compact: true })).toEqual(touch);
   });
 });
 

@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -21,10 +22,14 @@ public class AgentConfig {
 
     @Bean
     @ConditionalOnMissingBean(AgentModelClient.class)
-    public AgentModelClient agentModelClient(AppProperties props, AgentProperties agent, AiStatusTracker status) {
+    public AgentModelClient agentModelClient(AppProperties props, AgentProperties agent, AiStatusTracker status,
+                                             @Value("${ecotrack.agent.client:auto}") String client) {
         String project = props.ai().gemini() == null ? null : props.ai().gemini().projectId();
-        log.info("Agentic coach model={} location={} project={}", agent.model(), agent.location(), project);
-        return new GeminiAgentModelClient(project, agent.location(), status);
+        // Gemini 3 needs thought signatures echoed on tool turns, which only the REST client carries.
+        boolean rest = "rest".equalsIgnoreCase(client) || ("auto".equalsIgnoreCase(client) && GeminiRestAgentModelClient.isGemini3(agent.model()));
+        log.info("Agentic coach model={} location={} project={} client={}", agent.model(), agent.location(), project, rest ? "rest" : "sdk");
+        return rest ? new GeminiRestAgentModelClient(project, agent.location(), status)
+                : new GeminiAgentModelClient(project, agent.location(), status);
     }
 
     @Bean

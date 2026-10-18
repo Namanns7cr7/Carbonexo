@@ -14,13 +14,15 @@ import org.slf4j.LoggerFactory;
  * Failures are classified ({@link AIFailureKind}) and thrown as {@link AIProviderException};
  * this class never substitutes text. Prompts are never logged.
  */
-public class GeminiAIProvider implements AIProvider {
+public class GeminiAIProvider implements AIProvider, AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiAIProvider.class);
 
     private final String projectId;
     private final String location;
     private final AiStatusTracker status;
+    /** Shared client: one gRPC channel for all calls instead of a new channel + TLS handshake per call. */
+    private volatile VertexAI vertexAI;
 
     public GeminiAIProvider(AppProperties props) {
         this(props, new AiStatusTracker());
@@ -33,6 +35,23 @@ public class GeminiAIProvider implements AIProvider {
         log.info("GeminiAIProvider initialized — project={}, location={}, host={}", projectId, location, VertexClients.host(location));
     }
 
+    /** Created on first use so a missing project id fails the call (classified), not application startup. */
+    private VertexAI vertexAI() {
+        VertexAI v = vertexAI;
+        if (v == null) {
+            synchronized (this) {
+                if (vertexAI == null) vertexAI = VertexClients.create(projectId, location);
+                v = vertexAI;
+            }
+        }
+        return v;
+    }
+
+    @Override
+    public void close() {
+        if (vertexAI != null) vertexAI.close();
+    }
+
     @Override
     public String generate(String prompt, String model) {
         return generateResult(prompt, model).text();
@@ -41,8 +60,8 @@ public class GeminiAIProvider implements AIProvider {
     @Override
     public AIResult generateResult(String prompt, String model) {
         long t0 = System.nanoTime();
-        try (VertexAI vertexAI = VertexClients.create(projectId, location)) {
-            GenerateContentResponse response = new GenerativeModel(model, vertexAI).generateContent(prompt);
+        try {
+            GenerateContentResponse response = new GenerativeModel(model, vertexAI()).generateContent(prompt);
             if (response.getCandidatesCount() == 0
                     || response.getCandidates(0).getFinishReason() == Candidate.FinishReason.SAFETY) {
                 throw new AIProviderException(AIFailureKind.BLOCKED, model, "no candidate text", null);

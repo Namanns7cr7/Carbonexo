@@ -7,7 +7,7 @@ tags: [india, transport, bus]
 status: draft
 generated: {by: carbonexo-okf-producer/0.1.0, at: '2026-10-17T07:50:00Z'}
 verified:
-- {by: 'process:carbonexo-source-check', at: '2026-10-17T08:50:00Z'}
+- {by: 'process:carbonexo-source-check', at: '2026-10-18T11:36:00Z'}
 stale_after: '2027-04-17T00:00:00Z'
 sources:
 - {id: indiaghgp-road-2015, resource: /sources/indiaghgp-road-2015.md, title: 'India GHG Program (WRI India, CII, TERI)'}

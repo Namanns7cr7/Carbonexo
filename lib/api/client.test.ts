@@ -14,6 +14,18 @@ describe('api client — token management', () => {
     clearTokens();
     expect(getAccessToken()).toBeNull();
   });
+
+  it('drops the cached coach conversation so the next user on this browser cannot see it', () => {
+    const store = new Map<string, string>([['carbonexo_coach_chat_history', '[{"role":"user","text":"private"}]']]);
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('localStorage', { removeItem: (k: string) => store.delete(k), setItem: (k: string, v: string) => store.set(k, v) });
+    try {
+      clearTokens();
+      expect(store.has('carbonexo_coach_chat_history')).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe('apiFetch', () => {

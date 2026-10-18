@@ -114,6 +114,14 @@ public class AgenticCoachService {
     }
 
     public CoachResponse chat(UUID userId, String userMessage, Mode coachMode) {
+        return chat(userId, userMessage, coachMode, null);
+    }
+
+    /**
+     * @param pageHint where the user is in the app ("Green Credits (/app/credits)"), already validated by the
+     *                 controller; a low-priority hint that never replaces the latest message. Null when absent.
+     */
+    public CoachResponse chat(UUID userId, String userMessage, Mode coachMode, String pageHint) {
         if (userId == null) throw new IllegalStateException("authenticated user required");
         if (userMessage == null || userMessage.isBlank()) throw new BadRequestException("message is required");
         if (userMessage.length() > MAX_MESSAGE_CHARS) throw new BadRequestException("message too long");
@@ -142,7 +150,9 @@ public class AgenticCoachService {
         CoachRouter.Route route = config.getBool("ai.coach.router_enabled", true)
                 ? CoachRouter.route(userMessage, includeKnowledge) : new CoachRouter.Route(List.of(), List.of(), "");
         String system = renderer.render(PROMPT_KEY, Map.of("region", region + (confirmed ? "" : " (not confirmed by the user)"),
-                "today", today.toString())) + route.contract() + (safe ? SAFE_RULES : "");
+                "today", today.toString())) + route.contract() + (safe ? SAFE_RULES : "")
+                + (pageHint == null ? "" : "\n\nThe user is currently viewing the " + pageHint + " page. Use this only when the "
+                        + "latest message refers to this page or is ambiguous; the latest message is always the question to answer.");
 
         List<Message> messages = history(userId);
         messages.add(Message.user(userMessage));
