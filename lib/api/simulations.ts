@@ -74,7 +74,11 @@ export interface SimulationResult {
  * The server's registry is the only calculator (the same one the AI coach uses). There is no
  * browser fallback: an unreachable server is an error, never a local guess with stand-in factors.
  */
-export async function runSimulation(request: SimulationRequestBody): Promise<SimulationResult> {
-  const res = await api.post<SimulationResult>('/api/simulations', request);
+export async function runSimulation(
+  request: SimulationRequestBody,
+  options?: { insight?: boolean }
+): Promise<SimulationResult> {
+  const query = options?.insight !== undefined ? `?insight=${options.insight}` : '';
+  const res = await api.post<SimulationResult>(`/api/simulations${query}`, request);
   return { ...res, source: 'server' };
 }

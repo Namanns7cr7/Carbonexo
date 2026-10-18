@@ -27,26 +27,44 @@ public class UserProfileService {
      */
     @Transactional
     public ProfileResponse getByUserId(UUID userId) {
-        UserProfile p = repo.findByUserIdAndDeletedAtIsNull(userId)
+        UserProfile p = findOrCreate(userId);
+        return toResponse(p);
+    }
+
+    private UserProfile findOrCreate(UUID userId) {
+        return repo.findByUserIdAndDeletedAtIsNull(userId)
+                .or(() -> repo.findByUserId(userId).map(existing -> {
+                    if (existing.getDeletedAt() != null) {
+                        existing.setDeletedAt(null);
+                        return repo.save(existing);
+                    }
+                    return existing;
+                }))
                 .orElseGet(() -> {
                     UserProfile fresh = new UserProfile();
                     fresh.setUserId(userId);
                     users.findByIdAndDeletedAtIsNull(userId)
                             .ifPresent(u -> fresh.setName(u.getDisplayName()));
                     fresh.setOnboarded(false);
-                    return repo.save(fresh);
+                    try {
+                        return repo.save(fresh);
+                    } catch (Exception ex) {
+                        return repo.findByUserId(userId)
+                                .orElseThrow(() -> new IllegalStateException("Failed to create profile: " + ex.getMessage()));
+                    }
                 });
-        return toResponse(p);
     }
 
     @Transactional
     public ProfileResponse createOrUpdate(UUID userId, ProfileRequest req) {
         UserProfile p = repo.findByUserIdAndDeletedAtIsNull(userId)
+                .or(() -> repo.findByUserId(userId))
                 .orElseGet(() -> {
                     UserProfile fresh = new UserProfile();
                     fresh.setUserId(userId);
                     return fresh;
                 });
+        p.setDeletedAt(null);
 
         if (req.name() != null) p.setName(req.name());
         if (req.travelMode() != null) p.setTravelMode(req.travelMode());
@@ -59,13 +77,14 @@ public class UserProfileService {
         // does not reset the onboarding flag
         if (req.onboarded() != null) p.setOnboarded(req.onboarded());
 
-        repo.save(p);
+        p = repo.save(p);
         return toResponse(p);
     }
 
     @Transactional
     public ProfileResponse completeOnboarding(UUID userId) {
         UserProfile p = repo.findByUserIdAndDeletedAtIsNull(userId)
+                .or(() -> repo.findByUserId(userId))
                 .orElseGet(() -> {
                     UserProfile fresh = new UserProfile();
                     fresh.setUserId(userId);
@@ -73,8 +92,9 @@ public class UserProfileService {
                             .ifPresent(u -> fresh.setName(u.getDisplayName()));
                     return fresh;
                 });
+        p.setDeletedAt(null);
         p.setOnboarded(true);
-        repo.save(p);
+        p = repo.save(p);
         return toResponse(p);
     }
 

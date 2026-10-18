@@ -29,7 +29,7 @@ export default function ReportsPage() {
     activeFeature: 'esg_export',
     visibleMetricIds: ['totalEmissionsKg', 'topCategory', 'categoriesCount'],
     metadata: {
-      totalEmissionsKg: data?.totalEmissionsKg ?? null,
+      totalEmissionsKg: data?.currentMonthCo2Kg ?? null,
       topCategoryName: categoryEntries[0]?.[0] ?? 'none',
       topCategoryValue: categoryEntries[0]?.[1] ?? 0,
       categoriesCount: categoryEntries.length,
@@ -54,7 +54,6 @@ export default function ReportsPage() {
     }
   };
 
-  const categoryEntries = data ? Object.entries(data.categoryBreakdown).sort((a, b) => b[1] - a[1]) : [];
   const topCategory = categoryEntries[0]?.[1] ?? 1;
 
   return (

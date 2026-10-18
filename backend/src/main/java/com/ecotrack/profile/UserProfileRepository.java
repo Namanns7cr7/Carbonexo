@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface UserProfileRepository extends JpaRepository<UserProfile, UUID> {
     Optional<UserProfile> findByUserIdAndDeletedAtIsNull(UUID userId);
+    Optional<UserProfile> findByUserId(UUID userId);
 }

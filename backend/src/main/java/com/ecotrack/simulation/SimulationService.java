@@ -86,6 +86,11 @@ public class SimulationService {
 
     @Transactional(readOnly = true)
     public SimulationResponse simulate(UUID userId, SimulationRequest request) {
+        return simulate(userId, request, true);
+    }
+
+    @Transactional(readOnly = true)
+    public SimulationResponse simulate(UUID userId, SimulationRequest request, boolean includeInsight) {
         if (request.changes() == null || request.changes().isEmpty()) {
             throw new BadRequestException("At least one simulated change is required");
         }
@@ -148,8 +153,9 @@ public class SimulationService {
             credits = creditRuleEngine.creditsForKgSaved(baseSum.subtract(projSum).max(BigDecimal.ZERO).doubleValue());
         }
 
-        String insight = insight(status, deltaCo2Kg, deltaMin, deltaMax, goal.projectedProgressPct(), credits, request.horizon(),
-                breakdown);
+        String insight = includeInsight
+                ? insight(status, deltaCo2Kg, deltaMin, deltaMax, goal.projectedProgressPct(), credits, request.horizon(), breakdown)
+                : null;
         return new SimulationResponse(baselineCo2Kg, projectedCo2Kg, deltaCo2Kg, goal, credits, breakdown, insight, status,
                 estimated == 0 ? null : scale(deltaMin), estimated == 0 ? null : scale(deltaMax), registry.datasetVersion(), authority);
     }
