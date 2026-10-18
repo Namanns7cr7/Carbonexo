@@ -143,6 +143,7 @@ export function InertialRail({
   const inner = useRef<HTMLDivElement>(null);
   const [limit, setLimit] = useState(0);
   const draggable = !reduce && limit > 0;
+  const dragged = useRef(false); // a drag must not also count as a click on a link inside the rail
 
   // The container (padding included) and the track are measured the same way in both modes.
   // Re-attached when the mode changes, because the elements are replaced.
@@ -182,6 +183,20 @@ export function InertialRail({
         dragConstraints={{ left: -limit, right: 0 }}
         dragElastic={0.12}
         dragTransition={{ power: 0.35, timeConstant: 320, bounceStiffness: 260, bounceDamping: 28 }}
+        onDragStart={() => {
+          dragged.current = true;
+        }}
+        onDragEnd={() => {
+          setTimeout(() => {
+            dragged.current = false;
+          }, 0);
+        }}
+        onClickCapture={(e) => {
+          if (dragged.current) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
         style={{ touchAction: 'pan-y' }}
       >
         {children}

@@ -11,6 +11,7 @@
  */
 
 import { forwardRef, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { InertialRail, TactileCard } from '@/components/physics';
 import { useJourneyData, type FootprintView } from './useJourneyData';
@@ -21,15 +22,17 @@ interface Milestone {
   mark: string;
   label: string;
   detail: string;
+  /** Where in the app this stamp is earned. */
+  href: string;
   earned: (d: FootprintView) => boolean;
 }
 
 const MILESTONES: Milestone[] = [
-  { id: 'first-log', mark: '📝', label: 'First day logged', detail: 'Any activity, any category.', earned: (d) => (d.daysTracked ?? 0) >= 1 },
-  { id: 'streak-3', mark: '🔥', label: '3-day streak', detail: 'Three days in a row.', earned: (d) => (d.streak ?? 0) >= 3 },
-  { id: 'first-action', mark: '✅', label: 'First swap done', detail: 'Complete one action from your plan.', earned: (d) => (d.actionsDone ?? 0) >= 1 },
-  { id: 'week', mark: '🗓️', label: 'A full week', detail: 'Seven different days tracked.', earned: (d) => (d.daysTracked ?? 0) >= 7 },
-  { id: 'five-actions', mark: '🌿', label: 'Five swaps', detail: 'Five actions completed.', earned: (d) => (d.actionsDone ?? 0) >= 5 },
+  { id: 'first-log', mark: '📝', label: 'First day logged', detail: 'Any activity, any category.', href: '/app/track', earned: (d) => (d.daysTracked ?? 0) >= 1 },
+  { id: 'streak-3', mark: '🔥', label: '3-day streak', detail: 'Three days in a row.', href: '/app/track', earned: (d) => (d.streak ?? 0) >= 3 },
+  { id: 'first-action', mark: '✅', label: 'First swap done', detail: 'Complete one action from your plan.', href: '/app/actions', earned: (d) => (d.actionsDone ?? 0) >= 1 },
+  { id: 'week', mark: '🗓️', label: 'A full week', detail: 'Seven different days tracked.', href: '/app/track', earned: (d) => (d.daysTracked ?? 0) >= 7 },
+  { id: 'five-actions', mark: '🌿', label: 'Five swaps', detail: 'Five actions completed.', href: '/app/actions', earned: (d) => (d.actionsDone ?? 0) >= 5 },
 ];
 
 export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) {
@@ -94,8 +97,11 @@ export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) 
                   transition={{ type: 'spring', stiffness: 260, damping: 16, delay: i * 0.06 }}
                 >
                   {i > 0 && <span aria-hidden className="absolute -left-4 top-[34px] h-px w-4" style={{ background: on ? 'var(--lime)' : 'var(--border)' }} />}
-                  <div
-                    className="rounded-[20px] border p-4"
+                  <Link
+                    href={real ? m.href : '/register'}
+                    aria-label={`${m.label}: ${on ? 'stamped' : 'ahead'}. ${real ? 'Open' : 'Sign up to start'}`}
+                    className="block rounded-[20px] border p-4 outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-lime"
+                    draggable={false}
                     style={{
                       borderColor: on ? 'var(--lime)' : 'var(--border)',
                       borderStyle: on ? 'solid' : 'dashed',
@@ -111,10 +117,11 @@ export const SceneImpact = forwardRef<HTMLElement>(function SceneImpact(_, ref) 
                     </div>
                     <div className="text-[14px] font-bold">{m.label}</div>
                     <div className="mt-0.5 text-[12px] leading-[1.45] text-muted">{m.detail}</div>
-                    <div className="mt-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: on ? 'var(--lime)' : 'var(--muted)' }}>
-                      {on ? 'Stamped' : 'Ahead'}
+                    <div className="mt-2.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: on ? 'var(--lime)' : 'var(--muted)' }}>
+                      <span>{on ? 'Stamped' : 'Ahead'}</span>
+                      <span aria-hidden>→</span>
                     </div>
-                  </div>
+                  </Link>
                 </motion.div>
               );
             })}
