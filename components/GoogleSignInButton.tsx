@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginWithGoogle } from '@/lib/api/auth';
 
@@ -35,6 +35,7 @@ declare global {
 }
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 const SCRIPT_ID = 'google-gsi-client';
 
 /**
@@ -46,9 +47,17 @@ const SCRIPT_ID = 'google-gsi-client';
 export function GoogleSignInButton({ onError }: { onError?: (msg: string) => void }) {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+  // One exchange at a time: a second tap while the first is in flight would
+  // start a competing sign-in and make the page look like it bounced back.
+  const pending = useRef(false);
+  const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
     if (!CLIENT_ID) return;
+
+    // Wake the backend while the visitor is still choosing an account, so the
+    // token exchange does not sit behind a cold start.
+    fetch(`${API_BASE_URL}/actuator/health`, { cache: 'no-store' }).catch(() => {});
 
     const init = () => {
       if (!window.google || !ref.current) return;
@@ -56,10 +65,16 @@ export function GoogleSignInButton({ onError }: { onError?: (msg: string) => voi
         client_id: CLIENT_ID,
         use_fedcm_for_prompt: true,
         callback: async (response: { credential: string }) => {
+          if (pending.current) return;
+          pending.current = true;
+          setSigningIn(true);
           try {
             const res = await loginWithGoogle(response.credential);
+            // stays "signing in" until the next page replaces this one
             window.location.assign(res.user && !res.user.displayName ? '/onboarding' : '/app');
           } catch (e) {
+            pending.current = false;
+            setSigningIn(false);
             onError?.(e instanceof Error ? e.message : 'Google sign-in failed');
           }
         },
@@ -99,7 +114,13 @@ export function GoogleSignInButton({ onError }: { onError?: (msg: string) => voi
       <div className="flex w-full items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-muted">
         <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
       </div>
-      <div ref={ref} className="flex justify-center" />
+      <div ref={ref} className={signingIn ? 'hidden' : 'flex justify-center'} />
+      {signingIn && (
+        <div role="status" aria-live="polite" className="flex h-10 items-center gap-2 text-sm font-semibold text-muted">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+          Signing you in with Google…
+        </div>
+      )}
     </div>
   );
 }
